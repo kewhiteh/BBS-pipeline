@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import io
 from pathlib import Path
+import traceback
 from typing import Any, Dict, List, Optional, Tuple
 
 import polars as pl
@@ -172,6 +173,7 @@ def main() -> None:
             item_id=item_id,
         )
     except Exception as exc:
+        traceback.print_exc()
         st.error(f"Failed to load dataset metadata: {exc}")
         st.stop()
 

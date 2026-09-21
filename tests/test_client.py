@@ -251,11 +251,13 @@ class TestWeatherParsing:
             assert col in df.columns, f"Column {col!r} missing"
             assert df.schema[col] == expected_dtype
 
-    def test_weather_temp_columns_are_float64(self, synthetic_zip_builder):
+    def test_weather_temp_and_spp_columns_are_string(self, synthetic_zip_builder):
+        """TotalSpp, StartTemp, and EndTemp must be pl.String per Arithmetic Typing Invariant."""
         zip_buf = synthetic_zip_builder({"weather.csv": _weather_csv()})
         df = parse_weather(zip_buf)
-        assert df.schema["StartTemp"] == pl.Float64
-        assert df.schema["EndTemp"] == pl.Float64
+        assert df.schema["StartTemp"] == pl.String
+        assert df.schema["EndTemp"] == pl.String
+        assert df.schema["TotalSpp"] == pl.String
 
     def test_weather_date_fields_are_strings(self, synthetic_zip_builder):
         """Year/Month/Day/StartTime/EndTime must be pl.String per arithmetic invariant."""
