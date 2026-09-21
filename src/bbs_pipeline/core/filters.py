@@ -376,3 +376,184 @@ def slice_stop_range(
     return df.with_columns(
         pl.sum_horizontal([pl.col(c) for c in cols_in_range]).alias(segment_col)
     )
+
+
+# ---------------------------------------------------------------------------
+# §2.6 / §2.5 — Covariate Filtering Functions
+# ---------------------------------------------------------------------------
+
+
+def filter_observer_tenure(
+    df: pl.DataFrame,
+    min_tenure: Optional[int] = None,
+    max_tenure: Optional[int] = None,
+    tenure_col: str = "RouteTenure",
+) -> pl.DataFrame:
+    """Filter survey runs by observer tenure thresholds.
+
+    Supports pruning runs by observer experience on a route (e.g. ``min_tenure=2``
+    excludes first-year observers to control for Kendall bias, or ``max_tenure=1``
+    selects first-year runs).
+
+    Gracefully handles null/missing covariate values without dropping valid rows
+    unless explicitly bounded by ``min_tenure`` or ``max_tenure``.
+
+    Parameters
+    ----------
+    df:
+        Polars DataFrame containing observer covariates.
+    min_tenure:
+        Optional inclusive minimum tenure (years surveying route).
+    max_tenure:
+        Optional inclusive maximum tenure (years surveying route).
+    tenure_col:
+        Name of the tenure column. Defaults to ``"RouteTenure"``. If not found,
+        falls back to ``"ObserverTenure"`` if present.
+
+    Returns
+    -------
+    pl.DataFrame
+        Filtered DataFrame with out-of-bounds runs removed.
+
+    Raises
+    ------
+    TypeError
+        If ``df`` is not a :class:`polars.DataFrame`.
+    ValueError
+        If bounds are invalid (e.g. negative or min > max), or if tenure column
+        is missing when bounds are explicitly specified.
+    """
+    if not isinstance(df, pl.DataFrame):
+        raise TypeError(
+            f"df must be a polars.DataFrame, got {type(df).__name__}"
+        )
+
+    if min_tenure is None and max_tenure is None:
+        return df
+
+    if min_tenure is not None:
+        if not isinstance(min_tenure, int) or min_tenure < 0:
+            raise ValueError(
+                f"min_tenure must be a non-negative integer, got {min_tenure!r}."
+            )
+
+    if max_tenure is not None:
+        if not isinstance(max_tenure, int) or max_tenure < 0:
+            raise ValueError(
+                f"max_tenure must be a non-negative integer, got {max_tenure!r}."
+            )
+
+    if min_tenure is not None and max_tenure is not None and min_tenure > max_tenure:
+        raise ValueError(
+            f"min_tenure ({min_tenure}) must be <= max_tenure ({max_tenure})."
+        )
+
+    # Resolve column name
+    eff_col = tenure_col
+    if eff_col not in df.columns:
+        if "ObserverTenure" in df.columns:
+            eff_col = "ObserverTenure"
+        elif "RouteTenure" in df.columns:
+            eff_col = "RouteTenure"
+        else:
+            raise ValueError(
+                f"Column '{tenure_col}' not found in DataFrame for observer tenure filtering."
+            )
+
+    filtered = df
+    if min_tenure is not None:
+        filtered = filtered.filter(
+            pl.col(eff_col).is_not_null() & (pl.col(eff_col) >= min_tenure)
+        )
+
+    if max_tenure is not None:
+        filtered = filtered.filter(
+            pl.col(eff_col).is_not_null() & (pl.col(eff_col) <= max_tenure)
+        )
+
+    return filtered
+
+
+def filter_traffic(
+    df: pl.DataFrame,
+    max_cars_per_stop: Optional[float] = None,
+    max_car_total: Optional[int] = None,
+    cars_per_stop_col: str = "CarsPerStop",
+    car_total_col: str = "CarTotal",
+) -> pl.DataFrame:
+    """Filter survey runs by vehicle traffic rate thresholds.
+
+    Excludes survey runs that exceed traffic thresholds (``CarsPerStop`` or ``CarTotal``).
+
+    Gracefully handles null/missing covariate values without dropping valid rows
+    unless explicitly bounded by ``max_cars_per_stop`` or ``max_car_total``.
+
+    Parameters
+    ----------
+    df:
+        Polars DataFrame containing vehicle traffic covariates.
+    max_cars_per_stop:
+        Optional inclusive maximum threshold for average cars per stop.
+    max_car_total:
+        Optional inclusive maximum threshold for total vehicles across all stops.
+    cars_per_stop_col:
+        Column name for cars per stop. Defaults to ``"CarsPerStop"``.
+    car_total_col:
+        Column name for total cars. Defaults to ``"CarTotal"``.
+
+    Returns
+    -------
+    pl.DataFrame
+        Filtered DataFrame with high-traffic runs removed.
+
+    Raises
+    ------
+    TypeError
+        If ``df`` is not a :class:`polars.DataFrame`.
+    ValueError
+        If bounds are invalid (e.g. negative), or if required traffic columns
+        are missing when thresholds are explicitly specified.
+    """
+    if not isinstance(df, pl.DataFrame):
+        raise TypeError(
+            f"df must be a polars.DataFrame, got {type(df).__name__}"
+        )
+
+    if max_cars_per_stop is None and max_car_total is None:
+        return df
+
+    if max_cars_per_stop is not None:
+        if not isinstance(max_cars_per_stop, (int, float)) or max_cars_per_stop < 0:
+            raise ValueError(
+                f"max_cars_per_stop must be a non-negative number, got {max_cars_per_stop!r}."
+            )
+        if cars_per_stop_col not in df.columns:
+            raise ValueError(
+                f"Column '{cars_per_stop_col}' not found in DataFrame for traffic filtering."
+            )
+
+    if max_car_total is not None:
+        if not isinstance(max_car_total, int) or max_car_total < 0:
+            raise ValueError(
+                f"max_car_total must be a non-negative integer, got {max_car_total!r}."
+            )
+        if car_total_col not in df.columns:
+            raise ValueError(
+                f"Column '{car_total_col}' not found in DataFrame for traffic filtering."
+            )
+
+    filtered = df
+    if max_cars_per_stop is not None:
+        filtered = filtered.filter(
+            pl.col(cars_per_stop_col).is_not_null()
+            & (pl.col(cars_per_stop_col) <= max_cars_per_stop)
+        )
+
+    if max_car_total is not None:
+        filtered = filtered.filter(
+            pl.col(car_total_col).is_not_null()
+            & (pl.col(car_total_col) <= max_car_total)
+        )
+
+    return filtered
+

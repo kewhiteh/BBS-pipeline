@@ -30,6 +30,8 @@ from bbs_pipeline.core.filters import (
     add_route_key,
     filter_by_continuity,
     filter_by_min_stops,
+    filter_observer_tenure,
+    filter_traffic,
     nullify_stops_beyond_total,
     slice_stop_range,
 )
@@ -641,3 +643,152 @@ class TestIntegrationDiscoveryToFilters:
         nullified = nullify_stops_beyond_total(guarded)
         # All rows have TotalStops=50, so no nulls should appear
         assert nullified["Stop50"].null_count() == 0
+
+
+# ---------------------------------------------------------------------------
+# §2.6 / §2.5 — Covariate Filtering Unit Tests
+# ---------------------------------------------------------------------------
+
+
+class TestFilterObserverTenure:
+    """Unit tests for filter_observer_tenure."""
+
+    @pytest.fixture
+    def sample_df(self) -> pl.DataFrame:
+        schema = {
+            "RouteKey": pl.String,
+            "Year": pl.String,
+            "ObsN": pl.String,
+            "RouteTenure": pl.Int32,
+        }
+        return pl.DataFrame(
+            {
+                "RouteKey": ["840_02_001", "840_02_001", "840_02_001", "840_02_002"],
+                "Year": ["2015", "2016", "2017", "2018"],
+                "ObsN": ["001", "001", "001", "002"],
+                "RouteTenure": [1, 2, 5, None],
+            },
+            schema=schema,
+        )
+
+    def test_unbounded_returns_all_rows_including_nulls(self, sample_df: pl.DataFrame):
+        res = filter_observer_tenure(sample_df, min_tenure=None, max_tenure=None)
+        assert len(res) == len(sample_df)
+        assert res["RouteTenure"].null_count() == 1
+
+    def test_min_tenure_excludes_first_year_and_nulls(self, sample_df: pl.DataFrame):
+        # min_tenure=2 excludes first-year (tenure=1) and null tenure
+        res = filter_observer_tenure(sample_df, min_tenure=2)
+        assert len(res) == 2
+        assert sorted(res["RouteTenure"].to_list()) == [2, 5]
+
+    def test_max_tenure_excludes_experienced_and_nulls(self, sample_df: pl.DataFrame):
+        res = filter_observer_tenure(sample_df, max_tenure=2)
+        assert len(res) == 2
+        assert sorted(res["RouteTenure"].to_list()) == [1, 2]
+
+    def test_min_and_max_tenure_range(self, sample_df: pl.DataFrame):
+        res = filter_observer_tenure(sample_df, min_tenure=2, max_tenure=3)
+        assert len(res) == 1
+        assert res["RouteTenure"].to_list() == [2]
+
+    def test_observer_tenure_column_name_fallback(self):
+        schema = {"RouteKey": pl.String, "ObserverTenure": pl.Int32}
+        df = pl.DataFrame(
+            {"RouteKey": ["840_02_001", "840_02_002"], "ObserverTenure": [1, 4]},
+            schema=schema,
+        )
+        res = filter_observer_tenure(df, min_tenure=2)
+        assert len(res) == 1
+        assert res["ObserverTenure"].to_list() == [4]
+
+    def test_raises_type_error_on_non_dataframe(self):  # NEGATIVE
+        with pytest.raises(TypeError, match="polars.DataFrame"):
+            filter_observer_tenure([{"RouteTenure": 2}], min_tenure=1)  # type: ignore[arg-type]
+
+    def test_raises_value_error_on_invalid_bounds(self, sample_df: pl.DataFrame):  # NEGATIVE
+        with pytest.raises(ValueError, match="min_tenure"):
+            filter_observer_tenure(sample_df, min_tenure=-1)
+
+        with pytest.raises(ValueError, match="max_tenure"):
+            filter_observer_tenure(sample_df, max_tenure=-5)
+
+        with pytest.raises(ValueError, match="must be <= max_tenure"):
+            filter_observer_tenure(sample_df, min_tenure=5, max_tenure=2)
+
+    def test_raises_value_error_missing_column_when_bounded(self):  # NEGATIVE
+        df = pl.DataFrame({"RouteKey": ["840_02_001"]}, schema={"RouteKey": pl.String})
+        with pytest.raises(ValueError, match="Column 'RouteTenure' not found"):
+            filter_observer_tenure(df, min_tenure=2)
+
+
+class TestFilterTraffic:
+    """Unit tests for filter_traffic."""
+
+    @pytest.fixture
+    def sample_traffic_df(self) -> pl.DataFrame:
+        schema = {
+            "RouteDataID": pl.String,
+            "CarTotal": pl.Int32,
+            "CarsPerStop": pl.Float64,
+        }
+        return pl.DataFrame(
+            {
+                "RouteDataID": ["RD1", "RD2", "RD3", "RD4"],
+                "CarTotal": [20, 100, 250, None],
+                "CarsPerStop": [0.4, 2.0, 5.0, None],
+            },
+            schema=schema,
+        )
+
+    def test_unbounded_preserves_all_records_including_nulls(self, sample_traffic_df: pl.DataFrame):
+        res = filter_traffic(sample_traffic_df)
+        assert len(res) == len(sample_traffic_df)
+        assert res["CarsPerStop"].null_count() == 1
+
+    def test_max_cars_per_stop_filter(self, sample_traffic_df: pl.DataFrame):
+        res = filter_traffic(sample_traffic_df, max_cars_per_stop=2.0)
+        assert len(res) == 2
+        assert res["RouteDataID"].to_list() == ["RD1", "RD2"]
+
+    def test_max_car_total_filter(self, sample_traffic_df: pl.DataFrame):
+        res = filter_traffic(sample_traffic_df, max_car_total=100)
+        assert len(res) == 2
+        assert res["RouteDataID"].to_list() == ["RD1", "RD2"]
+
+    def test_combined_traffic_bounds(self, sample_traffic_df: pl.DataFrame):
+        res = filter_traffic(sample_traffic_df, max_cars_per_stop=3.0, max_car_total=50)
+        assert len(res) == 1
+        assert res["RouteDataID"].to_list() == ["RD1"]
+
+    def test_traffic_filter_does_not_drop_unbounded_nulls(self, sample_traffic_df: pl.DataFrame):
+        df = pl.DataFrame(
+            {
+                "RouteDataID": ["RD1", "RD2"],
+                "CarTotal": [50, 50],
+                "CarsPerStop": [1.0, None],
+            },
+            schema={"RouteDataID": pl.String, "CarTotal": pl.Int32, "CarsPerStop": pl.Float64},
+        )
+        res = filter_traffic(df, max_car_total=100)
+        assert len(res) == 2
+
+    def test_raises_type_error_on_non_dataframe(self):  # NEGATIVE
+        with pytest.raises(TypeError, match="polars.DataFrame"):
+            filter_traffic([{"CarTotal": 10}], max_car_total=20)  # type: ignore[arg-type]
+
+    def test_raises_value_error_on_negative_bounds(self, sample_traffic_df: pl.DataFrame):  # NEGATIVE
+        with pytest.raises(ValueError, match="max_cars_per_stop"):
+            filter_traffic(sample_traffic_df, max_cars_per_stop=-1.0)
+
+        with pytest.raises(ValueError, match="max_car_total"):
+            filter_traffic(sample_traffic_df, max_car_total=-10)
+
+    def test_raises_value_error_missing_column_when_bounded(self):  # NEGATIVE
+        df = pl.DataFrame({"RouteDataID": ["RD1"]}, schema={"RouteDataID": pl.String})
+        with pytest.raises(ValueError, match="Column 'CarsPerStop' not found"):
+            filter_traffic(df, max_cars_per_stop=5.0)
+
+        with pytest.raises(ValueError, match="Column 'CarTotal' not found"):
+            filter_traffic(df, max_car_total=100)
+

@@ -207,6 +207,19 @@ class TestCliArgumentParser:
         assert args.min_stops == 48
         assert args.stop_range == [1, 25]
 
+    def test_covariate_arguments(self) -> None:
+        parser = build_parser()
+        args = parser.parse_args([
+            "--min-obs-tenure", "2",
+            "--max-obs-tenure", "10",
+            "--max-cars-per-stop", "4.5",
+            "--max-car-total", "200",
+        ])
+        assert args.min_obs_tenure == 2
+        assert args.max_obs_tenure == 10
+        assert args.max_cars_per_stop == 4.5
+        assert args.max_car_total == 200
+
     def test_output_and_format_arguments(self) -> None:
         parser = build_parser()
         args = parser.parse_args([
@@ -350,6 +363,56 @@ class TestPipelineMockedIntegration:
         assert res == out_file
         assert out_file.exists()
         assert out_file.stat().st_size > 0
+
+    def test_pipeline_active_observer_tenure_filtering(self, mock_sciencebase_endpoints) -> None:
+        """Verify active observer tenure filtering prunes first-year survey runs."""
+        # min_obs_tenure=2 filters out first-year runs (RD001 in 2018, RD003 in 2019)
+        # leaving only 2019 for Route 001 (RD002)
+        data = run_pipeline(
+            states=["AL"],
+            species=["07610"],
+            start_year=2018,
+            end_year=2019,
+            min_obs_tenure=2,
+            output_path=None,
+            format="parquet",
+            shape="wide",
+        )
+        assert isinstance(data, bytes)
+        tbl = pq.read_table(io.BytesIO(data))
+        df = pl.from_arrow(tbl)
+        assert len(df) > 0
+        assert (df["Year"] == "2019").all()
+        assert (df["Route"] == "001").all()
+
+    def test_pipeline_active_traffic_filtering(self, mock_sciencebase_endpoints) -> None:
+        """Verify active traffic filtering accepts compliant runs and rejects over-limit runs."""
+        # mock vehicle data has 2 cars per stop (total=100)
+        data = run_pipeline(
+            states=["AL"],
+            species=["07610"],
+            start_year=2018,
+            end_year=2019,
+            max_cars_per_stop=3.0,
+            output_path=None,
+            format="parquet",
+            shape="wide",
+        )
+        assert isinstance(data, bytes)
+        assert len(data) > 0
+
+        # Filtering with max_cars_per_stop=1.0 should prune all runs and raise ValueError (# NEGATIVE)
+        with pytest.raises(ValueError, match="No survey runs satisfied the vehicle traffic criteria"):
+            run_pipeline(
+                states=["AL"],
+                species=["07610"],
+                start_year=2018,
+                end_year=2019,
+                max_cars_per_stop=1.0,
+                output_path=None,
+                format="parquet",
+                shape="wide",
+            )
 
     def test_cli_main_entrypoint_success(self, mock_sciencebase_endpoints) -> None:
         """Verify main() function parses sys.argv and returns exit code 0."""

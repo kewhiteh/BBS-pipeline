@@ -1,8 +1,8 @@
 """Reactive Streamlit web dashboard for USGS BBS Pipeline.
 
 Implements Task 7.2 (docs/04_TASKS.md) and §4 of docs/project_intake_brief_usgs_breeding_bird_survey_pipeline.md:
-- Searchable multi-select for States, BCRs, Strata, and candidate Routes.
-- Dynamic taxonomic filters (Clade, Family, Ecological Guild) synchronizing species pills.
+- Searchable multi-select for States, BCRs, Strata, Routes, Guilds, and Species.
+- Active covariate filters (Observer Tenure, Vehicle Traffic) and dynamic taxonomic set-union.
 - Dynamic survey year dual-slider adapting to the discovered dataset temporal horizon.
 - Sub-route stop slicing and route continuity dual-sliders.
 - Live Map preview displaying 1:1 route starting coordinates.
@@ -69,6 +69,52 @@ def load_metadata_cache(
     guilds_dict = load_guilds_json(gp) if gp.exists() else {}
 
     return routes_df, max_year, species_df, guilds_dict
+
+
+
+# ---------------------------------------------------------------------------
+# BCR Name Reference Registry (NABCI)
+# ---------------------------------------------------------------------------
+
+BCR_NAMES: Dict[str, str] = {
+    "1": "Aleutian/Bering Sea Islands",
+    "2": "Western Alaska",
+    "3": "Arctic Plains and Mountains",
+    "4": "Northwestern Interior Forest",
+    "5": "Northern Pacific Rainforest",
+    "6": "Boreal Taiga Plains",
+    "7": "Taiga Shield and Hudson Plains",
+    "8": "Boreal Softwood Shield",
+    "9": "Great Basin",
+    "10": "Northern Rockies",
+    "11": "Prairie Potholes",
+    "12": "Boreal Hardwood Transition",
+    "13": "Lower Great Lakes/St. Lawrence Plain",
+    "14": "Atlantic Northern Forest",
+    "15": "Sierra Nevada",
+    "16": "Southern Rockies/Colorado Plateau",
+    "17": "Badlands and Prairies",
+    "18": "Shortgrass Prairie",
+    "19": "Central Mixed-Grass Prairie",
+    "20": "Edwards Plateau",
+    "21": "Oaks and Prairies",
+    "22": "Eastern Tallgrass Prairie",
+    "23": "Prairie Hardwood Transition",
+    "24": "Central Hardwoods",
+    "25": "West Gulf Coastal Plain/Ouachitas",
+    "26": "Mississippi Alluvial Valley",
+    "27": "Southeastern Coastal Plain",
+    "28": "Appalachian Mountains",
+    "29": "Piedmont",
+    "30": "New England/Mid-Atlantic Coast",
+    "31": "Peninsular Florida",
+    "32": "Coastal California",
+    "33": "Sonoran and Mojave Deserts",
+    "34": "Sierra Madre Occidental",
+    "35": "Chihuahuan Desert",
+    "36": "Tamaulipan Brushlands",
+    "37": "Gulf Coastal Prairie",
+}
 
 
 # ---------------------------------------------------------------------------
@@ -155,11 +201,64 @@ def main() -> None:
             index=0,
             help="Coordinate reference system for spatial anchoring.",
         )
-        include_covariates = st.checkbox(
-            "Calculate Observer & Traffic Covariates",
-            value=True,
-            help="Compute CareerSurveysCompleted, RouteTenure, IsFirstYearObserver, CarTotal, CarsPerStop.",
-        )
+        with st.expander("🚗 Covariate Filters & Covariates", expanded=False):
+            include_covariates = st.checkbox(
+                "Calculate Observer & Traffic Covariates",
+                value=True,
+                help="Compute CareerSurveysCompleted, RouteTenure, IsFirstYearObserver, CarTotal, CarsPerStop.",
+            )
+            st.markdown("**Observer Experience Filter**")
+            enable_tenure_filter = st.checkbox(
+                "Filter by Observer Tenure",
+                value=False,
+                help="Prune survey runs by observer experience on a route (e.g. min 2 excludes Kendall bias).",
+            )
+            min_obs_tenure: Optional[int] = None
+            max_obs_tenure: Optional[int] = None
+            if enable_tenure_filter:
+                tenure_range = st.slider(
+                    "Observer Route Tenure (Years)",
+                    min_value=1,
+                    max_value=50,
+                    value=(1, 50),
+                    step=1,
+                    help="Inclusive range for observer route tenure.",
+                )
+                min_obs_tenure, max_obs_tenure = tenure_range[0], tenure_range[1]
+
+            st.markdown("**Vehicle Traffic Filter**")
+            enable_traffic_filter = st.checkbox(
+                "Filter by Vehicle Traffic",
+                value=False,
+                help="Prune high-traffic survey runs exceeding thresholds.",
+            )
+            max_cars_per_stop: Optional[float] = None
+            max_car_total: Optional[int] = None
+            if enable_traffic_filter:
+                traffic_mode = st.radio(
+                    "Traffic Threshold Metric",
+                    options=["Cars Per Stop", "Total Cars"],
+                    horizontal=True,
+                )
+                if traffic_mode == "Cars Per Stop":
+                    max_cars_per_stop = st.slider(
+                        "Max Average Cars Per Stop",
+                        min_value=0.0,
+                        max_value=100.0,
+                        value=10.0,
+                        step=0.5,
+                        help="Exclude runs where CarsPerStop exceeds this value.",
+                    )
+                else:
+                    max_car_total = st.slider(
+                        "Max Total Cars Observed",
+                        min_value=0,
+                        max_value=1500,
+                        value=250,
+                        step=10,
+                        help="Exclude runs where CarTotal exceeds this value.",
+                    )
+
         zero_fill_toggle = st.checkbox(
             "Extirpation-Preserving Zero-Filling",
             value=True,
@@ -206,34 +305,59 @@ def main() -> None:
             active_routes = active_routes.filter(pl.col("StateNum").is_in(selected_states))
 
         # BCRs and Strata
-        bcr_options = sorted(active_routes["BCR"].drop_nulls().unique().to_list())
-        selected_bcrs = st.multiselect(
+        available_bcrs = sorted(active_routes["BCR"].drop_nulls().unique().to_list())
+        bcr_labels = [
+            f"BCR {bcr} - {BCR_NAMES[str(bcr).lstrip('0')]}"
+            if str(bcr).lstrip("0") in BCR_NAMES
+            else f"BCR {bcr}"
+            for bcr in available_bcrs
+        ]
+        label_to_bcr = dict(zip(bcr_labels, available_bcrs))
+
+        selected_bcr_labels = st.multiselect(
             "Bird Conservation Regions (BCR)",
-            options=bcr_options,
+            options=bcr_labels,
             default=[],
             placeholder="Search BCRs...",
         )
+        selected_bcrs = [label_to_bcr[lbl] for lbl in selected_bcr_labels]
         if selected_bcrs:
             active_routes = active_routes.filter(pl.col("BCR").is_in(selected_bcrs))
 
-        strata_options = sorted(active_routes["Stratum"].drop_nulls().unique().to_list())
-        selected_strata = st.multiselect(
+        available_strata = sorted(active_routes["Stratum"].drop_nulls().unique().to_list())
+        strata_labels = [f"Stratum {st_val}" for st_val in available_strata]
+        label_to_stratum = dict(zip(strata_labels, available_strata))
+
+        selected_strata_labels = st.multiselect(
             "Physiographic Strata",
-            options=strata_options,
+            options=strata_labels,
             default=[],
             placeholder="Search strata...",
         )
+        selected_strata = [label_to_stratum[lbl] for lbl in selected_strata_labels]
         if selected_strata:
             active_routes = active_routes.filter(pl.col("Stratum").is_in(selected_strata))
 
         # Candidate Routes
-        route_options = sorted(active_routes["RouteKey"].unique().to_list())
-        selected_routes = st.multiselect(
+        route_records = (
+            active_routes.select(["RouteKey", "RouteName"])
+            .unique(subset=["RouteKey"])
+            .sort("RouteKey")
+            .to_dicts()
+        )
+        route_labels = [
+            f"{r['RouteKey']} - {r['RouteName']}" if r.get("RouteName") else str(r["RouteKey"])
+            for r in route_records
+        ]
+        label_to_route_key = dict(zip(route_labels, [r["RouteKey"] for r in route_records]))
+
+        selected_route_labels = st.multiselect(
             "Candidate Routes",
-            options=route_options,
+            options=route_labels,
             default=[],
             placeholder="Search routes by ID/name...",
         )
+        selected_routes = [label_to_route_key[lbl] for lbl in selected_route_labels]
         if selected_routes:
             active_routes = active_routes.filter(pl.col("RouteKey").is_in(selected_routes))
 
@@ -284,13 +408,15 @@ def main() -> None:
                     | set(v.get("foraging_guild") for v in guilds_dict.values() if v.get("foraging_guild"))
                 )
             )
-            selected_guilds = render_pills_or_multiselect(
+            selected_guilds = st.multiselect(
                 "Ecological Guilds (Breeding Habitat & Foraging)",
                 options=avail_guilds,
-                key="taxa_guild_pills",
+                default=[],
+                placeholder="Search or select ecological guilds...",
+                key="taxa_guild_multiselect",
             )
 
-            # Synchronized Species Pills
+            # Synchronized Species Multi-Select
             # Extract candidate species names
             species_options = (
                 active_species.select(["AOU", "English_Common_Name"])
@@ -300,10 +426,12 @@ def main() -> None:
             sp_display_list = [f"{s['English_Common_Name']} ({s['AOU']})" for s in species_options]
             sp_name_to_aou = {f"{s['English_Common_Name']} ({s['AOU']})": s["AOU"] for s in species_options}
 
-            selected_sp_labels = render_pills_or_multiselect(
-                f"Synchronized Species ({len(sp_display_list)} available, top 80 shown)",
-                options=sp_display_list[:80],
-                key="taxa_species_pills",
+            selected_sp_labels = st.multiselect(
+                f"Synchronized Species ({len(sp_display_list)} available)",
+                options=sp_display_list,
+                default=[],
+                placeholder="Search species by name or AOU...",
+                key="taxa_species_multiselect",
             )
             selected_species_aous = [sp_name_to_aou[lbl] for lbl in selected_sp_labels]
         else:
@@ -409,6 +537,10 @@ def main() -> None:
                     min_stops=min_stops_val,
                     stop_range=list(stop_range_val) if stop_range_val != (1, 50) else None,
                     include_covariates=include_covariates,
+                    min_obs_tenure=min_obs_tenure,
+                    max_obs_tenure=max_obs_tenure,
+                    max_cars_per_stop=max_cars_per_stop,
+                    max_car_total=max_car_total,
                     zero_fill=zero_fill_toggle,
                     item_id=item_id,
                     raw_data_dir=raw_data_dir if raw_data_dir else None,

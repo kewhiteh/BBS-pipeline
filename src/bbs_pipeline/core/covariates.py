@@ -312,3 +312,21 @@ def compute_traffic_covariates(
         result["CarTotal"].max(),
     )
     return result
+
+
+# ---------------------------------------------------------------------------
+# §2.6 / §2.5 — Covariate Filtering Functions (Re-exported from core.filters)
+# ---------------------------------------------------------------------------
+
+from bbs_pipeline.core.filters import (
+    filter_observer_tenure,
+    filter_traffic,
+)
+
+__all__ = [
+    "compute_observer_covariates",
+    "compute_traffic_covariates",
+    "filter_observer_tenure",
+    "filter_traffic",
+]
+

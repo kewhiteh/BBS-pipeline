@@ -19,6 +19,8 @@ import pytest
 from bbs_pipeline.core.covariates import (
     compute_observer_covariates,
     compute_traffic_covariates,
+    filter_observer_tenure,
+    filter_traffic,
 )
 
 # ---------------------------------------------------------------------------
@@ -386,3 +388,73 @@ class TestComputeTrafficCovariates:
         assert "CarTotal" in result.columns
         assert "CarsPerStop" in result.columns
         assert len(result) == 0
+
+
+class TestCovariateFilteringIntegration:
+    """Integration tests for covariate computation paired with active filtering."""
+
+    def test_observer_covariates_chained_with_tenure_filter(self):
+        # 3 runs for ObsN="001" on route A in 2010, 2011, 2012
+        rows = [
+            _make_weather_row("840_02_001", "001", "2010", "RD1"),
+            _make_weather_row("840_02_001", "001", "2011", "RD2"),
+            _make_weather_row("840_02_001", "001", "2012", "RD3"),
+        ]
+        df = _make_weather_df(rows)
+        cov_df = compute_observer_covariates(df)
+
+        # Filter to min_tenure=2 (drops first-year 2010 run)
+        filtered = filter_observer_tenure(cov_df, min_tenure=2)
+        assert len(filtered) == 2
+        assert filtered["Year"].to_list() == ["2011", "2012"]
+        assert (filtered["IsFirstYearObserver"] == 0).all()
+
+    def test_traffic_covariates_chained_with_traffic_filter(self):
+        r1 = _make_vehicle_row(total_stops=50, car_counts=[1] * 50, route_data_id="RD1")
+        r2 = _make_vehicle_row(total_stops=50, car_counts=[5] * 50, route_data_id="RD2")
+        r3 = _make_vehicle_row(total_stops=50, car_counts=[10] * 50, route_data_id="RD3")
+        veh_df = _make_vehicle_df([r1, r2, r3])
+        cov_df = compute_traffic_covariates(veh_df)
+
+        filtered = filter_traffic(cov_df, max_cars_per_stop=6.0)
+        assert len(filtered) == 2
+        assert filtered["RouteDataID"].to_list() == ["RD1", "RD2"]
+
+    def test_null_covariates_handling_with_joined_data(self):
+        # Survey run with and without matching traffic data
+        schema = {
+            "RouteDataID": pl.String,
+            "RouteKey": pl.String,
+            "RouteTenure": pl.Int32,
+            "CarTotal": pl.Int32,
+            "CarsPerStop": pl.Float64,
+        }
+        df = pl.DataFrame(
+            {
+                "RouteDataID": ["RD1", "RD2", "RD3"],
+                "RouteKey": ["840_02_001", "840_02_001", "840_02_001"],
+                "RouteTenure": [1, 3, None],
+                "CarTotal": [20, None, 40],
+                "CarsPerStop": [0.4, None, 0.8],
+            },
+            schema=schema,
+        )
+
+        # Unbounded tenure preserves row with null tenure
+        res1 = filter_observer_tenure(df)
+        assert len(res1) == 3
+
+        # Bounded tenure drops row with null tenure and row with tenure=1
+        res2 = filter_observer_tenure(df, min_tenure=2)
+        assert len(res2) == 1
+        assert res2["RouteDataID"].to_list() == ["RD2"]
+
+        # Unbounded traffic preserves row with null traffic
+        res3 = filter_traffic(df)
+        assert len(res3) == 3
+
+        # Bounded traffic drops row with null traffic
+        res4 = filter_traffic(df, max_cars_per_stop=1.0)
+        assert len(res4) == 2
+        assert res4["RouteDataID"].to_list() == ["RD1", "RD3"]
+

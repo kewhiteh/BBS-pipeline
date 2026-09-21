@@ -46,6 +46,8 @@ from bbs_pipeline.core.filters import (
     add_route_key,
     filter_by_continuity,
     filter_by_min_stops,
+    filter_observer_tenure,
+    filter_traffic,
     nullify_stops_beyond_total,
     slice_stop_range,
 )
@@ -304,6 +306,34 @@ def build_parser() -> argparse.ArgumentParser:
         dest="include_covariates",
         help="Skip covariate computation.",
     )
+    cov_grp.add_argument(
+        "--min-obs-tenure",
+        type=int,
+        default=None,
+        dest="min_obs_tenure",
+        help="Minimum observer route tenure in years (e.g. 2 excludes first-year observers).",
+    )
+    cov_grp.add_argument(
+        "--max-obs-tenure",
+        type=int,
+        default=None,
+        dest="max_obs_tenure",
+        help="Maximum observer route tenure in years.",
+    )
+    cov_grp.add_argument(
+        "--max-cars-per-stop",
+        type=float,
+        default=None,
+        dest="max_cars_per_stop",
+        help="Maximum average cars per stop threshold.",
+    )
+    cov_grp.add_argument(
+        "--max-car-total",
+        type=int,
+        default=None,
+        dest="max_car_total",
+        help="Maximum total cars observed across all stops.",
+    )
 
     # 6. Zero-Filling Group
     zf_grp = parser.add_argument_group("Zero-Filling Options")
@@ -541,6 +571,10 @@ def run_pipeline(
     start_stop: Optional[int] = None,
     end_stop: Optional[int] = None,
     include_covariates: bool = True,
+    min_obs_tenure: Optional[int] = None,
+    max_obs_tenure: Optional[int] = None,
+    max_cars_per_stop: Optional[float] = None,
+    max_car_total: Optional[int] = None,
     zero_fill: bool = True,
     item_id: str = DEFAULT_ITEM_ID,
     raw_data_dir: Optional[Union[str, Path]] = None,
@@ -598,6 +632,14 @@ def run_pipeline(
         Ending stop index for slicing (1-50).
     include_covariates:
         Whether to calculate observer and vehicle covariates.
+    min_obs_tenure:
+        Minimum observer route tenure (years surveying route).
+    max_obs_tenure:
+        Maximum observer route tenure (years surveying route).
+    max_cars_per_stop:
+        Maximum average cars per stop threshold.
+    max_car_total:
+        Maximum total cars observed across all stops.
     zero_fill:
         Whether to perform 4-step Cartesian zero-filling.
     item_id:
@@ -798,10 +840,14 @@ def run_pipeline(
     # -----------------------------------------------------------------------
     # Step 3: Observer & Vehicle Covariates
     # -----------------------------------------------------------------------
-    if include_covariates:
+    has_tenure_filter = min_obs_tenure is not None or max_obs_tenure is not None
+    has_traffic_filter = max_cars_per_stop is not None or max_car_total is not None
+
+    if include_covariates or has_tenure_filter:
         # Longitudinal observer experience
         weather_df = compute_observer_covariates(weather_df)
 
+    if include_covariates or has_traffic_filter:
         # Vehicle & noise covariates
         try:
             veh_buf = _find_and_read_file("VehicleData.csv", raw_dir=raw_dir, item_id=item_id, session=session)
@@ -817,6 +863,28 @@ def run_pipeline(
                 weather_df = weather_df.join(veh_sub, on="RouteDataID", how="left", coalesce=True)
         except Exception as exc:
             logger.debug("Could not compute traffic covariates: %s", exc)
+
+    if has_tenure_filter:
+        weather_df = filter_observer_tenure(
+            weather_df,
+            min_tenure=min_obs_tenure,
+            max_tenure=max_obs_tenure,
+        )
+        if weather_df.is_empty():
+            raise ValueError("No survey runs satisfied the observer tenure criteria.")
+
+    if has_traffic_filter:
+        weather_df = filter_traffic(
+            weather_df,
+            max_cars_per_stop=max_cars_per_stop,
+            max_car_total=max_car_total,
+        )
+        if weather_df.is_empty():
+            raise ValueError("No survey runs satisfied the vehicle traffic criteria.")
+
+    if has_tenure_filter or has_traffic_filter:
+        valid_route_keys = frozenset(weather_df["RouteKey"].to_list())
+        routes_df = routes_df.filter(pl.col("RouteKey").is_in(list(valid_route_keys)))
 
     # -----------------------------------------------------------------------
     # Step 4: Taxonomic Set-Union Resolution
@@ -1005,6 +1073,10 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
             start_stop=args.start_stop,
             end_stop=args.end_stop,
             include_covariates=args.include_covariates,
+            min_obs_tenure=args.min_obs_tenure,
+            max_obs_tenure=args.max_obs_tenure,
+            max_cars_per_stop=args.max_cars_per_stop,
+            max_car_total=args.max_car_total,
             zero_fill=args.zero_fill,
             item_id=args.item_id,
             raw_data_dir=args.raw_data_dir,
