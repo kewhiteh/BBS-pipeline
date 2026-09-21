@@ -16,11 +16,11 @@
 - [x] Phase 2 Gate: 100% test pass on mocked network streaming and parsing; zero disk writes verified; atomic commit tagged[cite: 1].
 
 ## Phase 3: Domain Filters, Continuity & Dynamic Temporal Discovery
-- [ ] Task 3.1: Implement `discovery.py` to extract `max_observed_year` from weather records and compute eligible year sets excluding 2020[cite: 3].
-- [ ] Task 3.2: Implement `filters.py` for composite route keying (`CountryNum_StateNum_Route`) and proportional continuity thresholding[cite: 3].
-- [ ] Task 3.3: Implement stop effort guards and sub-route slicing with strict NULL bounds for stops exceeding `TotalStops`[cite: 3].
-- [ ] Task 3.4: Implement unit and failure-path tests in `test_filters.py` verifying mathematical completeness bounds[cite: 1].
-- [ ] Phase 3 Gate: 100% test pass on continuity logic and stop filtering; atomic commit tagged[cite: 1].
+- [x] Task 3.1: Implement `discovery.py` to extract `max_observed_year` from weather records and compute eligible year sets excluding 2020[cite: 3].
+- [x] Task 3.2: Implement `filters.py` for composite route keying (`CountryNum_StateNum_Route`) and proportional continuity thresholding[cite: 3].
+- [x] Task 3.3: Implement stop effort guards and sub-route slicing with strict NULL bounds for stops exceeding `TotalStops`[cite: 3].
+- [x] Task 3.4: Implement unit and failure-path tests in `test_filters.py` verifying mathematical completeness bounds[cite: 1].
+- [x] Phase 3 Gate: 100% test pass on continuity logic and stop filtering; atomic commit tagged[cite: 1].
 
 ## Phase 4: Taxonomic Set-Union Resolver & Observer Covariates
 - [ ] Task 4.1: Implement `taxonomy.py` evaluating set-unions across orders, families, guilds, and individual AOUs, applying migrant exclusions[cite: 1, 3].
