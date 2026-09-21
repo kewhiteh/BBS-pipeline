@@ -56,8 +56,11 @@ def compute_observer_covariates(
       the observer surveyed *this specific* route (``RouteKey``).
     - **IsFirstYearObserver** — ``1`` when ``RouteTenure == 1``, else ``0``
       (binary Kendall bias indicator).
+    - **ObserverCohort** — BBS experience classification: ``"Novice"`` (1 year),
+      ``"Intermediate"`` (2-5 years), or ``"Veteran"`` (6+ years).
 
-    All three are ``pl.Int32`` columns appended to the returned DataFrame.
+    The first three are ``pl.Int32`` columns, and ``ObserverCohort`` is ``pl.String``,
+    appended to the returned DataFrame.
 
     .. note::
         The input DataFrame must already contain a ``RouteKey`` column (added
@@ -80,9 +83,9 @@ def compute_observer_covariates(
     Returns
     -------
     pl.DataFrame
-        Input DataFrame with three appended columns:
+        Input DataFrame with four appended columns:
         ``CareerSurveysCompleted`` (Int32), ``RouteTenure`` (Int32),
-        ``IsFirstYearObserver`` (Int32).
+        ``IsFirstYearObserver`` (Int32), ``ObserverCohort`` (String).
 
     Raises
     ------
@@ -110,6 +113,7 @@ def compute_observer_covariates(
             pl.lit(None, dtype=pl.Int32).alias("CareerSurveysCompleted"),
             pl.lit(None, dtype=pl.Int32).alias("RouteTenure"),
             pl.lit(None, dtype=pl.Int32).alias("IsFirstYearObserver"),
+            pl.lit(None, dtype=pl.String).alias("ObserverCohort"),
         )
 
     # Work with integer years for ≤ comparisons, keeping string keys intact.
@@ -197,7 +201,15 @@ def compute_observer_covariates(
             pl.when(pl.col("RouteTenure") == 1)
             .then(pl.lit(1, dtype=pl.Int32))
             .otherwise(pl.lit(0, dtype=pl.Int32))
-            .alias("IsFirstYearObserver")
+            .alias("IsFirstYearObserver"),
+            pl.when(pl.col("RouteTenure") == 1)
+            .then(pl.lit("Novice", dtype=pl.String))
+            .when((pl.col("RouteTenure") >= 2) & (pl.col("RouteTenure") <= 5))
+            .then(pl.lit("Intermediate", dtype=pl.String))
+            .when(pl.col("RouteTenure") >= 6)
+            .then(pl.lit("Veteran", dtype=pl.String))
+            .otherwise(pl.lit(None, dtype=pl.String))
+            .alias("ObserverCohort"),
         )
         .drop("_year_int")
     )
@@ -315,17 +327,29 @@ def compute_traffic_covariates(
 
 
 # ---------------------------------------------------------------------------
-# §2.6 / §2.5 — Covariate Filtering Functions (Re-exported from core.filters)
+# §2.6 / §2.5 — Covariate Filtering Functions & Cohorts
 # ---------------------------------------------------------------------------
 
+from bbs_pipeline.core.constants import (
+    BCR_NAMES,
+    OBSERVER_COHORTS,
+    STRATA_NAMES,
+    classify_observer_cohort,
+)
 from bbs_pipeline.core.filters import (
+    filter_by_observer_cohort,
     filter_observer_tenure,
     filter_traffic,
 )
 
 __all__ = [
+    "BCR_NAMES",
+    "OBSERVER_COHORTS",
+    "STRATA_NAMES",
+    "classify_observer_cohort",
     "compute_observer_covariates",
     "compute_traffic_covariates",
+    "filter_by_observer_cohort",
     "filter_observer_tenure",
     "filter_traffic",
 ]

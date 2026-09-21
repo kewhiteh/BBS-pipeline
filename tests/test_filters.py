@@ -30,6 +30,7 @@ from bbs_pipeline.core.filters import (
     add_route_key,
     filter_by_continuity,
     filter_by_min_stops,
+    filter_by_observer_cohort,
     filter_observer_tenure,
     filter_traffic,
     nullify_stops_beyond_total,
@@ -702,6 +703,56 @@ class TestFilterObserverTenure:
         assert len(res) == 1
         assert res["ObserverTenure"].to_list() == [4]
 
+    def test_exclude_first_year(self, sample_df: pl.DataFrame):
+        # exclude_first_year=True drops tenure=1 (first-year) and null tenure
+        res = filter_observer_tenure(sample_df, exclude_first_year=True)
+        assert len(res) == 2
+        assert sorted(res["RouteTenure"].to_list()) == [2, 5]
+
+    def test_cohort_filtering(self):
+        schema = {"RouteKey": pl.String, "RouteTenure": pl.Int32}
+        df = pl.DataFrame(
+            {
+                "RouteKey": ["R1", "R2", "R3", "R4", "R5"],
+                "RouteTenure": [1, 2, 4, 6, None],
+            },
+            schema=schema,
+        )
+        # Novice only
+        res_nov = filter_observer_tenure(df, cohorts=["Novice"])
+        assert len(res_nov) == 1
+        assert res_nov["RouteTenure"].to_list() == [1]
+
+        # Intermediate only
+        res_int = filter_observer_tenure(df, cohorts=["Intermediate"])
+        assert len(res_int) == 2
+        assert sorted(res_int["RouteTenure"].to_list()) == [2, 4]
+
+        # Veteran only
+        res_vet = filter_observer_tenure(df, cohorts=["Veteran"])
+        assert len(res_vet) == 1
+        assert res_vet["RouteTenure"].to_list() == [6]
+
+        # Intermediate + Veteran
+        res_combo = filter_observer_tenure(df, cohorts=["Intermediate", "Veteran"])
+        assert len(res_combo) == 3
+        assert sorted(res_combo["RouteTenure"].to_list()) == [2, 4, 6]
+
+        # UI display option format (e.g. 'Intermediate (2-5 yrs)')
+        res_ui = filter_observer_tenure(df, cohorts=["Intermediate (2-5 yrs)"])
+        assert len(res_ui) == 2
+        assert sorted(res_ui["RouteTenure"].to_list()) == [2, 4]
+
+    def test_filter_by_observer_cohort_convenience(self):
+        schema = {"RouteKey": pl.String, "RouteTenure": pl.Int32}
+        df = pl.DataFrame(
+            {"RouteKey": ["R1", "R2", "R3"], "RouteTenure": [1, 3, 7]},
+            schema=schema,
+        )
+        res = filter_by_observer_cohort(df, cohorts=["Intermediate", "Veteran"])
+        assert len(res) == 2
+        assert sorted(res["RouteTenure"].to_list()) == [3, 7]
+
     def test_raises_type_error_on_non_dataframe(self):  # NEGATIVE
         with pytest.raises(TypeError, match="polars.DataFrame"):
             filter_observer_tenure([{"RouteTenure": 2}], min_tenure=1)  # type: ignore[arg-type]
@@ -720,6 +771,14 @@ class TestFilterObserverTenure:
         df = pl.DataFrame({"RouteKey": ["840_02_001"]}, schema={"RouteKey": pl.String})
         with pytest.raises(ValueError, match="Column 'RouteTenure' not found"):
             filter_observer_tenure(df, min_tenure=2)
+
+    def test_raises_value_error_on_invalid_cohort(self, sample_df: pl.DataFrame):  # NEGATIVE
+        with pytest.raises(ValueError, match="Invalid cohort 'Expert'"):
+            filter_observer_tenure(sample_df, cohorts=["Expert"])
+
+    def test_raises_value_error_on_empty_cohorts(self, sample_df: pl.DataFrame):  # NEGATIVE
+        with pytest.raises(ValueError, match="cohorts must be a non-empty sequence"):
+            filter_observer_tenure(sample_df, cohorts=[])
 
 
 class TestFilterTraffic:

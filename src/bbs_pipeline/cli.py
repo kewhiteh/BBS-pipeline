@@ -321,6 +321,20 @@ def build_parser() -> argparse.ArgumentParser:
         help="Maximum observer route tenure in years.",
     )
     cov_grp.add_argument(
+        "--exclude-first-year",
+        action="store_true",
+        default=False,
+        dest="exclude_first_year",
+        help="Exclude first-year observer survey runs on routes (Kendall first-year observer effect).",
+    )
+    cov_grp.add_argument(
+        "--observer-cohorts",
+        "--observer-cohort",
+        nargs="+",
+        dest="observer_cohorts",
+        help="Observer experience cohorts to include: Novice, Intermediate, Veteran.",
+    )
+    cov_grp.add_argument(
         "--max-cars-per-stop",
         type=float,
         default=None,
@@ -573,6 +587,8 @@ def run_pipeline(
     include_covariates: bool = True,
     min_obs_tenure: Optional[int] = None,
     max_obs_tenure: Optional[int] = None,
+    exclude_first_year: bool = False,
+    observer_cohorts: Optional[Sequence[str]] = None,
     max_cars_per_stop: Optional[float] = None,
     max_car_total: Optional[int] = None,
     zero_fill: bool = True,
@@ -636,6 +652,10 @@ def run_pipeline(
         Minimum observer route tenure (years surveying route).
     max_obs_tenure:
         Maximum observer route tenure (years surveying route).
+    exclude_first_year:
+        Exclude first-year observer survey runs (Kendall first-year bias).
+    observer_cohorts:
+        Observer experience cohorts (Novice, Intermediate, Veteran).
     max_cars_per_stop:
         Maximum average cars per stop threshold.
     max_car_total:
@@ -753,11 +773,15 @@ def run_pipeline(
 
     if bcrs:
         bcr_set = {str(b).strip() for b in bcrs}
-        routes_df = routes_df.filter(pl.col("BCR").is_in(bcr_set))
+        routes_df = routes_df.filter(
+            pl.col("BCR").str.strip_chars().is_in(bcr_set) | pl.col("BCR").is_in(bcr_set)
+        )
 
     if strata:
         strata_set = {str(st).strip() for st in strata}
-        routes_df = routes_df.filter(pl.col("Stratum").is_in(strata_set))
+        routes_df = routes_df.filter(
+            pl.col("Stratum").str.strip_chars().is_in(strata_set) | pl.col("Stratum").is_in(strata_set)
+        )
 
     if routes:
         route_set = {str(r).strip() for r in routes}
@@ -840,7 +864,12 @@ def run_pipeline(
     # -----------------------------------------------------------------------
     # Step 3: Observer & Vehicle Covariates
     # -----------------------------------------------------------------------
-    has_tenure_filter = min_obs_tenure is not None or max_obs_tenure is not None
+    has_tenure_filter = (
+        min_obs_tenure is not None
+        or max_obs_tenure is not None
+        or exclude_first_year
+        or observer_cohorts is not None
+    )
     has_traffic_filter = max_cars_per_stop is not None or max_car_total is not None
 
     if include_covariates or has_tenure_filter:
@@ -869,6 +898,8 @@ def run_pipeline(
             weather_df,
             min_tenure=min_obs_tenure,
             max_tenure=max_obs_tenure,
+            exclude_first_year=exclude_first_year,
+            cohorts=observer_cohorts,
         )
         if weather_df.is_empty():
             raise ValueError("No survey runs satisfied the observer tenure criteria.")
@@ -1075,6 +1106,8 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
             include_covariates=args.include_covariates,
             min_obs_tenure=args.min_obs_tenure,
             max_obs_tenure=args.max_obs_tenure,
+            exclude_first_year=args.exclude_first_year,
+            observer_cohorts=args.observer_cohorts,
             max_cars_per_stop=args.max_cars_per_stop,
             max_car_total=args.max_car_total,
             zero_fill=args.zero_fill,

@@ -26,7 +26,7 @@ from __future__ import annotations
 
 import logging
 import math
-from typing import FrozenSet, Optional
+from typing import FrozenSet, Optional, Sequence
 
 import polars as pl
 
@@ -388,15 +388,22 @@ def filter_observer_tenure(
     min_tenure: Optional[int] = None,
     max_tenure: Optional[int] = None,
     tenure_col: str = "RouteTenure",
+    exclude_first_year: bool = False,
+    cohorts: Optional[Sequence[str]] = None,
 ) -> pl.DataFrame:
-    """Filter survey runs by observer tenure thresholds.
+    """Filter survey runs by observer tenure thresholds and experience cohorts.
 
-    Supports pruning runs by observer experience on a route (e.g. ``min_tenure=2``
-    excludes first-year observers to control for Kendall bias, or ``max_tenure=1``
-    selects first-year runs).
+    Supports:
+    - Excluding first-year observer runs (``exclude_first_year=True`` / tenure > 1)
+      to control for the Kendall first-year observer effect.
+    - Filtering by standard BBS analytical cohorts:
+      * Novice: 1 year
+      * Intermediate: 2-5 years
+      * Veteran: 6+ years
+    - Pruning runs by continuous tenure thresholds (``min_tenure``, ``max_tenure``).
 
     Gracefully handles null/missing covariate values without dropping valid rows
-    unless explicitly bounded by ``min_tenure`` or ``max_tenure``.
+    unless explicitly bounded by filters.
 
     Parameters
     ----------
@@ -409,6 +416,11 @@ def filter_observer_tenure(
     tenure_col:
         Name of the tenure column. Defaults to ``"RouteTenure"``. If not found,
         falls back to ``"ObserverTenure"`` if present.
+    exclude_first_year:
+        If True, excludes runs where tenure is 1 (``eff_col > 1``).
+    cohorts:
+        Optional sequence of experience cohort names (e.g. ``["Intermediate", "Veteran"]``).
+        Options: ``"Novice"`` (1 yr), ``"Intermediate"`` (2-5 yrs), ``"Veteran"`` (6+ yrs).
 
     Returns
     -------
@@ -420,15 +432,16 @@ def filter_observer_tenure(
     TypeError
         If ``df`` is not a :class:`polars.DataFrame`.
     ValueError
-        If bounds are invalid (e.g. negative or min > max), or if tenure column
-        is missing when bounds are explicitly specified.
+        If bounds are invalid (e.g. negative or min > max), if tenure column
+        is missing when bounds are explicitly specified, or if an unrecognized
+        cohort name is supplied.
     """
     if not isinstance(df, pl.DataFrame):
         raise TypeError(
             f"df must be a polars.DataFrame, got {type(df).__name__}"
         )
 
-    if min_tenure is None and max_tenure is None:
+    if min_tenure is None and max_tenure is None and not exclude_first_year and cohorts is None:
         return df
 
     if min_tenure is not None:
@@ -448,6 +461,21 @@ def filter_observer_tenure(
             f"min_tenure ({min_tenure}) must be <= max_tenure ({max_tenure})."
         )
 
+    valid_cohorts = {"Novice", "Intermediate", "Veteran"}
+    norm_cohorts: set[str] = set()
+    if cohorts is not None:
+        if not isinstance(cohorts, (list, tuple, set, frozenset)) or len(cohorts) == 0:
+            raise ValueError("cohorts must be a non-empty sequence when specified.")
+        for c in cohorts:
+            if not isinstance(c, str):
+                raise ValueError(f"Cohort names must be strings, got {type(c).__name__}")
+            c_clean = c.strip().split()[0].capitalize()
+            if c_clean not in valid_cohorts:
+                raise ValueError(
+                    f"Invalid cohort '{c}'. Must be one of: Novice, Intermediate, Veteran."
+                )
+            norm_cohorts.add(c_clean)
+
     # Resolve column name
     eff_col = tenure_col
     if eff_col not in df.columns:
@@ -461,6 +489,11 @@ def filter_observer_tenure(
             )
 
     filtered = df
+    if exclude_first_year:
+        filtered = filtered.filter(
+            pl.col(eff_col).is_not_null() & (pl.col(eff_col) > 1)
+        )
+
     if min_tenure is not None:
         filtered = filtered.filter(
             pl.col(eff_col).is_not_null() & (pl.col(eff_col) >= min_tenure)
@@ -471,7 +504,57 @@ def filter_observer_tenure(
             pl.col(eff_col).is_not_null() & (pl.col(eff_col) <= max_tenure)
         )
 
+    if norm_cohorts:
+        conds = []
+        if "Novice" in norm_cohorts:
+            conds.append(pl.col(eff_col) == 1)
+        if "Intermediate" in norm_cohorts:
+            conds.append((pl.col(eff_col) >= 2) & (pl.col(eff_col) <= 5))
+        if "Veteran" in norm_cohorts:
+            conds.append(pl.col(eff_col) >= 6)
+
+        combined_cond = conds[0]
+        for cond in conds[1:]:
+            combined_cond = combined_cond | cond
+
+        filtered = filtered.filter(
+            pl.col(eff_col).is_not_null() & combined_cond
+        )
+
     return filtered
+
+
+def filter_by_observer_cohort(
+    df: pl.DataFrame,
+    cohorts: Sequence[str],
+    tenure_col: str = "RouteTenure",
+) -> pl.DataFrame:
+    """Filter survey runs by standard BBS observer experience cohorts.
+
+    Cohorts:
+    - ``"Novice"``: 1 year
+    - ``"Intermediate"``: 2-5 years
+    - ``"Veteran"``: 6+ years
+
+    Parameters
+    ----------
+    df:
+        Polars DataFrame containing observer covariates.
+    cohorts:
+        Sequence of cohort names (e.g. ``["Intermediate", "Veteran"]``).
+    tenure_col:
+        Name of the tenure column. Defaults to ``"RouteTenure"``.
+
+    Returns
+    -------
+    pl.DataFrame
+        Filtered DataFrame retaining only runs in the selected cohorts.
+    """
+    return filter_observer_tenure(
+        df=df,
+        cohorts=cohorts,
+        tenure_col=tenure_col,
+    )
 
 
 def filter_traffic(

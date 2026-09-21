@@ -72,49 +72,7 @@ def load_metadata_cache(
 
 
 
-# ---------------------------------------------------------------------------
-# BCR Name Reference Registry (NABCI)
-# ---------------------------------------------------------------------------
-
-BCR_NAMES: Dict[str, str] = {
-    "1": "Aleutian/Bering Sea Islands",
-    "2": "Western Alaska",
-    "3": "Arctic Plains and Mountains",
-    "4": "Northwestern Interior Forest",
-    "5": "Northern Pacific Rainforest",
-    "6": "Boreal Taiga Plains",
-    "7": "Taiga Shield and Hudson Plains",
-    "8": "Boreal Softwood Shield",
-    "9": "Great Basin",
-    "10": "Northern Rockies",
-    "11": "Prairie Potholes",
-    "12": "Boreal Hardwood Transition",
-    "13": "Lower Great Lakes/St. Lawrence Plain",
-    "14": "Atlantic Northern Forest",
-    "15": "Sierra Nevada",
-    "16": "Southern Rockies/Colorado Plateau",
-    "17": "Badlands and Prairies",
-    "18": "Shortgrass Prairie",
-    "19": "Central Mixed-Grass Prairie",
-    "20": "Edwards Plateau",
-    "21": "Oaks and Prairies",
-    "22": "Eastern Tallgrass Prairie",
-    "23": "Prairie Hardwood Transition",
-    "24": "Central Hardwoods",
-    "25": "West Gulf Coastal Plain/Ouachitas",
-    "26": "Mississippi Alluvial Valley",
-    "27": "Southeastern Coastal Plain",
-    "28": "Appalachian Mountains",
-    "29": "Piedmont",
-    "30": "New England/Mid-Atlantic Coast",
-    "31": "Peninsular Florida",
-    "32": "Coastal California",
-    "33": "Sonoran and Mojave Deserts",
-    "34": "Sierra Madre Occidental",
-    "35": "Chihuahuan Desert",
-    "36": "Tamaulipan Brushlands",
-    "37": "Gulf Coastal Prairie",
-}
+from bbs_pipeline.core.constants import BCR_NAMES, STRATA_NAMES, OBSERVER_COHORTS
 
 
 # ---------------------------------------------------------------------------
@@ -208,23 +166,28 @@ def main() -> None:
                 help="Compute CareerSurveysCompleted, RouteTenure, IsFirstYearObserver, CarTotal, CarsPerStop.",
             )
             st.markdown("**Observer Experience Filter**")
-            enable_tenure_filter = st.checkbox(
-                "Filter by Observer Tenure",
-                value=False,
-                help="Prune survey runs by observer experience on a route (e.g. min 2 excludes Kendall bias).",
+            exclude_first_year = st.checkbox(
+                "Exclude First-Year Observer Runs (First-Year Effect)",
+                value=True,
+                help="Exclude first-year observer runs (RouteTenure == 1) to control for Kendall first-year observer effect.",
             )
-            min_obs_tenure: Optional[int] = None
-            max_obs_tenure: Optional[int] = None
-            if enable_tenure_filter:
-                tenure_range = st.slider(
-                    "Observer Route Tenure (Years)",
-                    min_value=1,
-                    max_value=50,
-                    value=(1, 50),
-                    step=1,
-                    help="Inclusive range for observer route tenure.",
-                )
-                min_obs_tenure, max_obs_tenure = tenure_range[0], tenure_range[1]
+            cohort_display_options = [
+                "Novice (1 yr)",
+                "Intermediate (2-5 yrs)",
+                "Veteran (6+ yrs)",
+            ]
+            selected_cohort_display = st.multiselect(
+                "Observer Experience Cohorts",
+                options=cohort_display_options,
+                default=[],
+                help="Filter survey runs by observer experience cohorts on the route.",
+            )
+            cohort_map = {
+                "Novice (1 yr)": "Novice",
+                "Intermediate (2-5 yrs)": "Intermediate",
+                "Veteran (6+ yrs)": "Veteran",
+            }
+            selected_cohorts = [cohort_map[c] for c in selected_cohort_display if c in cohort_map]
 
             st.markdown("**Vehicle Traffic Filter**")
             enable_traffic_filter = st.checkbox(
@@ -305,11 +268,15 @@ def main() -> None:
             active_routes = active_routes.filter(pl.col("StateNum").is_in(selected_states))
 
         # BCRs and Strata
-        available_bcrs = sorted(active_routes["BCR"].drop_nulls().unique().to_list())
+        raw_bcrs = active_routes["BCR"].drop_nulls().unique().to_list()
+        available_bcrs = sorted(
+            list({str(b).strip() for b in raw_bcrs if str(b).strip()}),
+            key=lambda x: int(x) if x.isdigit() else x,
+        )
         bcr_labels = [
-            f"BCR {bcr} - {BCR_NAMES[str(bcr).lstrip('0')]}"
-            if str(bcr).lstrip("0") in BCR_NAMES
-            else f"BCR {bcr}"
+            f"{bcr} - {BCR_NAMES[bcr.lstrip('0')]}"
+            if bcr.lstrip("0") in BCR_NAMES
+            else (f"{bcr} - {BCR_NAMES[bcr]}" if bcr in BCR_NAMES else f"{bcr}")
             for bcr in available_bcrs
         ]
         label_to_bcr = dict(zip(bcr_labels, available_bcrs))
@@ -322,10 +289,21 @@ def main() -> None:
         )
         selected_bcrs = [label_to_bcr[lbl] for lbl in selected_bcr_labels]
         if selected_bcrs:
-            active_routes = active_routes.filter(pl.col("BCR").is_in(selected_bcrs))
+            active_routes = active_routes.filter(
+                pl.col("BCR").str.strip_chars().is_in(selected_bcrs) | pl.col("BCR").is_in(selected_bcrs)
+            )
 
-        available_strata = sorted(active_routes["Stratum"].drop_nulls().unique().to_list())
-        strata_labels = [f"Stratum {st_val}" for st_val in available_strata]
+        raw_strata = active_routes["Stratum"].drop_nulls().unique().to_list()
+        available_strata = sorted(
+            list({str(st).strip() for st in raw_strata if str(st).strip()}),
+            key=lambda x: int(x) if x.isdigit() else x,
+        )
+        strata_labels = [
+            f"{st_val} - {STRATA_NAMES[st_val.lstrip('0')]}"
+            if st_val.lstrip("0") in STRATA_NAMES
+            else (f"{st_val} - {STRATA_NAMES[st_val]}" if st_val in STRATA_NAMES else f"{st_val}")
+            for st_val in available_strata
+        ]
         label_to_stratum = dict(zip(strata_labels, available_strata))
 
         selected_strata_labels = st.multiselect(
@@ -336,7 +314,9 @@ def main() -> None:
         )
         selected_strata = [label_to_stratum[lbl] for lbl in selected_strata_labels]
         if selected_strata:
-            active_routes = active_routes.filter(pl.col("Stratum").is_in(selected_strata))
+            active_routes = active_routes.filter(
+                pl.col("Stratum").str.strip_chars().is_in(selected_strata) | pl.col("Stratum").is_in(selected_strata)
+            )
 
         # Candidate Routes
         route_records = (
@@ -537,8 +517,10 @@ def main() -> None:
                     min_stops=min_stops_val,
                     stop_range=list(stop_range_val) if stop_range_val != (1, 50) else None,
                     include_covariates=include_covariates,
-                    min_obs_tenure=min_obs_tenure,
-                    max_obs_tenure=max_obs_tenure,
+                    min_obs_tenure=None,
+                    max_obs_tenure=None,
+                    exclude_first_year=exclude_first_year,
+                    observer_cohorts=selected_cohorts if selected_cohorts else None,
                     max_cars_per_stop=max_cars_per_stop,
                     max_car_total=max_car_total,
                     zero_fill=zero_fill_toggle,

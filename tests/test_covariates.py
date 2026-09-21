@@ -17,8 +17,13 @@ import polars as pl
 import pytest
 
 from bbs_pipeline.core.covariates import (
+    BCR_NAMES,
+    OBSERVER_COHORTS,
+    STRATA_NAMES,
+    classify_observer_cohort,
     compute_observer_covariates,
     compute_traffic_covariates,
+    filter_by_observer_cohort,
     filter_observer_tenure,
     filter_traffic,
 )
@@ -281,7 +286,31 @@ class TestComputeObserverCovariates:
         assert "CareerSurveysCompleted" in result.columns
         assert "RouteTenure" in result.columns
         assert "IsFirstYearObserver" in result.columns
+        assert "ObserverCohort" in result.columns
+        assert result.schema["ObserverCohort"] == pl.String
         assert len(result) == 0
+
+    def test_observer_cohort_span(self):
+        """Observer over 7 distinct years traverses Novice, Intermediate, and Veteran cohorts."""
+        obs = "8888"
+        rk = "840_02_001"
+        rows = [
+            _make_weather_row(rk, obs, str(year), f"RD{year}")
+            for year in [2010, 2011, 2012, 2013, 2014, 2015, 2016]
+        ]
+        df = _make_weather_df(rows)
+        res = compute_observer_covariates(df).sort("Year")
+
+        # 2010: RouteTenure=1 -> Novice
+        assert res.filter(pl.col("Year") == "2010")["ObserverCohort"][0] == "Novice"
+        # 2011: RouteTenure=2 -> Intermediate
+        assert res.filter(pl.col("Year") == "2011")["ObserverCohort"][0] == "Intermediate"
+        # 2014: RouteTenure=5 -> Intermediate
+        assert res.filter(pl.col("Year") == "2014")["ObserverCohort"][0] == "Intermediate"
+        # 2015: RouteTenure=6 -> Veteran
+        assert res.filter(pl.col("Year") == "2015")["ObserverCohort"][0] == "Veteran"
+        # 2016: RouteTenure=7 -> Veteran
+        assert res.filter(pl.col("Year") == "2016")["ObserverCohort"][0] == "Veteran"
 
 
 # ---------------------------------------------------------------------------
@@ -457,4 +486,62 @@ class TestCovariateFilteringIntegration:
         res4 = filter_traffic(df, max_cars_per_stop=1.0)
         assert len(res4) == 2
         assert res4["RouteDataID"].to_list() == ["RD1", "RD3"]
+
+    def test_exclude_first_year_filter(self):
+        schema = {"RouteKey": pl.String, "RouteTenure": pl.Int32}
+        df = pl.DataFrame(
+            {"RouteKey": ["R1", "R2", "R3", "R4"], "RouteTenure": [1, 2, 6, None]},
+            schema=schema,
+        )
+        res = filter_observer_tenure(df, exclude_first_year=True)
+        assert len(res) == 2
+        assert sorted(res["RouteTenure"].to_list()) == [2, 6]
+
+    def test_filter_by_observer_cohort_intermediate_and_veteran(self):
+        schema = {"RouteKey": pl.String, "RouteTenure": pl.Int32}
+        df = pl.DataFrame(
+            {
+                "RouteKey": ["R1", "R2", "R3", "R4", "R5"],
+                "RouteTenure": [1, 2, 5, 6, 10],
+            },
+            schema=schema,
+        )
+        # Filter to Intermediate and Veteran
+        res = filter_by_observer_cohort(df, cohorts=["Intermediate", "Veteran"])
+        assert len(res) == 4
+        assert sorted(res["RouteTenure"].to_list()) == [2, 5, 6, 10]
+
+        # Filter to Novice only
+        res_nov = filter_by_observer_cohort(df, cohorts=["Novice"])
+        assert len(res_nov) == 1
+        assert res_nov["RouteTenure"].to_list() == [1]
+
+    def test_classify_observer_cohort_helper(self):
+        assert classify_observer_cohort(None) is None
+        assert classify_observer_cohort(0) is None
+        assert classify_observer_cohort(1) == "Novice"
+        assert classify_observer_cohort(2) == "Intermediate"
+        assert classify_observer_cohort(5) == "Intermediate"
+        assert classify_observer_cohort(6) == "Veteran"
+        assert classify_observer_cohort(30) == "Veteran"
+
+    def test_authoritative_registries_completeness(self):
+        # BCR 1 through 39
+        for i in range(1, 40):
+            assert str(i) in BCR_NAMES, f"Missing BCR {i}"
+        assert BCR_NAMES["14"] == "Atlantic Northern Forest"
+        assert BCR_NAMES["28"] == "Appalachian Mountains"
+        assert BCR_NAMES["29"] == "Piedmont"
+        assert BCR_NAMES["38"] == "Islas Marías"
+        assert BCR_NAMES["39"] == "Sierras de Baja California"
+
+        # Physiographic Strata
+        assert STRATA_NAMES["1"] == "Subtropical"
+        assert STRATA_NAMES["2"] == "Floridian"
+        assert STRATA_NAMES["10"] == "Northern Piedmont"
+        assert STRATA_NAMES["13"] == "Ridge and Valley"
+        assert STRATA_NAMES["14"] == "Highland Rim"
+        assert STRATA_NAMES["28"] == "Northern Spruce-Hardwoods"
+        assert STRATA_NAMES["29"] == "Closed Boreal Forest"
+        assert STRATA_NAMES["99"] == "Tundra"
 

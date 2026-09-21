@@ -212,11 +212,15 @@ class TestCliArgumentParser:
         args = parser.parse_args([
             "--min-obs-tenure", "2",
             "--max-obs-tenure", "10",
+            "--exclude-first-year",
+            "--observer-cohorts", "Intermediate", "Veteran",
             "--max-cars-per-stop", "4.5",
             "--max-car-total", "200",
         ])
         assert args.min_obs_tenure == 2
         assert args.max_obs_tenure == 10
+        assert args.exclude_first_year is True
+        assert args.observer_cohorts == ["Intermediate", "Veteran"]
         assert args.max_cars_per_stop == 4.5
         assert args.max_car_total == 200
 
