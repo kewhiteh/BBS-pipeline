@@ -1,0 +1,34 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "bbs-pipeline"
+version = "0.1.0"
+description = "USGS Breeding Bird Survey (BBS) High-Performance Extraction, Cleaning, Zero-Filling, and Spatial Export Pipeline"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "polars>=0.20.0,<1.0.0",
+    "pyarrow>=14.0.0",
+    "requests>=2.31.0",
+    "urllib3>=2.0.0",
+    "geopandas>=0.14.0",
+    "pyproj>=3.6.0",
+    "shapely>=2.0.0",
+    "streamlit>=1.30.0",
+    "pytest>=8.0.0",
+    "requests-mock>=1.11.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0.0",
+    "requests-mock>=1.11.0",
+    "ruff",
+    "mypy",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+

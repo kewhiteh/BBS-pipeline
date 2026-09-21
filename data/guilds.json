@@ -1,0 +1,4586 @@
+{
+  "01770": {
+    "common_name": "Black-bellied Whistling-Duck",
+    "breeding_habitat": "wetland",
+    "foraging_guild": "surface_dabbler",
+    "migratory_status": "short_distance_migrant"
+  },
+  "01780": {
+    "common_name": "Fulvous Whistling-Duck",
+    "breeding_habitat": "wetland",
+    "foraging_guild": "surface_dabbler",
+    "migratory_status": "short_distance_migrant"
+  },
+  "01760": {
+    "common_name": "Emperor Goose",
+    "breeding_habitat": "wetland",
+    "foraging_guild": "surface_dabbler",
+    "migratory_status": "short_distance_migrant"
+  },
+  "01690": {
+    "common_name": "Snow Goose",
+    "breeding_habitat": "wetland",
+    "foraging_guild": "surface_dabbler",
+    "migratory_status": "short_distance_migrant"
+  },
+  "01691": {
+    "common_name": "(Blue Goose) Snow Goose",
+    "breeding_habitat": "wetland",
+    "foraging_guild": "surface_dabbler",
+    "migratory_status": "short_distance_migrant"
+  },
+  "01700": {
+    "common_name": "Ross's Goose",
+    "breeding_habitat": "wetland",
+    "foraging_guild": "surface_dabbler",
+    "migratory_status": "short_distance_migrant"
+  },
+  "01710": {
+    "common_name": "Greater White-fronted Goose",
+    "breeding_habitat": "wetland",
+    "foraging_guild": "surface_dabbler",
+    "migratory_status": "short_distance_migrant"
+  },
+  "01730": {
+    "common_name": "Brant",
+    "breeding_habitat": "wetland",
+    "foraging_guild": "surface_dabbler",
+    "migratory_status": "short_distance_migrant"
+  },
+  "01740": {
+    "common_name": "(Black Brant) Brant",
+    "breeding_habitat": "wetland",
+    "foraging_guild": "surface_dabbler",
+    "migratory_status": "short_distance_migrant"
+  },
+  "01725": {
+    "common_name": "Cackling Goose",
+    "breeding_habitat": "wetland",
+    "foraging_guild": "surface_dabbler",
+    "migratory_status": "short_distance_migrant"
+  },
+  "01720": {
+    "common_name": "Canada Goose",
+    "breeding_habitat": "wetland",
+    "foraging_guild": "surface_dabbler",
+    "migratory_status": "short_distance_migrant"
+  },
+  "01782": {
+    "common_name": "Mute Swan",
+    "breeding_habitat": "wetland",
+    "foraging_guild": "surface_dabbler",
+    "migratory_status": "short_distance_migrant"
+  },
+  "01810": {
+    "common_name": "Trumpeter Swan",
+    "breeding_habitat": "wetland",
+    "foraging_guild": "surface_dabbler",
+    "migratory_status": "short_distance_migrant"
+  },
+  "01800": {
+    "common_name": "Tundra Swan",
+    "breeding_habitat": "wetland",
+    "foraging_guild": "surface_dabbler",
+    "migratory_status": "short_distance_migrant"
+  },
+  "20630": {
+    "common_name": "Egyptian Goose",
+    "breeding_habitat": "wetland",
+    "foraging_guild": "diver",
+    "migratory_status": "short_distance_migrant"
+  },
+  "10210": {
+    "common_name": "Muscovy Duck",
+    "breeding_habitat": "wetland",
+    "foraging_guild": "diver",
+    "migratory_status": "short_distance_migrant"
+  },
+  "01440": {
+    "common_name": "Wood Duck",
+    "breeding_habitat": "wetland",
+    "foraging_guild": "surface_dabbler",
+    "migratory_status": "short_distance_migrant"
+  },
+  "01400": {
+    "common_name": "Blue-winged Teal",
+    "breeding_habitat": "wetland",
+    "foraging_guild": "surface_dabbler",
+    "migratory_status": "short_distance_migrant"
+  },
+  "01410": {
+    "common_name": "Cinnamon Teal",
+    "breeding_habitat": "wetland",
+    "foraging_guild": "surface_dabbler",
+    "migratory_status": "short_distance_migrant"
+  },
+  "01420": {
+    "common_name": "Northern Shoveler",
+    "breeding_habitat": "wetland",
+    "foraging_guild": "surface_dabbler",
+    "migratory_status": "short_distance_migrant"
+  },
+  "01350": {
+    "common_name": "Gadwall",
+    "breeding_habitat": "wetland",
+    "foraging_guild": "surface_dabbler",
+    "migratory_status": "short_distance_migrant"
+  },
+  "01360": {
+    "common_name": "Eurasian Wigeon",
+    "breeding_habitat": "wetland",
+    "foraging_guild": "surface_dabbler",
+    "migratory_status": "short_distance_migrant"
+  },
+  "01370": {
+    "common_name": "American Wigeon",
+    "breeding_habitat": "wetland",
+    "foraging_guild": "surface_dabbler",
+    "migratory_status": "short_distance_migrant"
+  },
+  "01320": {
+    "common_name": "Mallard",
+    "breeding_habitat": "wetland",
+    "foraging_guild": "surface_dabbler",
+    "migratory_status": "short_distance_migrant"
+  },
+  "01331": {
+    "common_name": "Mexican Duck",
+    "breeding_habitat": "wetland",
+    "foraging_guild": "surface_dabbler",
+    "migratory_status": "short_distance_migrant"
+  },
+  "01330": {
+    "common_name": "American Black Duck",
+    "breeding_habitat": "wetland",
+    "foraging_guild": "surface_dabbler",
+    "migratory_status": "short_distance_migrant"
+  },
+  "01340": {
+    "common_name": "Mottled Duck",
+    "breeding_habitat": "wetland",
+    "foraging_guild": "surface_dabbler",
+    "migratory_status": "short_distance_migrant"
+  },
+  "01326": {
+    "common_name": "hybrid Mallard x Black / Mexican / Mottled Duck",
+    "breeding_habitat": "wetland",
+    "foraging_guild": "surface_dabbler",
+    "migratory_status": "short_distance_migrant"
+  },
+  "01430": {
+    "common_name": "Northern Pintail",
+    "breeding_habitat": "wetland",
+    "foraging_guild": "surface_dabbler",
+    "migratory_status": "short_distance_migrant"
+  },
+  "01390": {
+    "common_name": "Green-winged Teal",
+    "breeding_habitat": "wetland",
+    "foraging_guild": "surface_dabbler",
+    "migratory_status": "short_distance_migrant"
+  },
+  "01470": {
+    "common_name": "Canvasback",
+    "breeding_habitat": "wetland",
+    "foraging_guild": "diver",
+    "migratory_status": "short_distance_migrant"
+  },
+  "01460": {
+    "common_name": "Redhead",
+    "breeding_habitat": "wetland",
+    "foraging_guild": "diver",
+    "migratory_status": "short_distance_migrant"
+  },
+  "01500": {
+    "common_name": "Ring-necked Duck",
+    "breeding_habitat": "wetland",
+    "foraging_guild": "diver",
+    "migratory_status": "short_distance_migrant"
+  },
+  "01491": {
+    "common_name": "Tufted Duck",
+    "breeding_habitat": "wetland",
+    "foraging_guild": "diver",
+    "migratory_status": "short_distance_migrant"
+  },
+  "01480": {
+    "common_name": "Greater Scaup",
+    "breeding_habitat": "wetland",
+    "foraging_guild": "diver",
+    "migratory_status": "short_distance_migrant"
+  },
+  "01490": {
+    "common_name": "Lesser Scaup",
+    "breeding_habitat": "wetland",
+    "foraging_guild": "diver",
+    "migratory_status": "short_distance_migrant"
+  },
+  "01489": {
+    "common_name": "unid. Greater Scaup / Lesser Scaup",
+    "breeding_habitat": "wetland",
+    "foraging_guild": "diver",
+    "migratory_status": "short_distance_migrant"
+  },
+  "01570": {
+    "common_name": "Steller's Eider",
+    "breeding_habitat": "wetland",
+    "foraging_guild": "diver",
+    "migratory_status": "short_distance_migrant"
+  },
+  "01580": {
+    "common_name": "Spectacled Eider",
+    "breeding_habitat": "wetland",
+    "foraging_guild": "diver",
+    "migratory_status": "short_distance_migrant"
+  },
+  "01620": {
+    "common_name": "King Eider",
+    "breeding_habitat": "wetland",
+    "foraging_guild": "diver",
+    "migratory_status": "short_distance_migrant"
+  },
+  "01590": {
+    "common_name": "Common Eider",
+    "breeding_habitat": "wetland",
+    "foraging_guild": "diver",
+    "migratory_status": "short_distance_migrant"
+  },
+  "01550": {
+    "common_name": "Harlequin Duck",
+    "breeding_habitat": "wetland",
+    "foraging_guild": "diver",
+    "migratory_status": "short_distance_migrant"
+  },
+  "01660": {
+    "common_name": "Surf Scoter",
+    "breeding_habitat": "wetland",
+    "foraging_guild": "diver",
+    "migratory_status": "short_distance_migrant"
+  },
+  "01650": {
+    "common_name": "White-winged Scoter",
+    "breeding_habitat": "wetland",
+    "foraging_guild": "diver",
+    "migratory_status": "short_distance_migrant"
+  },
+  "01630": {
+    "common_name": "Black Scoter",
+    "breeding_habitat": "wetland",
+    "foraging_guild": "diver",
+    "migratory_status": "short_distance_migrant"
+  },
+  "01657": {
+    "common_name": "unid. scoter",
+    "breeding_habitat": "wetland",
+    "foraging_guild": "diver",
+    "migratory_status": "short_distance_migrant"
+  },
+  "01540": {
+    "common_name": "Long-tailed Duck",
+    "breeding_habitat": "wetland",
+    "foraging_guild": "diver",
+    "migratory_status": "short_distance_migrant"
+  },
+  "01530": {
+    "common_name": "Bufflehead",
+    "breeding_habitat": "wetland",
+    "foraging_guild": "diver",
+    "migratory_status": "short_distance_migrant"
+  },
+  "01510": {
+    "common_name": "Common Goldeneye",
+    "breeding_habitat": "wetland",
+    "foraging_guild": "diver",
+    "migratory_status": "short_distance_migrant"
+  },
+  "01520": {
+    "common_name": "Barrow's Goldeneye",
+    "breeding_habitat": "wetland",
+    "foraging_guild": "diver",
+    "migratory_status": "short_distance_migrant"
+  },
+  "01512": {
+    "common_name": "unid. Common Goldeneye / Barrow's Goldeneye",
+    "breeding_habitat": "wetland",
+    "foraging_guild": "diver",
+    "migratory_status": "short_distance_migrant"
+  },
+  "01310": {
+    "common_name": "Hooded Merganser",
+    "breeding_habitat": "wetland",
+    "foraging_guild": "diver",
+    "migratory_status": "short_distance_migrant"
+  },
+  "01290": {
+    "common_name": "Common Merganser",
+    "breeding_habitat": "wetland",
+    "foraging_guild": "diver",
+    "migratory_status": "short_distance_migrant"
+  },
+  "01300": {
+    "common_name": "Red-breasted Merganser",
+    "breeding_habitat": "wetland",
+    "foraging_guild": "diver",
+    "migratory_status": "short_distance_migrant"
+  },
+  "01670": {
+    "common_name": "Ruddy Duck",
+    "breeding_habitat": "wetland",
+    "foraging_guild": "diver",
+    "migratory_status": "short_distance_migrant"
+  },
+  "03110": {
+    "common_name": "Plain Chachalaca",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "granivore",
+    "migratory_status": "resident"
+  },
+  "02920": {
+    "common_name": "Mountain Quail",
+    "breeding_habitat": "early_successional",
+    "foraging_guild": "granivore",
+    "migratory_status": "resident"
+  },
+  "02890": {
+    "common_name": "Northern Bobwhite",
+    "breeding_habitat": "early_successional",
+    "foraging_guild": "granivore",
+    "migratory_status": "resident"
+  },
+  "02930": {
+    "common_name": "Scaled Quail",
+    "breeding_habitat": "arid",
+    "foraging_guild": "granivore",
+    "migratory_status": "resident"
+  },
+  "02940": {
+    "common_name": "California Quail",
+    "breeding_habitat": "early_successional",
+    "foraging_guild": "granivore",
+    "migratory_status": "resident"
+  },
+  "02950": {
+    "common_name": "Gambel's Quail",
+    "breeding_habitat": "arid",
+    "foraging_guild": "granivore",
+    "migratory_status": "resident"
+  },
+  "02960": {
+    "common_name": "Montezuma Quail",
+    "breeding_habitat": "early_successional",
+    "foraging_guild": "granivore",
+    "migratory_status": "resident"
+  },
+  "03100": {
+    "common_name": "Wild Turkey",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "granivore",
+    "migratory_status": "resident"
+  },
+  "03000": {
+    "common_name": "Ruffed Grouse",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "granivore",
+    "migratory_status": "resident"
+  },
+  "02980": {
+    "common_name": "Spruce Grouse",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "granivore",
+    "migratory_status": "resident"
+  },
+  "03010": {
+    "common_name": "Willow Ptarmigan",
+    "breeding_habitat": "early_successional",
+    "foraging_guild": "granivore",
+    "migratory_status": "resident"
+  },
+  "03020": {
+    "common_name": "Rock Ptarmigan",
+    "breeding_habitat": "early_successional",
+    "foraging_guild": "granivore",
+    "migratory_status": "resident"
+  },
+  "03040": {
+    "common_name": "White-tailed Ptarmigan",
+    "breeding_habitat": "early_successional",
+    "foraging_guild": "granivore",
+    "migratory_status": "resident"
+  },
+  "03090": {
+    "common_name": "Greater Sage-Grouse",
+    "breeding_habitat": "arid",
+    "foraging_guild": "granivore",
+    "migratory_status": "resident"
+  },
+  "03089": {
+    "common_name": "Gunnison Sage-Grouse",
+    "breeding_habitat": "arid",
+    "foraging_guild": "granivore",
+    "migratory_status": "resident"
+  },
+  "02970": {
+    "common_name": "Dusky Grouse",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "granivore",
+    "migratory_status": "resident"
+  },
+  "02971": {
+    "common_name": "Sooty Grouse",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "granivore",
+    "migratory_status": "resident"
+  },
+  "02973": {
+    "common_name": "unid. Dusky Grouse / Sooty Grouse",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "granivore",
+    "migratory_status": "resident"
+  },
+  "03080": {
+    "common_name": "Sharp-tailed Grouse",
+    "breeding_habitat": "grassland",
+    "foraging_guild": "granivore",
+    "migratory_status": "resident"
+  },
+  "03050": {
+    "common_name": "Greater Prairie-Chicken",
+    "breeding_habitat": "early_successional",
+    "foraging_guild": "granivore",
+    "migratory_status": "resident"
+  },
+  "03070": {
+    "common_name": "Lesser Prairie-Chicken",
+    "breeding_habitat": "early_successional",
+    "foraging_guild": "granivore",
+    "migratory_status": "resident"
+  },
+  "02881": {
+    "common_name": "Gray Partridge",
+    "breeding_habitat": "early_successional",
+    "foraging_guild": "granivore",
+    "migratory_status": "resident"
+  },
+  "03091": {
+    "common_name": "Ring-necked Pheasant",
+    "breeding_habitat": "early_successional",
+    "foraging_guild": "granivore",
+    "migratory_status": "resident"
+  },
+  "03095": {
+    "common_name": "Indian Peafowl",
+    "breeding_habitat": "early_successional",
+    "foraging_guild": "granivore",
+    "migratory_status": "resident"
+  },
+  "02882": {
+    "common_name": "Chukar",
+    "breeding_habitat": "early_successional",
+    "foraging_guild": "granivore",
+    "migratory_status": "resident"
+  },
+  "00050": {
+    "common_name": "Least Grebe",
+    "breeding_habitat": "wetland",
+    "foraging_guild": "piscivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "00060": {
+    "common_name": "Pied-billed Grebe",
+    "breeding_habitat": "wetland",
+    "foraging_guild": "piscivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "00030": {
+    "common_name": "Horned Grebe",
+    "breeding_habitat": "wetland",
+    "foraging_guild": "piscivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "00020": {
+    "common_name": "Red-necked Grebe",
+    "breeding_habitat": "wetland",
+    "foraging_guild": "piscivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "00040": {
+    "common_name": "Eared Grebe",
+    "breeding_habitat": "wetland",
+    "foraging_guild": "piscivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "00010": {
+    "common_name": "Western Grebe",
+    "breeding_habitat": "wetland",
+    "foraging_guild": "piscivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "00011": {
+    "common_name": "Clark's Grebe",
+    "breeding_habitat": "wetland",
+    "foraging_guild": "piscivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "00012": {
+    "common_name": "unid. Western Grebe / Clark's Grebe",
+    "breeding_habitat": "wetland",
+    "foraging_guild": "piscivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "03131": {
+    "common_name": "Rock Pigeon",
+    "breeding_habitat": "urban",
+    "foraging_guild": "granivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "03140": {
+    "common_name": "White-crowned Pigeon",
+    "breeding_habitat": "generalist",
+    "foraging_guild": "granivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "03130": {
+    "common_name": "Red-billed Pigeon",
+    "breeding_habitat": "generalist",
+    "foraging_guild": "granivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "03120": {
+    "common_name": "Band-tailed Pigeon",
+    "breeding_habitat": "generalist",
+    "foraging_guild": "granivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "03152": {
+    "common_name": "African Collared-Dove (a.k.a. Ringed Turtle-Dove)",
+    "breeding_habitat": "generalist",
+    "foraging_guild": "granivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "22860": {
+    "common_name": "Eurasian Collared-Dove",
+    "breeding_habitat": "generalist",
+    "foraging_guild": "granivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "03151": {
+    "common_name": "Spotted Dove",
+    "breeding_habitat": "generalist",
+    "foraging_guild": "granivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "03210": {
+    "common_name": "Inca Dove",
+    "breeding_habitat": "arid",
+    "foraging_guild": "granivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "03200": {
+    "common_name": "Common Ground Dove",
+    "breeding_habitat": "generalist",
+    "foraging_guild": "granivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "03201": {
+    "common_name": "Ruddy Ground Dove",
+    "breeding_habitat": "generalist",
+    "foraging_guild": "granivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "03180": {
+    "common_name": "White-tipped Dove",
+    "breeding_habitat": "generalist",
+    "foraging_guild": "granivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "03190": {
+    "common_name": "White-winged Dove",
+    "breeding_habitat": "arid",
+    "foraging_guild": "granivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "03160": {
+    "common_name": "Mourning Dove",
+    "breeding_habitat": "generalist",
+    "foraging_guild": "granivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "03830": {
+    "common_name": "Smooth-billed Ani",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "foliage_gleaner",
+    "migratory_status": "short_distance_migrant"
+  },
+  "03840": {
+    "common_name": "Groove-billed Ani",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "foliage_gleaner",
+    "migratory_status": "short_distance_migrant"
+  },
+  "03850": {
+    "common_name": "Greater Roadrunner",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "carnivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "03870": {
+    "common_name": "Yellow-billed Cuckoo",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "foliage_gleaner",
+    "migratory_status": "short_distance_migrant"
+  },
+  "03860": {
+    "common_name": "Mangrove Cuckoo",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "foliage_gleaner",
+    "migratory_status": "short_distance_migrant"
+  },
+  "03880": {
+    "common_name": "Black-billed Cuckoo",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "foliage_gleaner",
+    "migratory_status": "short_distance_migrant"
+  },
+  "03875": {
+    "common_name": "unid. Yellow-billed Cuckoo / Black-billed Cuckoo",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "foliage_gleaner",
+    "migratory_status": "short_distance_migrant"
+  },
+  "04210": {
+    "common_name": "Lesser Nighthawk",
+    "breeding_habitat": "arid",
+    "foraging_guild": "aerial_insectivore",
+    "migratory_status": "neotropical_migrant"
+  },
+  "04200": {
+    "common_name": "Common Nighthawk",
+    "breeding_habitat": "early_successional",
+    "foraging_guild": "aerial_insectivore",
+    "migratory_status": "neotropical_migrant"
+  },
+  "04201": {
+    "common_name": "Antillean Nighthawk",
+    "breeding_habitat": "early_successional",
+    "foraging_guild": "aerial_insectivore",
+    "migratory_status": "neotropical_migrant"
+  },
+  "04205": {
+    "common_name": "unid. Lesser Nighthawk / Common Nighthawk",
+    "breeding_habitat": "arid",
+    "foraging_guild": "aerial_insectivore",
+    "migratory_status": "neotropical_migrant"
+  },
+  "04206": {
+    "common_name": "unid. Common Nighthawk / Antillean Nighthawk",
+    "breeding_habitat": "early_successional",
+    "foraging_guild": "aerial_insectivore",
+    "migratory_status": "neotropical_migrant"
+  },
+  "04190": {
+    "common_name": "Common Pauraque",
+    "breeding_habitat": "early_successional",
+    "foraging_guild": "aerial_insectivore",
+    "migratory_status": "neotropical_migrant"
+  },
+  "04180": {
+    "common_name": "Common Poorwill",
+    "breeding_habitat": "early_successional",
+    "foraging_guild": "aerial_insectivore",
+    "migratory_status": "neotropical_migrant"
+  },
+  "04160": {
+    "common_name": "Chuck-will's-widow",
+    "breeding_habitat": "early_successional",
+    "foraging_guild": "aerial_insectivore",
+    "migratory_status": "neotropical_migrant"
+  },
+  "04171": {
+    "common_name": "Eastern Whip-poor-will",
+    "breeding_habitat": "early_successional",
+    "foraging_guild": "aerial_insectivore",
+    "migratory_status": "neotropical_migrant"
+  },
+  "04172": {
+    "common_name": "Mexican Whip-poor-will",
+    "breeding_habitat": "early_successional",
+    "foraging_guild": "aerial_insectivore",
+    "migratory_status": "neotropical_migrant"
+  },
+  "04220": {
+    "common_name": "Black Swift",
+    "breeding_habitat": "early_successional",
+    "foraging_guild": "aerial_insectivore",
+    "migratory_status": "neotropical_migrant"
+  },
+  "04230": {
+    "common_name": "Chimney Swift",
+    "breeding_habitat": "urban",
+    "foraging_guild": "aerial_insectivore",
+    "migratory_status": "neotropical_migrant"
+  },
+  "04240": {
+    "common_name": "Vaux's Swift",
+    "breeding_habitat": "early_successional",
+    "foraging_guild": "aerial_insectivore",
+    "migratory_status": "neotropical_migrant"
+  },
+  "04250": {
+    "common_name": "White-throated Swift",
+    "breeding_habitat": "early_successional",
+    "foraging_guild": "aerial_insectivore",
+    "migratory_status": "neotropical_migrant"
+  },
+  "04260": {
+    "common_name": "Rivoli's Hummingbird",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "nectarivore",
+    "migratory_status": "neotropical_migrant"
+  },
+  "04270": {
+    "common_name": "Blue-throated Mountain-gem",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "nectarivore",
+    "migratory_status": "neotropical_migrant"
+  },
+  "04370": {
+    "common_name": "Lucifer Hummingbird",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "nectarivore",
+    "migratory_status": "neotropical_migrant"
+  },
+  "04280": {
+    "common_name": "Ruby-throated Hummingbird",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "nectarivore",
+    "migratory_status": "neotropical_migrant"
+  },
+  "04290": {
+    "common_name": "Black-chinned Hummingbird",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "nectarivore",
+    "migratory_status": "neotropical_migrant"
+  },
+  "04295": {
+    "common_name": "unid. Ruby-throated / Black-chinned Hummingbird",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "nectarivore",
+    "migratory_status": "neotropical_migrant"
+  },
+  "04310": {
+    "common_name": "Anna's Hummingbird",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "nectarivore",
+    "migratory_status": "neotropical_migrant"
+  },
+  "04300": {
+    "common_name": "Costa's Hummingbird",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "nectarivore",
+    "migratory_status": "neotropical_migrant"
+  },
+  "04360": {
+    "common_name": "Calliope Hummingbird",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "nectarivore",
+    "migratory_status": "neotropical_migrant"
+  },
+  "04330": {
+    "common_name": "Rufous Hummingbird",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "nectarivore",
+    "migratory_status": "neotropical_migrant"
+  },
+  "04340": {
+    "common_name": "Allen's Hummingbird",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "nectarivore",
+    "migratory_status": "neotropical_migrant"
+  },
+  "04335": {
+    "common_name": "unid. Rufous Hummingbird / Allen's Hummingbird",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "nectarivore",
+    "migratory_status": "neotropical_migrant"
+  },
+  "04402": {
+    "common_name": "unid. hummingbird",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "nectarivore",
+    "migratory_status": "neotropical_migrant"
+  },
+  "04320": {
+    "common_name": "Broad-tailed Hummingbird",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "nectarivore",
+    "migratory_status": "neotropical_migrant"
+  },
+  "04410": {
+    "common_name": "Broad-billed Hummingbird",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "nectarivore",
+    "migratory_status": "neotropical_migrant"
+  },
+  "04391": {
+    "common_name": "Violet-crowned Hummingbird",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "nectarivore",
+    "migratory_status": "neotropical_migrant"
+  },
+  "04390": {
+    "common_name": "Buff-bellied Hummingbird",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "nectarivore",
+    "migratory_status": "neotropical_migrant"
+  },
+  "02111": {
+    "common_name": "Ridgway's Rail",
+    "breeding_habitat": "wetland",
+    "foraging_guild": "shoreline_prober",
+    "migratory_status": "short_distance_migrant"
+  },
+  "02080": {
+    "common_name": "King Rail",
+    "breeding_habitat": "wetland",
+    "foraging_guild": "shoreline_prober",
+    "migratory_status": "short_distance_migrant"
+  },
+  "02110": {
+    "common_name": "Clapper Rail",
+    "breeding_habitat": "wetland",
+    "foraging_guild": "shoreline_prober",
+    "migratory_status": "short_distance_migrant"
+  },
+  "02090": {
+    "common_name": "unid. Clapper / King Rail",
+    "breeding_habitat": "wetland",
+    "foraging_guild": "shoreline_prober",
+    "migratory_status": "short_distance_migrant"
+  },
+  "02120": {
+    "common_name": "Virginia Rail",
+    "breeding_habitat": "wetland",
+    "foraging_guild": "shoreline_prober",
+    "migratory_status": "short_distance_migrant"
+  },
+  "02140": {
+    "common_name": "Sora",
+    "breeding_habitat": "wetland",
+    "foraging_guild": "shoreline_prober",
+    "migratory_status": "short_distance_migrant"
+  },
+  "02190": {
+    "common_name": "Common Gallinule",
+    "breeding_habitat": "wetland",
+    "foraging_guild": "shoreline_prober",
+    "migratory_status": "short_distance_migrant"
+  },
+  "02210": {
+    "common_name": "American Coot",
+    "breeding_habitat": "wetland",
+    "foraging_guild": "shoreline_prober",
+    "migratory_status": "short_distance_migrant"
+  },
+  "02180": {
+    "common_name": "Purple Gallinule",
+    "breeding_habitat": "wetland",
+    "foraging_guild": "shoreline_prober",
+    "migratory_status": "short_distance_migrant"
+  },
+  "21930": {
+    "common_name": "Purple Swamphen",
+    "breeding_habitat": "wetland",
+    "foraging_guild": "shoreline_prober",
+    "migratory_status": "short_distance_migrant"
+  },
+  "02150": {
+    "common_name": "Yellow Rail",
+    "breeding_habitat": "wetland",
+    "foraging_guild": "shoreline_prober",
+    "migratory_status": "short_distance_migrant"
+  },
+  "02160": {
+    "common_name": "Black Rail",
+    "breeding_habitat": "wetland",
+    "foraging_guild": "shoreline_prober",
+    "migratory_status": "short_distance_migrant"
+  },
+  "02070": {
+    "common_name": "Limpkin",
+    "breeding_habitat": "wetland",
+    "foraging_guild": "shoreline_prober",
+    "migratory_status": "short_distance_migrant"
+  },
+  "02060": {
+    "common_name": "Sandhill Crane",
+    "breeding_habitat": "wetland",
+    "foraging_guild": "shoreline_prober",
+    "migratory_status": "short_distance_migrant"
+  },
+  "02040": {
+    "common_name": "Whooping Crane",
+    "breeding_habitat": "wetland",
+    "foraging_guild": "shoreline_prober",
+    "migratory_status": "short_distance_migrant"
+  },
+  "02260": {
+    "common_name": "Black-necked Stilt",
+    "breeding_habitat": "coastal",
+    "foraging_guild": "shoreline_prober",
+    "migratory_status": "short_distance_migrant"
+  },
+  "02250": {
+    "common_name": "American Avocet",
+    "breeding_habitat": "coastal",
+    "foraging_guild": "shoreline_prober",
+    "migratory_status": "short_distance_migrant"
+  },
+  "02860": {
+    "common_name": "American Oystercatcher",
+    "breeding_habitat": "coastal",
+    "foraging_guild": "shoreline_prober",
+    "migratory_status": "short_distance_migrant"
+  },
+  "02870": {
+    "common_name": "Black Oystercatcher",
+    "breeding_habitat": "coastal",
+    "foraging_guild": "shoreline_prober",
+    "migratory_status": "short_distance_migrant"
+  },
+  "02700": {
+    "common_name": "Black-bellied Plover",
+    "breeding_habitat": "coastal",
+    "foraging_guild": "shoreline_prober",
+    "migratory_status": "short_distance_migrant"
+  },
+  "02720": {
+    "common_name": "American Golden-Plover",
+    "breeding_habitat": "coastal",
+    "foraging_guild": "shoreline_prober",
+    "migratory_status": "short_distance_migrant"
+  },
+  "02721": {
+    "common_name": "Pacific Golden-Plover",
+    "breeding_habitat": "coastal",
+    "foraging_guild": "shoreline_prober",
+    "migratory_status": "short_distance_migrant"
+  },
+  "02730": {
+    "common_name": "Killdeer",
+    "breeding_habitat": "grassland",
+    "foraging_guild": "shoreline_prober",
+    "migratory_status": "short_distance_migrant"
+  },
+  "02750": {
+    "common_name": "Common Ringed Plover",
+    "breeding_habitat": "coastal",
+    "foraging_guild": "shoreline_prober",
+    "migratory_status": "short_distance_migrant"
+  },
+  "02740": {
+    "common_name": "Semipalmated Plover",
+    "breeding_habitat": "coastal",
+    "foraging_guild": "shoreline_prober",
+    "migratory_status": "short_distance_migrant"
+  },
+  "02770": {
+    "common_name": "Piping Plover",
+    "breeding_habitat": "coastal",
+    "foraging_guild": "shoreline_prober",
+    "migratory_status": "short_distance_migrant"
+  },
+  "02800": {
+    "common_name": "Wilson's Plover",
+    "breeding_habitat": "coastal",
+    "foraging_guild": "shoreline_prober",
+    "migratory_status": "short_distance_migrant"
+  },
+  "02810": {
+    "common_name": "Mountain Plover",
+    "breeding_habitat": "coastal",
+    "foraging_guild": "shoreline_prober",
+    "migratory_status": "short_distance_migrant"
+  },
+  "02780": {
+    "common_name": "Snowy Plover",
+    "breeding_habitat": "coastal",
+    "foraging_guild": "shoreline_prober",
+    "migratory_status": "short_distance_migrant"
+  },
+  "02610": {
+    "common_name": "Upland Sandpiper",
+    "breeding_habitat": "grassland",
+    "foraging_guild": "shoreline_prober",
+    "migratory_status": "short_distance_migrant"
+  },
+  "02680": {
+    "common_name": "Bristle-thighed Curlew",
+    "breeding_habitat": "coastal",
+    "foraging_guild": "shoreline_prober",
+    "migratory_status": "short_distance_migrant"
+  },
+  "02650": {
+    "common_name": "Whimbrel",
+    "breeding_habitat": "coastal",
+    "foraging_guild": "shoreline_prober",
+    "migratory_status": "short_distance_migrant"
+  },
+  "02640": {
+    "common_name": "Long-billed Curlew",
+    "breeding_habitat": "coastal",
+    "foraging_guild": "shoreline_prober",
+    "migratory_status": "short_distance_migrant"
+  },
+  "02500": {
+    "common_name": "Bar-tailed Godwit",
+    "breeding_habitat": "coastal",
+    "foraging_guild": "shoreline_prober",
+    "migratory_status": "short_distance_migrant"
+  },
+  "02510": {
+    "common_name": "Hudsonian Godwit",
+    "breeding_habitat": "coastal",
+    "foraging_guild": "shoreline_prober",
+    "migratory_status": "short_distance_migrant"
+  },
+  "02490": {
+    "common_name": "Marbled Godwit",
+    "breeding_habitat": "coastal",
+    "foraging_guild": "shoreline_prober",
+    "migratory_status": "short_distance_migrant"
+  },
+  "02830": {
+    "common_name": "Ruddy Turnstone",
+    "breeding_habitat": "coastal",
+    "foraging_guild": "shoreline_prober",
+    "migratory_status": "short_distance_migrant"
+  },
+  "02840": {
+    "common_name": "Black Turnstone",
+    "breeding_habitat": "coastal",
+    "foraging_guild": "shoreline_prober",
+    "migratory_status": "short_distance_migrant"
+  },
+  "02340": {
+    "common_name": "Red Knot",
+    "breeding_habitat": "coastal",
+    "foraging_guild": "shoreline_prober",
+    "migratory_status": "short_distance_migrant"
+  },
+  "02820": {
+    "common_name": "Surfbird",
+    "breeding_habitat": "coastal",
+    "foraging_guild": "shoreline_prober",
+    "migratory_status": "short_distance_migrant"
+  },
+  "02600": {
+    "common_name": "Ruff",
+    "breeding_habitat": "coastal",
+    "foraging_guild": "shoreline_prober",
+    "migratory_status": "short_distance_migrant"
+  },
+  "02380": {
+    "common_name": "Sharp-tailed Sandpiper",
+    "breeding_habitat": "coastal",
+    "foraging_guild": "shoreline_prober",
+    "migratory_status": "short_distance_migrant"
+  },
+  "02330": {
+    "common_name": "Stilt Sandpiper",
+    "breeding_habitat": "coastal",
+    "foraging_guild": "shoreline_prober",
+    "migratory_status": "short_distance_migrant"
+  },
+  "02422": {
+    "common_name": "Red-necked Stint",
+    "breeding_habitat": "coastal",
+    "foraging_guild": "shoreline_prober",
+    "migratory_status": "short_distance_migrant"
+  },
+  "02480": {
+    "common_name": "Sanderling",
+    "breeding_habitat": "coastal",
+    "foraging_guild": "shoreline_prober",
+    "migratory_status": "short_distance_migrant"
+  },
+  "02430": {
+    "common_name": "Dunlin",
+    "breeding_habitat": "coastal",
+    "foraging_guild": "shoreline_prober",
+    "migratory_status": "short_distance_migrant"
+  },
+  "02356": {
+    "common_name": "Rock Sandpiper",
+    "breeding_habitat": "coastal",
+    "foraging_guild": "shoreline_prober",
+    "migratory_status": "short_distance_migrant"
+  },
+  "02350": {
+    "common_name": "Purple Sandpiper",
+    "breeding_habitat": "coastal",
+    "foraging_guild": "shoreline_prober",
+    "migratory_status": "short_distance_migrant"
+  },
+  "02410": {
+    "common_name": "Baird's Sandpiper",
+    "breeding_habitat": "coastal",
+    "foraging_guild": "shoreline_prober",
+    "migratory_status": "short_distance_migrant"
+  },
+  "02420": {
+    "common_name": "Least Sandpiper",
+    "breeding_habitat": "coastal",
+    "foraging_guild": "shoreline_prober",
+    "migratory_status": "short_distance_migrant"
+  },
+  "02400": {
+    "common_name": "White-rumped Sandpiper",
+    "breeding_habitat": "coastal",
+    "foraging_guild": "shoreline_prober",
+    "migratory_status": "short_distance_migrant"
+  },
+  "02620": {
+    "common_name": "Buff-breasted Sandpiper",
+    "breeding_habitat": "coastal",
+    "foraging_guild": "shoreline_prober",
+    "migratory_status": "short_distance_migrant"
+  },
+  "02390": {
+    "common_name": "Pectoral Sandpiper",
+    "breeding_habitat": "coastal",
+    "foraging_guild": "shoreline_prober",
+    "migratory_status": "short_distance_migrant"
+  },
+  "02460": {
+    "common_name": "Semipalmated Sandpiper",
+    "breeding_habitat": "coastal",
+    "foraging_guild": "shoreline_prober",
+    "migratory_status": "short_distance_migrant"
+  },
+  "02470": {
+    "common_name": "Western Sandpiper",
+    "breeding_habitat": "coastal",
+    "foraging_guild": "shoreline_prober",
+    "migratory_status": "short_distance_migrant"
+  },
+  "02429": {
+    "common_name": "unid. small ''peep'' sandpiper",
+    "breeding_habitat": "coastal",
+    "foraging_guild": "shoreline_prober",
+    "migratory_status": "short_distance_migrant"
+  },
+  "02310": {
+    "common_name": "Short-billed Dowitcher",
+    "breeding_habitat": "coastal",
+    "foraging_guild": "shoreline_prober",
+    "migratory_status": "short_distance_migrant"
+  },
+  "02320": {
+    "common_name": "Long-billed Dowitcher",
+    "breeding_habitat": "coastal",
+    "foraging_guild": "shoreline_prober",
+    "migratory_status": "short_distance_migrant"
+  },
+  "02327": {
+    "common_name": "unid. Short-billed / Long-billed Dowitcher",
+    "breeding_habitat": "coastal",
+    "foraging_guild": "shoreline_prober",
+    "migratory_status": "short_distance_migrant"
+  },
+  "02280": {
+    "common_name": "American Woodcock",
+    "breeding_habitat": "wetland",
+    "foraging_guild": "shoreline_prober",
+    "migratory_status": "short_distance_migrant"
+  },
+  "02300": {
+    "common_name": "Wilson's Snipe",
+    "breeding_habitat": "wetland",
+    "foraging_guild": "shoreline_prober",
+    "migratory_status": "short_distance_migrant"
+  },
+  "02631": {
+    "common_name": "Common Sandpiper",
+    "breeding_habitat": "coastal",
+    "foraging_guild": "shoreline_prober",
+    "migratory_status": "short_distance_migrant"
+  },
+  "02630": {
+    "common_name": "Spotted Sandpiper",
+    "breeding_habitat": "coastal",
+    "foraging_guild": "shoreline_prober",
+    "migratory_status": "short_distance_migrant"
+  },
+  "02560": {
+    "common_name": "Solitary Sandpiper",
+    "breeding_habitat": "coastal",
+    "foraging_guild": "shoreline_prober",
+    "migratory_status": "short_distance_migrant"
+  },
+  "02590": {
+    "common_name": "Wandering Tattler",
+    "breeding_habitat": "coastal",
+    "foraging_guild": "shoreline_prober",
+    "migratory_status": "short_distance_migrant"
+  },
+  "02550": {
+    "common_name": "Lesser Yellowlegs",
+    "breeding_habitat": "coastal",
+    "foraging_guild": "shoreline_prober",
+    "migratory_status": "short_distance_migrant"
+  },
+  "02580": {
+    "common_name": "Willet",
+    "breeding_habitat": "coastal",
+    "foraging_guild": "shoreline_prober",
+    "migratory_status": "short_distance_migrant"
+  },
+  "02530": {
+    "common_name": "Common Greenshank",
+    "breeding_habitat": "coastal",
+    "foraging_guild": "shoreline_prober",
+    "migratory_status": "short_distance_migrant"
+  },
+  "02540": {
+    "common_name": "Greater Yellowlegs",
+    "breeding_habitat": "coastal",
+    "foraging_guild": "shoreline_prober",
+    "migratory_status": "short_distance_migrant"
+  },
+  "02555": {
+    "common_name": "unid. Greater Yellowlegs / Lesser Yellowlegs",
+    "breeding_habitat": "coastal",
+    "foraging_guild": "shoreline_prober",
+    "migratory_status": "short_distance_migrant"
+  },
+  "02240": {
+    "common_name": "Wilson's Phalarope",
+    "breeding_habitat": "coastal",
+    "foraging_guild": "shoreline_prober",
+    "migratory_status": "short_distance_migrant"
+  },
+  "02230": {
+    "common_name": "Red-necked Phalarope",
+    "breeding_habitat": "coastal",
+    "foraging_guild": "shoreline_prober",
+    "migratory_status": "short_distance_migrant"
+  },
+  "02220": {
+    "common_name": "Red Phalarope",
+    "breeding_habitat": "coastal",
+    "foraging_guild": "shoreline_prober",
+    "migratory_status": "short_distance_migrant"
+  },
+  "00360": {
+    "common_name": "Pomarine Jaeger",
+    "breeding_habitat": "coastal",
+    "foraging_guild": "omnivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "00370": {
+    "common_name": "Parasitic Jaeger",
+    "breeding_habitat": "coastal",
+    "foraging_guild": "omnivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "00380": {
+    "common_name": "Long-tailed Jaeger",
+    "breeding_habitat": "coastal",
+    "foraging_guild": "omnivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "00300": {
+    "common_name": "Common Murre",
+    "breeding_habitat": "coastal",
+    "foraging_guild": "piscivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "00310": {
+    "common_name": "Thick-billed Murre",
+    "breeding_habitat": "coastal",
+    "foraging_guild": "piscivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "00315": {
+    "common_name": "unid. Common Murre / Thick-billed Murre",
+    "breeding_habitat": "coastal",
+    "foraging_guild": "piscivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "00320": {
+    "common_name": "Razorbill",
+    "breeding_habitat": "coastal",
+    "foraging_guild": "piscivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "00270": {
+    "common_name": "Black Guillemot",
+    "breeding_habitat": "coastal",
+    "foraging_guild": "piscivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "00290": {
+    "common_name": "Pigeon Guillemot",
+    "breeding_habitat": "coastal",
+    "foraging_guild": "piscivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "00230": {
+    "common_name": "Marbled Murrelet",
+    "breeding_habitat": "coastal",
+    "foraging_guild": "piscivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "00240": {
+    "common_name": "Kittlitz's Murrelet",
+    "breeding_habitat": "coastal",
+    "foraging_guild": "piscivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "00210": {
+    "common_name": "Ancient Murrelet",
+    "breeding_habitat": "coastal",
+    "foraging_guild": "piscivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "00160": {
+    "common_name": "Cassin's Auklet",
+    "breeding_habitat": "coastal",
+    "foraging_guild": "piscivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "00150": {
+    "common_name": "Rhinoceros Auklet",
+    "breeding_habitat": "coastal",
+    "foraging_guild": "piscivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "00130": {
+    "common_name": "Atlantic Puffin",
+    "breeding_habitat": "coastal",
+    "foraging_guild": "piscivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "00140": {
+    "common_name": "Horned Puffin",
+    "breeding_habitat": "coastal",
+    "foraging_guild": "piscivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "00120": {
+    "common_name": "Tufted Puffin",
+    "breeding_habitat": "coastal",
+    "foraging_guild": "piscivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "00400": {
+    "common_name": "Black-legged Kittiwake",
+    "breeding_habitat": "coastal",
+    "foraging_guild": "omnivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "00390": {
+    "common_name": "Ivory Gull",
+    "breeding_habitat": "coastal",
+    "foraging_guild": "omnivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "00620": {
+    "common_name": "Sabine's Gull",
+    "breeding_habitat": "coastal",
+    "foraging_guild": "omnivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "00600": {
+    "common_name": "Bonaparte's Gull",
+    "breeding_habitat": "coastal",
+    "foraging_guild": "omnivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "00551": {
+    "common_name": "Black-headed Gull",
+    "breeding_habitat": "coastal",
+    "foraging_guild": "omnivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "00601": {
+    "common_name": "Little Gull",
+    "breeding_habitat": "coastal",
+    "foraging_guild": "omnivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "00610": {
+    "common_name": "Ross's Gull",
+    "breeding_habitat": "coastal",
+    "foraging_guild": "omnivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "00580": {
+    "common_name": "Laughing Gull",
+    "breeding_habitat": "coastal",
+    "foraging_guild": "omnivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "00590": {
+    "common_name": "Franklin's Gull",
+    "breeding_habitat": "coastal",
+    "foraging_guild": "omnivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "00570": {
+    "common_name": "Heermann's Gull",
+    "breeding_habitat": "coastal",
+    "foraging_guild": "omnivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "00550": {
+    "common_name": "Short-billed Gull",
+    "breeding_habitat": "coastal",
+    "foraging_guild": "omnivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "00540": {
+    "common_name": "Ring-billed Gull",
+    "breeding_habitat": "coastal",
+    "foraging_guild": "omnivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "00490": {
+    "common_name": "Western Gull",
+    "breeding_habitat": "coastal",
+    "foraging_guild": "omnivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "00530": {
+    "common_name": "California Gull",
+    "breeding_habitat": "coastal",
+    "foraging_guild": "omnivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "00510": {
+    "common_name": "Herring Gull",
+    "breeding_habitat": "coastal",
+    "foraging_guild": "omnivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "00430": {
+    "common_name": "Iceland Gull",
+    "breeding_habitat": "coastal",
+    "foraging_guild": "omnivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "00500": {
+    "common_name": "Lesser Black-backed Gull",
+    "breeding_habitat": "coastal",
+    "foraging_guild": "omnivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "00480": {
+    "common_name": "Slaty-backed Gull",
+    "breeding_habitat": "coastal",
+    "foraging_guild": "omnivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "00440": {
+    "common_name": "Glaucous-winged Gull",
+    "breeding_habitat": "coastal",
+    "foraging_guild": "omnivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "00495": {
+    "common_name": "hybrid Western Gull x Glaucous-winged Gull",
+    "breeding_habitat": "coastal",
+    "foraging_guild": "omnivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "00420": {
+    "common_name": "Glaucous Gull",
+    "breeding_habitat": "coastal",
+    "foraging_guild": "omnivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "00470": {
+    "common_name": "Great Black-backed Gull",
+    "breeding_habitat": "coastal",
+    "foraging_guild": "omnivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "00534": {
+    "common_name": "unid. gull",
+    "breeding_habitat": "coastal",
+    "foraging_guild": "omnivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "00730": {
+    "common_name": "Aleutian Tern",
+    "breeding_habitat": "coastal",
+    "foraging_guild": "piscivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "00740": {
+    "common_name": "Least Tern",
+    "breeding_habitat": "coastal",
+    "foraging_guild": "piscivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "00630": {
+    "common_name": "Gull-billed Tern",
+    "breeding_habitat": "coastal",
+    "foraging_guild": "piscivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "00640": {
+    "common_name": "Caspian Tern",
+    "breeding_habitat": "coastal",
+    "foraging_guild": "piscivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "00770": {
+    "common_name": "Black Tern",
+    "breeding_habitat": "coastal",
+    "foraging_guild": "piscivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "00720": {
+    "common_name": "Roseate Tern",
+    "breeding_habitat": "coastal",
+    "foraging_guild": "piscivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "00700": {
+    "common_name": "Common Tern",
+    "breeding_habitat": "coastal",
+    "foraging_guild": "piscivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "00710": {
+    "common_name": "Arctic Tern",
+    "breeding_habitat": "coastal",
+    "foraging_guild": "piscivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "00690": {
+    "common_name": "Forster's Tern",
+    "breeding_habitat": "coastal",
+    "foraging_guild": "piscivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "00650": {
+    "common_name": "Royal Tern",
+    "breeding_habitat": "coastal",
+    "foraging_guild": "piscivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "00670": {
+    "common_name": "Sandwich Tern",
+    "breeding_habitat": "coastal",
+    "foraging_guild": "piscivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "00660": {
+    "common_name": "Elegant Tern",
+    "breeding_habitat": "coastal",
+    "foraging_guild": "piscivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "00634": {
+    "common_name": "unid. tern",
+    "breeding_habitat": "coastal",
+    "foraging_guild": "omnivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "00800": {
+    "common_name": "Black Skimmer",
+    "breeding_habitat": "coastal",
+    "foraging_guild": "omnivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "01130": {
+    "common_name": "Red-billed Tropicbird",
+    "breeding_habitat": "coastal",
+    "foraging_guild": "foliage_gleaner",
+    "migratory_status": "short_distance_migrant"
+  },
+  "00110": {
+    "common_name": "Red-throated Loon",
+    "breeding_habitat": "wetland",
+    "foraging_guild": "piscivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "00090": {
+    "common_name": "Arctic Loon",
+    "breeding_habitat": "wetland",
+    "foraging_guild": "piscivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "00100": {
+    "common_name": "Pacific Loon",
+    "breeding_habitat": "wetland",
+    "foraging_guild": "piscivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "00070": {
+    "common_name": "Common Loon",
+    "breeding_habitat": "wetland",
+    "foraging_guild": "piscivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "00080": {
+    "common_name": "Yellow-billed Loon",
+    "breeding_habitat": "wetland",
+    "foraging_guild": "piscivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "00077": {
+    "common_name": "unid. loon",
+    "breeding_habitat": "wetland",
+    "foraging_guild": "piscivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "01060": {
+    "common_name": "Leach's Storm-Petrel",
+    "breeding_habitat": "coastal",
+    "foraging_guild": "foliage_gleaner",
+    "migratory_status": "short_distance_migrant"
+  },
+  "00860": {
+    "common_name": "Northern Fulmar",
+    "breeding_habitat": "coastal",
+    "foraging_guild": "foliage_gleaner",
+    "migratory_status": "short_distance_migrant"
+  },
+  "00880": {
+    "common_name": "Cory's Shearwater",
+    "breeding_habitat": "coastal",
+    "foraging_guild": "foliage_gleaner",
+    "migratory_status": "short_distance_migrant"
+  },
+  "00900": {
+    "common_name": "Manx Shearwater",
+    "breeding_habitat": "coastal",
+    "foraging_guild": "foliage_gleaner",
+    "migratory_status": "short_distance_migrant"
+  },
+  "01880": {
+    "common_name": "Wood Stork",
+    "breeding_habitat": "wetland",
+    "foraging_guild": "piscivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "01280": {
+    "common_name": "Magnificent Frigatebird",
+    "breeding_habitat": "coastal",
+    "foraging_guild": "foliage_gleaner",
+    "migratory_status": "short_distance_migrant"
+  },
+  "01140": {
+    "common_name": "Masked Booby",
+    "breeding_habitat": "coastal",
+    "foraging_guild": "piscivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "01141": {
+    "common_name": "Blue-footed Booby",
+    "breeding_habitat": "coastal",
+    "foraging_guild": "piscivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "01150": {
+    "common_name": "Brown Booby",
+    "breeding_habitat": "coastal",
+    "foraging_guild": "piscivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "01170": {
+    "common_name": "Northern Gannet",
+    "breeding_habitat": "coastal",
+    "foraging_guild": "piscivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "01180": {
+    "common_name": "Anhinga",
+    "breeding_habitat": "wetland",
+    "foraging_guild": "piscivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "01220": {
+    "common_name": "Brandt's Cormorant",
+    "breeding_habitat": "wetland",
+    "foraging_guild": "piscivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "01230": {
+    "common_name": "Pelagic Cormorant",
+    "breeding_habitat": "wetland",
+    "foraging_guild": "piscivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "01207": {
+    "common_name": "unid. west coast cormorant",
+    "breeding_habitat": "wetland",
+    "foraging_guild": "piscivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "01190": {
+    "common_name": "Great Cormorant",
+    "breeding_habitat": "wetland",
+    "foraging_guild": "piscivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "01200": {
+    "common_name": "Double-crested Cormorant",
+    "breeding_habitat": "wetland",
+    "foraging_guild": "piscivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "01206": {
+    "common_name": "unid. Double-crested Cormorant / Great Cormorant",
+    "breeding_habitat": "wetland",
+    "foraging_guild": "piscivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "01210": {
+    "common_name": "Neotropic Cormorant",
+    "breeding_habitat": "wetland",
+    "foraging_guild": "piscivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "01205": {
+    "common_name": "unid. Neotropic / Double-crested Cormorant",
+    "breeding_habitat": "wetland",
+    "foraging_guild": "piscivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "01250": {
+    "common_name": "American White Pelican",
+    "breeding_habitat": "wetland",
+    "foraging_guild": "piscivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "01260": {
+    "common_name": "Brown Pelican",
+    "breeding_habitat": "wetland",
+    "foraging_guild": "piscivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "01945": {
+    "common_name": "unid. heron / egret",
+    "breeding_habitat": "wetland",
+    "foraging_guild": "piscivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "01910": {
+    "common_name": "Least Bittern",
+    "breeding_habitat": "wetland",
+    "foraging_guild": "ground_gleaner",
+    "migratory_status": "short_distance_migrant"
+  },
+  "01900": {
+    "common_name": "American Bittern",
+    "breeding_habitat": "wetland",
+    "foraging_guild": "ground_gleaner",
+    "migratory_status": "short_distance_migrant"
+  },
+  "02000": {
+    "common_name": "Little Blue Heron",
+    "breeding_habitat": "wetland",
+    "foraging_guild": "piscivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "01990": {
+    "common_name": "Tricolored Heron",
+    "breeding_habitat": "wetland",
+    "foraging_guild": "piscivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "01980": {
+    "common_name": "Reddish Egret",
+    "breeding_habitat": "wetland",
+    "foraging_guild": "piscivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "01970": {
+    "common_name": "Snowy Egret",
+    "breeding_habitat": "wetland",
+    "foraging_guild": "piscivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "01961": {
+    "common_name": "Little Egret",
+    "breeding_habitat": "wetland",
+    "foraging_guild": "piscivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "02030": {
+    "common_name": "Yellow-crowned Night Heron",
+    "breeding_habitat": "wetland",
+    "foraging_guild": "piscivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "02020": {
+    "common_name": "Black-crowned Night Heron",
+    "breeding_habitat": "wetland",
+    "foraging_guild": "piscivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "02035": {
+    "common_name": "unid Black-crowned / Yellow-crowned Night Heron",
+    "breeding_habitat": "wetland",
+    "foraging_guild": "piscivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "02010": {
+    "common_name": "Green Heron",
+    "breeding_habitat": "wetland",
+    "foraging_guild": "piscivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "01960": {
+    "common_name": "Great Egret",
+    "breeding_habitat": "wetland",
+    "foraging_guild": "piscivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "02001": {
+    "common_name": "Western Cattle-Egret",
+    "breeding_habitat": "wetland",
+    "foraging_guild": "piscivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "01940": {
+    "common_name": "Great Blue Heron",
+    "breeding_habitat": "wetland",
+    "foraging_guild": "piscivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "01920": {
+    "common_name": "(Great White Heron) Great Blue Heron",
+    "breeding_habitat": "wetland",
+    "foraging_guild": "piscivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "01840": {
+    "common_name": "White Ibis",
+    "breeding_habitat": "wetland",
+    "foraging_guild": "piscivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "01860": {
+    "common_name": "Glossy Ibis",
+    "breeding_habitat": "wetland",
+    "foraging_guild": "piscivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "01870": {
+    "common_name": "White-faced Ibis",
+    "breeding_habitat": "wetland",
+    "foraging_guild": "piscivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "01861": {
+    "common_name": "unid. Glossy Ibis / White-faced Ibis",
+    "breeding_habitat": "wetland",
+    "foraging_guild": "piscivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "01830": {
+    "common_name": "Roseate Spoonbill",
+    "breeding_habitat": "wetland",
+    "foraging_guild": "piscivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "03240": {
+    "common_name": "California Condor",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "scavenger",
+    "migratory_status": "resident"
+  },
+  "03260": {
+    "common_name": "Black Vulture",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "scavenger",
+    "migratory_status": "resident"
+  },
+  "03250": {
+    "common_name": "Turkey Vulture",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "scavenger",
+    "migratory_status": "resident"
+  },
+  "03255": {
+    "common_name": "unid. Black Vulture / Turkey Vulture",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "scavenger",
+    "migratory_status": "resident"
+  },
+  "03640": {
+    "common_name": "Osprey",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "piscivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "03280": {
+    "common_name": "White-tailed Kite",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "carnivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "03271": {
+    "common_name": "Hook-billed Kite",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "carnivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "03270": {
+    "common_name": "Swallow-tailed Kite",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "carnivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "03490": {
+    "common_name": "Golden Eagle",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "carnivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "03310": {
+    "common_name": "Northern Harrier",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "carnivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "03320": {
+    "common_name": "Sharp-shinned Hawk",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "carnivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "03330": {
+    "common_name": "Cooper's Hawk",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "carnivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "03340": {
+    "common_name": "American Goshawk",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "carnivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "03333": {
+    "common_name": "unid. Accipiter hawk",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "carnivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "03520": {
+    "common_name": "Bald Eagle",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "carnivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "03290": {
+    "common_name": "Mississippi Kite",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "carnivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "03300": {
+    "common_name": "Snail Kite",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "carnivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "03450": {
+    "common_name": "Common Black Hawk",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "carnivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "03350": {
+    "common_name": "Harris's Hawk",
+    "breeding_habitat": "arid",
+    "foraging_guild": "carnivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "03410": {
+    "common_name": "White-tailed Hawk",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "carnivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "03460": {
+    "common_name": "Gray Hawk",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "carnivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "03390": {
+    "common_name": "Red-shouldered Hawk",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "carnivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "03430": {
+    "common_name": "Broad-winged Hawk",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "carnivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "03440": {
+    "common_name": "Short-tailed Hawk",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "carnivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "03420": {
+    "common_name": "Swainson's Hawk",
+    "breeding_habitat": "grassland",
+    "foraging_guild": "carnivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "03400": {
+    "common_name": "Zone-tailed Hawk",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "carnivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "03370": {
+    "common_name": "Red-tailed Hawk",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "carnivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "03380": {
+    "common_name": "(Harlan's Hawk) Red-tailed Hawk",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "carnivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "03470": {
+    "common_name": "Rough-legged Hawk",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "carnivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "03480": {
+    "common_name": "Ferruginous Hawk",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "carnivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "03451": {
+    "common_name": "unid. Buteo hawk",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "carnivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "03650": {
+    "common_name": "American Barn Owl",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "carnivore",
+    "migratory_status": "resident"
+  },
+  "03740": {
+    "common_name": "Flammulated Owl",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "carnivore",
+    "migratory_status": "resident"
+  },
+  "03731": {
+    "common_name": "Whiskered Screech-Owl",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "carnivore",
+    "migratory_status": "resident"
+  },
+  "03732": {
+    "common_name": "Western Screech-Owl",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "carnivore",
+    "migratory_status": "resident"
+  },
+  "03730": {
+    "common_name": "Eastern Screech-Owl",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "carnivore",
+    "migratory_status": "resident"
+  },
+  "03750": {
+    "common_name": "Great Horned Owl",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "carnivore",
+    "migratory_status": "resident"
+  },
+  "03760": {
+    "common_name": "Snowy Owl",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "carnivore",
+    "migratory_status": "resident"
+  },
+  "03770": {
+    "common_name": "Northern Hawk Owl",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "carnivore",
+    "migratory_status": "resident"
+  },
+  "03790": {
+    "common_name": "Northern Pygmy-Owl",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "carnivore",
+    "migratory_status": "resident"
+  },
+  "03800": {
+    "common_name": "Ferruginous Pygmy-Owl",
+    "breeding_habitat": "arid",
+    "foraging_guild": "carnivore",
+    "migratory_status": "resident"
+  },
+  "03810": {
+    "common_name": "Elf Owl",
+    "breeding_habitat": "arid",
+    "foraging_guild": "carnivore",
+    "migratory_status": "resident"
+  },
+  "03780": {
+    "common_name": "Burrowing Owl",
+    "breeding_habitat": "grassland",
+    "foraging_guild": "carnivore",
+    "migratory_status": "resident"
+  },
+  "03690": {
+    "common_name": "Spotted Owl",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "carnivore",
+    "migratory_status": "resident"
+  },
+  "03680": {
+    "common_name": "Barred Owl",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "carnivore",
+    "migratory_status": "resident"
+  },
+  "03700": {
+    "common_name": "Great Gray Owl",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "carnivore",
+    "migratory_status": "resident"
+  },
+  "03660": {
+    "common_name": "Long-eared Owl",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "carnivore",
+    "migratory_status": "resident"
+  },
+  "03670": {
+    "common_name": "Short-eared Owl",
+    "breeding_habitat": "grassland",
+    "foraging_guild": "carnivore",
+    "migratory_status": "resident"
+  },
+  "03710": {
+    "common_name": "Boreal Owl",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "carnivore",
+    "migratory_status": "resident"
+  },
+  "03720": {
+    "common_name": "Northern Saw-whet Owl",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "carnivore",
+    "migratory_status": "resident"
+  },
+  "03890": {
+    "common_name": "Elegant Trogon",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "foliage_gleaner",
+    "migratory_status": "short_distance_migrant"
+  },
+  "03901": {
+    "common_name": "Ringed Kingfisher",
+    "breeding_habitat": "wetland",
+    "foraging_guild": "piscivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "03900": {
+    "common_name": "Belted Kingfisher",
+    "breeding_habitat": "wetland",
+    "foraging_guild": "piscivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "03910": {
+    "common_name": "Green Kingfisher",
+    "breeding_habitat": "wetland",
+    "foraging_guild": "piscivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "04080": {
+    "common_name": "Lewis's Woodpecker",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "bark_gleaner",
+    "migratory_status": "resident"
+  },
+  "04060": {
+    "common_name": "Red-headed Woodpecker",
+    "breeding_habitat": "early_successional",
+    "foraging_guild": "bark_gleaner",
+    "migratory_status": "resident"
+  },
+  "04070": {
+    "common_name": "Acorn Woodpecker",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "bark_gleaner",
+    "migratory_status": "resident"
+  },
+  "04110": {
+    "common_name": "Gila Woodpecker",
+    "breeding_habitat": "arid",
+    "foraging_guild": "bark_gleaner",
+    "migratory_status": "resident"
+  },
+  "04100": {
+    "common_name": "Golden-fronted Woodpecker",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "bark_gleaner",
+    "migratory_status": "resident"
+  },
+  "04090": {
+    "common_name": "Red-bellied Woodpecker",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "bark_gleaner",
+    "migratory_status": "resident"
+  },
+  "04040": {
+    "common_name": "Williamson's Sapsucker",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "bark_gleaner",
+    "migratory_status": "resident"
+  },
+  "04020": {
+    "common_name": "Yellow-bellied Sapsucker",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "bark_gleaner",
+    "migratory_status": "resident"
+  },
+  "04021": {
+    "common_name": "Red-naped Sapsucker",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "bark_gleaner",
+    "migratory_status": "resident"
+  },
+  "04030": {
+    "common_name": "Red-breasted Sapsucker",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "bark_gleaner",
+    "migratory_status": "resident"
+  },
+  "04022": {
+    "common_name": "unid. sapsucker",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "bark_gleaner",
+    "migratory_status": "resident"
+  },
+  "04010": {
+    "common_name": "American Three-toed Woodpecker",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "bark_gleaner",
+    "migratory_status": "resident"
+  },
+  "04000": {
+    "common_name": "Black-backed Woodpecker",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "bark_gleaner",
+    "migratory_status": "resident"
+  },
+  "03940": {
+    "common_name": "Downy Woodpecker",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "bark_gleaner",
+    "migratory_status": "resident"
+  },
+  "03970": {
+    "common_name": "Nuttall's Woodpecker",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "bark_gleaner",
+    "migratory_status": "resident"
+  },
+  "03960": {
+    "common_name": "Ladder-backed Woodpecker",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "bark_gleaner",
+    "migratory_status": "resident"
+  },
+  "03950": {
+    "common_name": "Red-cockaded Woodpecker",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "bark_gleaner",
+    "migratory_status": "resident"
+  },
+  "03930": {
+    "common_name": "Hairy Woodpecker",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "bark_gleaner",
+    "migratory_status": "resident"
+  },
+  "03990": {
+    "common_name": "White-headed Woodpecker",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "bark_gleaner",
+    "migratory_status": "resident"
+  },
+  "03975": {
+    "common_name": "Arizona Woodpecker",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "bark_gleaner",
+    "migratory_status": "resident"
+  },
+  "04123": {
+    "common_name": "(unid. Red / Yellow Shafted) Northern Flicker",
+    "breeding_habitat": "early_successional",
+    "foraging_guild": "bark_gleaner",
+    "migratory_status": "resident"
+  },
+  "04120": {
+    "common_name": "(Yellow-shafted Flicker) Northern Flicker",
+    "breeding_habitat": "early_successional",
+    "foraging_guild": "bark_gleaner",
+    "migratory_status": "resident"
+  },
+  "04130": {
+    "common_name": "(Red-shafted Flicker) Northern Flicker",
+    "breeding_habitat": "early_successional",
+    "foraging_guild": "bark_gleaner",
+    "migratory_status": "resident"
+  },
+  "04125": {
+    "common_name": "hybrid Northern Flicker (Red x Yellow-shafted)",
+    "breeding_habitat": "early_successional",
+    "foraging_guild": "bark_gleaner",
+    "migratory_status": "resident"
+  },
+  "04140": {
+    "common_name": "Gilded Flicker",
+    "breeding_habitat": "arid",
+    "foraging_guild": "bark_gleaner",
+    "migratory_status": "resident"
+  },
+  "04050": {
+    "common_name": "Pileated Woodpecker",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "bark_gleaner",
+    "migratory_status": "resident"
+  },
+  "03920": {
+    "common_name": "unid. woodpecker",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "bark_gleaner",
+    "migratory_status": "resident"
+  },
+  "03620": {
+    "common_name": "Crested Caracara",
+    "breeding_habitat": "arid",
+    "foraging_guild": "carnivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "03600": {
+    "common_name": "American Kestrel",
+    "breeding_habitat": "grassland",
+    "foraging_guild": "carnivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "03570": {
+    "common_name": "Merlin",
+    "breeding_habitat": "generalist",
+    "foraging_guild": "carnivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "03590": {
+    "common_name": "Aplomado Falcon",
+    "breeding_habitat": "generalist",
+    "foraging_guild": "carnivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "03540": {
+    "common_name": "Gyrfalcon",
+    "breeding_habitat": "generalist",
+    "foraging_guild": "carnivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "03560": {
+    "common_name": "Peregrine Falcon",
+    "breeding_habitat": "generalist",
+    "foraging_guild": "carnivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "03550": {
+    "common_name": "Prairie Falcon",
+    "breeding_habitat": "grassland",
+    "foraging_guild": "carnivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "03824": {
+    "common_name": "Monk Parakeet",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "granivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "51830": {
+    "common_name": "Nanday Parakeet",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "granivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "52021": {
+    "common_name": "Yellow-chevroned Parakeet",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "granivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "03827": {
+    "common_name": "unid. White-winged / Yellow-chevroned Parakeet",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "granivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "03826": {
+    "common_name": "Red-crowned Parrot",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "granivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "03823": {
+    "common_name": "Rose-ringed Parakeet",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "granivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "03822": {
+    "common_name": "Budgerigar",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "granivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "04411": {
+    "common_name": "Rose-throated Becard",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "foliage_gleaner",
+    "migratory_status": "neotropical_migrant"
+  },
+  "04720": {
+    "common_name": "Northern Beardless-Tyrannulet",
+    "breeding_habitat": "early_successional",
+    "foraging_guild": "aerial_insectivore",
+    "migratory_status": "neotropical_migrant"
+  },
+  "04550": {
+    "common_name": "Dusky-capped Flycatcher",
+    "breeding_habitat": "early_successional",
+    "foraging_guild": "aerial_insectivore",
+    "migratory_status": "neotropical_migrant"
+  },
+  "04540": {
+    "common_name": "Ash-throated Flycatcher",
+    "breeding_habitat": "arid",
+    "foraging_guild": "aerial_insectivore",
+    "migratory_status": "neotropical_migrant"
+  },
+  "04520": {
+    "common_name": "Great Crested Flycatcher",
+    "breeding_habitat": "early_successional",
+    "foraging_guild": "aerial_insectivore",
+    "migratory_status": "neotropical_migrant"
+  },
+  "04530": {
+    "common_name": "Brown-crested Flycatcher",
+    "breeding_habitat": "early_successional",
+    "foraging_guild": "aerial_insectivore",
+    "migratory_status": "neotropical_migrant"
+  },
+  "04490": {
+    "common_name": "Great Kiskadee",
+    "breeding_habitat": "early_successional",
+    "foraging_guild": "aerial_insectivore",
+    "migratory_status": "neotropical_migrant"
+  },
+  "04510": {
+    "common_name": "Sulphur-bellied Flycatcher",
+    "breeding_habitat": "early_successional",
+    "foraging_guild": "aerial_insectivore",
+    "migratory_status": "neotropical_migrant"
+  },
+  "04460": {
+    "common_name": "Tropical Kingbird",
+    "breeding_habitat": "early_successional",
+    "foraging_guild": "aerial_insectivore",
+    "migratory_status": "neotropical_migrant"
+  },
+  "04461": {
+    "common_name": "Couch's Kingbird",
+    "breeding_habitat": "early_successional",
+    "foraging_guild": "aerial_insectivore",
+    "migratory_status": "neotropical_migrant"
+  },
+  "04462": {
+    "common_name": "unid. Tropical Kingbird / Couch's Kingbird",
+    "breeding_habitat": "early_successional",
+    "foraging_guild": "aerial_insectivore",
+    "migratory_status": "neotropical_migrant"
+  },
+  "04480": {
+    "common_name": "Cassin's Kingbird",
+    "breeding_habitat": "early_successional",
+    "foraging_guild": "aerial_insectivore",
+    "migratory_status": "neotropical_migrant"
+  },
+  "04451": {
+    "common_name": "Thick-billed Kingbird",
+    "breeding_habitat": "early_successional",
+    "foraging_guild": "aerial_insectivore",
+    "migratory_status": "neotropical_migrant"
+  },
+  "04470": {
+    "common_name": "Western Kingbird",
+    "breeding_habitat": "grassland",
+    "foraging_guild": "aerial_insectivore",
+    "migratory_status": "neotropical_migrant"
+  },
+  "04447": {
+    "common_name": "unid. Cassin's Kingbird / Western Kingbird",
+    "breeding_habitat": "grassland",
+    "foraging_guild": "aerial_insectivore",
+    "migratory_status": "neotropical_migrant"
+  },
+  "04440": {
+    "common_name": "Eastern Kingbird",
+    "breeding_habitat": "early_successional",
+    "foraging_guild": "aerial_insectivore",
+    "migratory_status": "neotropical_migrant"
+  },
+  "04450": {
+    "common_name": "Gray Kingbird",
+    "breeding_habitat": "early_successional",
+    "foraging_guild": "aerial_insectivore",
+    "migratory_status": "neotropical_migrant"
+  },
+  "04430": {
+    "common_name": "Scissor-tailed Flycatcher",
+    "breeding_habitat": "grassland",
+    "foraging_guild": "aerial_insectivore",
+    "migratory_status": "neotropical_migrant"
+  },
+  "04420": {
+    "common_name": "Fork-tailed Flycatcher",
+    "breeding_habitat": "early_successional",
+    "foraging_guild": "aerial_insectivore",
+    "migratory_status": "neotropical_migrant"
+  },
+  "04590": {
+    "common_name": "Olive-sided Flycatcher",
+    "breeding_habitat": "early_successional",
+    "foraging_guild": "aerial_insectivore",
+    "migratory_status": "neotropical_migrant"
+  },
+  "04600": {
+    "common_name": "Greater Pewee",
+    "breeding_habitat": "early_successional",
+    "foraging_guild": "aerial_insectivore",
+    "migratory_status": "neotropical_migrant"
+  },
+  "04620": {
+    "common_name": "Western Wood-Pewee",
+    "breeding_habitat": "early_successional",
+    "foraging_guild": "aerial_insectivore",
+    "migratory_status": "neotropical_migrant"
+  },
+  "04610": {
+    "common_name": "Eastern Wood-Pewee",
+    "breeding_habitat": "early_successional",
+    "foraging_guild": "aerial_insectivore",
+    "migratory_status": "neotropical_migrant"
+  },
+  "04630": {
+    "common_name": "Yellow-bellied Flycatcher",
+    "breeding_habitat": "early_successional",
+    "foraging_guild": "aerial_insectivore",
+    "migratory_status": "neotropical_migrant"
+  },
+  "04650": {
+    "common_name": "Acadian Flycatcher",
+    "breeding_habitat": "early_successional",
+    "foraging_guild": "aerial_insectivore",
+    "migratory_status": "neotropical_migrant"
+  },
+  "04661": {
+    "common_name": "Alder Flycatcher",
+    "breeding_habitat": "early_successional",
+    "foraging_guild": "aerial_insectivore",
+    "migratory_status": "neotropical_migrant"
+  },
+  "04660": {
+    "common_name": "Willow Flycatcher",
+    "breeding_habitat": "wetland",
+    "foraging_guild": "aerial_insectivore",
+    "migratory_status": "neotropical_migrant"
+  },
+  "04665": {
+    "common_name": "unid. Alder Flycatcher / Willow Flycatcher",
+    "breeding_habitat": "wetland",
+    "foraging_guild": "aerial_insectivore",
+    "migratory_status": "neotropical_migrant"
+  },
+  "04670": {
+    "common_name": "Least Flycatcher",
+    "breeding_habitat": "early_successional",
+    "foraging_guild": "aerial_insectivore",
+    "migratory_status": "neotropical_migrant"
+  },
+  "04680": {
+    "common_name": "Hammond's Flycatcher",
+    "breeding_habitat": "early_successional",
+    "foraging_guild": "aerial_insectivore",
+    "migratory_status": "neotropical_migrant"
+  },
+  "04691": {
+    "common_name": "Gray Flycatcher",
+    "breeding_habitat": "early_successional",
+    "foraging_guild": "aerial_insectivore",
+    "migratory_status": "neotropical_migrant"
+  },
+  "04690": {
+    "common_name": "Dusky Flycatcher",
+    "breeding_habitat": "early_successional",
+    "foraging_guild": "aerial_insectivore",
+    "migratory_status": "neotropical_migrant"
+  },
+  "04689": {
+    "common_name": "unid. Hammond's Flycatcher / Dusky Flycatcher",
+    "breeding_habitat": "early_successional",
+    "foraging_guild": "aerial_insectivore",
+    "migratory_status": "neotropical_migrant"
+  },
+  "04640": {
+    "common_name": "(Cordilleran Flycatcher) Western Flycatcher",
+    "breeding_habitat": "early_successional",
+    "foraging_guild": "aerial_insectivore",
+    "migratory_status": "neotropical_migrant"
+  },
+  "04641": {
+    "common_name": "(Pacific-slope Flycatcher) Western Flycatcher",
+    "breeding_habitat": "early_successional",
+    "foraging_guild": "aerial_insectivore",
+    "migratory_status": "neotropical_migrant"
+  },
+  "04642": {
+    "common_name": "(unid. Cordilleran / Pac-slope) Western Flycatcher",
+    "breeding_habitat": "early_successional",
+    "foraging_guild": "aerial_insectivore",
+    "migratory_status": "neotropical_migrant"
+  },
+  "04700": {
+    "common_name": "Buff-breasted Flycatcher",
+    "breeding_habitat": "early_successional",
+    "foraging_guild": "aerial_insectivore",
+    "migratory_status": "neotropical_migrant"
+  },
+  "04679": {
+    "common_name": "unid. Empidonax flycatcher",
+    "breeding_habitat": "early_successional",
+    "foraging_guild": "aerial_insectivore",
+    "migratory_status": "neotropical_migrant"
+  },
+  "04580": {
+    "common_name": "Black Phoebe",
+    "breeding_habitat": "wetland",
+    "foraging_guild": "aerial_insectivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "04560": {
+    "common_name": "Eastern Phoebe",
+    "breeding_habitat": "generalist",
+    "foraging_guild": "aerial_insectivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "04570": {
+    "common_name": "Say's Phoebe",
+    "breeding_habitat": "early_successional",
+    "foraging_guild": "aerial_insectivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "04710": {
+    "common_name": "Vermilion Flycatcher",
+    "breeding_habitat": "arid",
+    "foraging_guild": "aerial_insectivore",
+    "migratory_status": "neotropical_migrant"
+  },
+  "06300": {
+    "common_name": "Black-capped Vireo",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "foliage_gleaner",
+    "migratory_status": "neotropical_migrant"
+  },
+  "06310": {
+    "common_name": "White-eyed Vireo",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "foliage_gleaner",
+    "migratory_status": "neotropical_migrant"
+  },
+  "06330": {
+    "common_name": "Bell's Vireo",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "foliage_gleaner",
+    "migratory_status": "neotropical_migrant"
+  },
+  "06340": {
+    "common_name": "Gray Vireo",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "foliage_gleaner",
+    "migratory_status": "neotropical_migrant"
+  },
+  "06320": {
+    "common_name": "Hutton's Vireo",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "foliage_gleaner",
+    "migratory_status": "neotropical_migrant"
+  },
+  "06280": {
+    "common_name": "Yellow-throated Vireo",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "foliage_gleaner",
+    "migratory_status": "neotropical_migrant"
+  },
+  "06291": {
+    "common_name": "Cassin's Vireo",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "foliage_gleaner",
+    "migratory_status": "neotropical_migrant"
+  },
+  "06290": {
+    "common_name": "Blue-headed Vireo",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "foliage_gleaner",
+    "migratory_status": "neotropical_migrant"
+  },
+  "06295": {
+    "common_name": "unid. Cassin's Vireo / Blue-headed Vireo",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "foliage_gleaner",
+    "migratory_status": "neotropical_migrant"
+  },
+  "06292": {
+    "common_name": "Plumbeous Vireo",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "foliage_gleaner",
+    "migratory_status": "neotropical_migrant"
+  },
+  "06296": {
+    "common_name": "unid. Plumbeous Vireo / Cassin's Vireo",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "foliage_gleaner",
+    "migratory_status": "neotropical_migrant"
+  },
+  "06260": {
+    "common_name": "Philadelphia Vireo",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "foliage_gleaner",
+    "migratory_status": "neotropical_migrant"
+  },
+  "06270": {
+    "common_name": "Warbling Vireo",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "foliage_gleaner",
+    "migratory_status": "neotropical_migrant"
+  },
+  "06240": {
+    "common_name": "Red-eyed Vireo",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "foliage_gleaner",
+    "migratory_status": "neotropical_migrant"
+  },
+  "06230": {
+    "common_name": "Black-whiskered Vireo",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "foliage_gleaner",
+    "migratory_status": "neotropical_migrant"
+  },
+  "06220": {
+    "common_name": "Loggerhead Shrike",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "carnivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "06210": {
+    "common_name": "Northern Shrike",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "carnivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "04840": {
+    "common_name": "Canada Jay",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "omnivore",
+    "migratory_status": "resident"
+  },
+  "04830": {
+    "common_name": "Green Jay",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "omnivore",
+    "migratory_status": "resident"
+  },
+  "04920": {
+    "common_name": "Pinyon Jay",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "omnivore",
+    "migratory_status": "resident"
+  },
+  "04780": {
+    "common_name": "Steller's Jay",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "omnivore",
+    "migratory_status": "resident"
+  },
+  "04770": {
+    "common_name": "Blue Jay",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "omnivore",
+    "migratory_status": "resident"
+  },
+  "04790": {
+    "common_name": "Florida Scrub-Jay",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "omnivore",
+    "migratory_status": "resident"
+  },
+  "04811": {
+    "common_name": "Island Scrub-Jay",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "omnivore",
+    "migratory_status": "resident"
+  },
+  "04812": {
+    "common_name": "California Scrub-Jay",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "omnivore",
+    "migratory_status": "resident"
+  },
+  "04813": {
+    "common_name": "Woodhouse's Scrub-Jay",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "omnivore",
+    "migratory_status": "resident"
+  },
+  "04810": {
+    "common_name": "unid. California Scrub-Jay / Woodhouse's Scrub-Jay",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "omnivore",
+    "migratory_status": "resident"
+  },
+  "04820": {
+    "common_name": "Mexican Jay",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "omnivore",
+    "migratory_status": "resident"
+  },
+  "04910": {
+    "common_name": "Clark's Nutcracker",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "omnivore",
+    "migratory_status": "resident"
+  },
+  "04750": {
+    "common_name": "Black-billed Magpie",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "omnivore",
+    "migratory_status": "resident"
+  },
+  "04760": {
+    "common_name": "Yellow-billed Magpie",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "omnivore",
+    "migratory_status": "resident"
+  },
+  "04880": {
+    "common_name": "American Crow",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "omnivore",
+    "migratory_status": "resident"
+  },
+  "04900": {
+    "common_name": "Fish Crow",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "omnivore",
+    "migratory_status": "resident"
+  },
+  "04881": {
+    "common_name": "unid. American Crow / Fish Crow",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "omnivore",
+    "migratory_status": "resident"
+  },
+  "04870": {
+    "common_name": "Chihuahuan Raven",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "omnivore",
+    "migratory_status": "resident"
+  },
+  "04860": {
+    "common_name": "Common Raven",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "omnivore",
+    "migratory_status": "resident"
+  },
+  "04865": {
+    "common_name": "unid. Chihuahuan Raven / Common Raven",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "omnivore",
+    "migratory_status": "resident"
+  },
+  "07460": {
+    "common_name": "Verdin",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "foliage_gleaner",
+    "migratory_status": "resident"
+  },
+  "07360": {
+    "common_name": "Carolina Chickadee",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "foliage_gleaner",
+    "migratory_status": "resident"
+  },
+  "07350": {
+    "common_name": "Black-capped Chickadee",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "foliage_gleaner",
+    "migratory_status": "resident"
+  },
+  "07380": {
+    "common_name": "Mountain Chickadee",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "foliage_gleaner",
+    "migratory_status": "resident"
+  },
+  "07370": {
+    "common_name": "Mexican Chickadee",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "foliage_gleaner",
+    "migratory_status": "resident"
+  },
+  "07410": {
+    "common_name": "Chestnut-backed Chickadee",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "foliage_gleaner",
+    "migratory_status": "resident"
+  },
+  "07400": {
+    "common_name": "Boreal Chickadee",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "foliage_gleaner",
+    "migratory_status": "resident"
+  },
+  "07352": {
+    "common_name": "unid. Carolina Chickadee / Black-capped Chickadee",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "foliage_gleaner",
+    "migratory_status": "resident"
+  },
+  "07353": {
+    "common_name": "unid. Black-capped Chickadee / Mountain Chickadee",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "foliage_gleaner",
+    "migratory_status": "resident"
+  },
+  "07354": {
+    "common_name": "unid. Black-capped Chickadee / Boreal Chickadee",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "foliage_gleaner",
+    "migratory_status": "resident"
+  },
+  "07351": {
+    "common_name": "unid. western chickadee species",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "foliage_gleaner",
+    "migratory_status": "resident"
+  },
+  "07340": {
+    "common_name": "Bridled Titmouse",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "foliage_gleaner",
+    "migratory_status": "resident"
+  },
+  "07330": {
+    "common_name": "Oak Titmouse",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "foliage_gleaner",
+    "migratory_status": "resident"
+  },
+  "07331": {
+    "common_name": "Juniper Titmouse",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "foliage_gleaner",
+    "migratory_status": "resident"
+  },
+  "07332": {
+    "common_name": "unid. Oak Titmouse / Juniper Titmouse",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "foliage_gleaner",
+    "migratory_status": "resident"
+  },
+  "07310": {
+    "common_name": "Tufted Titmouse",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "foliage_gleaner",
+    "migratory_status": "resident"
+  },
+  "07320": {
+    "common_name": "Black-crested Titmouse",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "foliage_gleaner",
+    "migratory_status": "resident"
+  },
+  "07315": {
+    "common_name": "unid. Tufted Titmouse / Black-crested Titmouse",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "foliage_gleaner",
+    "migratory_status": "resident"
+  },
+  "04730": {
+    "common_name": "Eurasian Skylark",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "ground_gleaner",
+    "migratory_status": "short_distance_migrant"
+  },
+  "04740": {
+    "common_name": "Horned Lark",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "ground_gleaner",
+    "migratory_status": "short_distance_migrant"
+  },
+  "06160": {
+    "common_name": "Bank Swallow",
+    "breeding_habitat": "wetland",
+    "foraging_guild": "aerial_insectivore",
+    "migratory_status": "neotropical_migrant"
+  },
+  "06140": {
+    "common_name": "Tree Swallow",
+    "breeding_habitat": "early_successional",
+    "foraging_guild": "aerial_insectivore",
+    "migratory_status": "neotropical_migrant"
+  },
+  "06150": {
+    "common_name": "Violet-green Swallow",
+    "breeding_habitat": "early_successional",
+    "foraging_guild": "aerial_insectivore",
+    "migratory_status": "neotropical_migrant"
+  },
+  "06170": {
+    "common_name": "Northern Rough-winged Swallow",
+    "breeding_habitat": "early_successional",
+    "foraging_guild": "aerial_insectivore",
+    "migratory_status": "neotropical_migrant"
+  },
+  "06110": {
+    "common_name": "Purple Martin",
+    "breeding_habitat": "urban",
+    "foraging_guild": "aerial_insectivore",
+    "migratory_status": "neotropical_migrant"
+  },
+  "06130": {
+    "common_name": "Barn Swallow",
+    "breeding_habitat": "urban",
+    "foraging_guild": "aerial_insectivore",
+    "migratory_status": "neotropical_migrant"
+  },
+  "06120": {
+    "common_name": "Cliff Swallow",
+    "breeding_habitat": "wetland",
+    "foraging_guild": "aerial_insectivore",
+    "migratory_status": "neotropical_migrant"
+  },
+  "06121": {
+    "common_name": "Cave Swallow",
+    "breeding_habitat": "early_successional",
+    "foraging_guild": "aerial_insectivore",
+    "migratory_status": "neotropical_migrant"
+  },
+  "06122": {
+    "common_name": "unid. Cave Swallow / Cliff Swallow",
+    "breeding_habitat": "wetland",
+    "foraging_guild": "aerial_insectivore",
+    "migratory_status": "neotropical_migrant"
+  },
+  "07430": {
+    "common_name": "Bushtit",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "foliage_gleaner",
+    "migratory_status": "short_distance_migrant"
+  },
+  "07470": {
+    "common_name": "Arctic Warbler",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "foliage_gleaner",
+    "migratory_status": "short_distance_migrant"
+  },
+  "07420": {
+    "common_name": "Wrentit",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "foliage_gleaner",
+    "migratory_status": "resident"
+  },
+  "07421": {
+    "common_name": "Swinhoe\u0092s White-eye",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "foliage_gleaner",
+    "migratory_status": "short_distance_migrant"
+  },
+  "07490": {
+    "common_name": "Ruby-crowned Kinglet",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "foliage_gleaner",
+    "migratory_status": "short_distance_migrant"
+  },
+  "07480": {
+    "common_name": "Golden-crowned Kinglet",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "foliage_gleaner",
+    "migratory_status": "short_distance_migrant"
+  },
+  "06180": {
+    "common_name": "Bohemian Waxwing",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "foliage_gleaner",
+    "migratory_status": "short_distance_migrant"
+  },
+  "06190": {
+    "common_name": "Cedar Waxwing",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "foliage_gleaner",
+    "migratory_status": "short_distance_migrant"
+  },
+  "06185": {
+    "common_name": "unid. Cedar Waxwing / Bohemian Waxwing",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "foliage_gleaner",
+    "migratory_status": "short_distance_migrant"
+  },
+  "06200": {
+    "common_name": "Phainopepla",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "foliage_gleaner",
+    "migratory_status": "resident"
+  },
+  "07280": {
+    "common_name": "Red-breasted Nuthatch",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "bark_gleaner",
+    "migratory_status": "resident"
+  },
+  "07270": {
+    "common_name": "White-breasted Nuthatch",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "bark_gleaner",
+    "migratory_status": "resident"
+  },
+  "07300": {
+    "common_name": "Pygmy Nuthatch",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "bark_gleaner",
+    "migratory_status": "resident"
+  },
+  "07290": {
+    "common_name": "Brown-headed Nuthatch",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "bark_gleaner",
+    "migratory_status": "resident"
+  },
+  "07260": {
+    "common_name": "Brown Creeper",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "bark_gleaner",
+    "migratory_status": "resident"
+  },
+  "07510": {
+    "common_name": "Blue-gray Gnatcatcher",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "foliage_gleaner",
+    "migratory_status": "short_distance_migrant"
+  },
+  "07520": {
+    "common_name": "Black-tailed Gnatcatcher",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "foliage_gleaner",
+    "migratory_status": "short_distance_migrant"
+  },
+  "07539": {
+    "common_name": "unid. Blue-gray / Black-tailed Gnatcatcher",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "foliage_gleaner",
+    "migratory_status": "short_distance_migrant"
+  },
+  "07530": {
+    "common_name": "California Gnatcatcher",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "foliage_gleaner",
+    "migratory_status": "short_distance_migrant"
+  },
+  "07150": {
+    "common_name": "Rock Wren",
+    "breeding_habitat": "arid",
+    "foraging_guild": "foliage_gleaner",
+    "migratory_status": "short_distance_migrant"
+  },
+  "07170": {
+    "common_name": "Canyon Wren",
+    "breeding_habitat": "arid",
+    "foraging_guild": "foliage_gleaner",
+    "migratory_status": "short_distance_migrant"
+  },
+  "16600": {
+    "common_name": "Sinaloa Wren",
+    "breeding_habitat": "early_successional",
+    "foraging_guild": "foliage_gleaner",
+    "migratory_status": "short_distance_migrant"
+  },
+  "07130": {
+    "common_name": "Cactus Wren",
+    "breeding_habitat": "arid",
+    "foraging_guild": "foliage_gleaner",
+    "migratory_status": "short_distance_migrant"
+  },
+  "07190": {
+    "common_name": "Bewick's Wren",
+    "breeding_habitat": "early_successional",
+    "foraging_guild": "foliage_gleaner",
+    "migratory_status": "short_distance_migrant"
+  },
+  "07180": {
+    "common_name": "Carolina Wren",
+    "breeding_habitat": "early_successional",
+    "foraging_guild": "foliage_gleaner",
+    "migratory_status": "short_distance_migrant"
+  },
+  "07210": {
+    "common_name": "Northern House Wren",
+    "breeding_habitat": "early_successional",
+    "foraging_guild": "foliage_gleaner",
+    "migratory_status": "short_distance_migrant"
+  },
+  "07221": {
+    "common_name": "Pacific Wren",
+    "breeding_habitat": "early_successional",
+    "foraging_guild": "foliage_gleaner",
+    "migratory_status": "short_distance_migrant"
+  },
+  "07222": {
+    "common_name": "Winter Wren",
+    "breeding_habitat": "early_successional",
+    "foraging_guild": "foliage_gleaner",
+    "migratory_status": "short_distance_migrant"
+  },
+  "07220": {
+    "common_name": "unid. Pacific Wren / Winter Wren",
+    "breeding_habitat": "early_successional",
+    "foraging_guild": "foliage_gleaner",
+    "migratory_status": "short_distance_migrant"
+  },
+  "07240": {
+    "common_name": "Sedge Wren",
+    "breeding_habitat": "wetland",
+    "foraging_guild": "foliage_gleaner",
+    "migratory_status": "short_distance_migrant"
+  },
+  "07250": {
+    "common_name": "Marsh Wren",
+    "breeding_habitat": "wetland",
+    "foraging_guild": "foliage_gleaner",
+    "migratory_status": "short_distance_migrant"
+  },
+  "07040": {
+    "common_name": "Gray Catbird",
+    "breeding_habitat": "early_successional",
+    "foraging_guild": "ground_gleaner",
+    "migratory_status": "short_distance_migrant"
+  },
+  "07070": {
+    "common_name": "Curve-billed Thrasher",
+    "breeding_habitat": "arid",
+    "foraging_guild": "ground_gleaner",
+    "migratory_status": "short_distance_migrant"
+  },
+  "07050": {
+    "common_name": "Brown Thrasher",
+    "breeding_habitat": "early_successional",
+    "foraging_guild": "ground_gleaner",
+    "migratory_status": "short_distance_migrant"
+  },
+  "07060": {
+    "common_name": "Long-billed Thrasher",
+    "breeding_habitat": "early_successional",
+    "foraging_guild": "ground_gleaner",
+    "migratory_status": "short_distance_migrant"
+  },
+  "07080": {
+    "common_name": "Bendire's Thrasher",
+    "breeding_habitat": "arid",
+    "foraging_guild": "ground_gleaner",
+    "migratory_status": "short_distance_migrant"
+  },
+  "07100": {
+    "common_name": "California Thrasher",
+    "breeding_habitat": "early_successional",
+    "foraging_guild": "ground_gleaner",
+    "migratory_status": "short_distance_migrant"
+  },
+  "07110": {
+    "common_name": "LeConte's Thrasher",
+    "breeding_habitat": "arid",
+    "foraging_guild": "ground_gleaner",
+    "migratory_status": "short_distance_migrant"
+  },
+  "07120": {
+    "common_name": "Crissal Thrasher",
+    "breeding_habitat": "arid",
+    "foraging_guild": "ground_gleaner",
+    "migratory_status": "short_distance_migrant"
+  },
+  "07020": {
+    "common_name": "Sage Thrasher",
+    "breeding_habitat": "arid",
+    "foraging_guild": "ground_gleaner",
+    "migratory_status": "short_distance_migrant"
+  },
+  "07031": {
+    "common_name": "Bahama Mockingbird",
+    "breeding_habitat": "early_successional",
+    "foraging_guild": "ground_gleaner",
+    "migratory_status": "short_distance_migrant"
+  },
+  "07030": {
+    "common_name": "Northern Mockingbird",
+    "breeding_habitat": "early_successional",
+    "foraging_guild": "ground_gleaner",
+    "migratory_status": "short_distance_migrant"
+  },
+  "04930": {
+    "common_name": "European Starling",
+    "breeding_habitat": "urban",
+    "foraging_guild": "ground_gleaner",
+    "migratory_status": "resident"
+  },
+  "04932": {
+    "common_name": "Common Myna",
+    "breeding_habitat": "urban",
+    "foraging_guild": "ground_gleaner",
+    "migratory_status": "resident"
+  },
+  "07010": {
+    "common_name": "American Dipper",
+    "breeding_habitat": "wetland",
+    "foraging_guild": "ground_gleaner",
+    "migratory_status": "resident"
+  },
+  "07660": {
+    "common_name": "Eastern Bluebird",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "ground_gleaner",
+    "migratory_status": "short_distance_migrant"
+  },
+  "07670": {
+    "common_name": "Western Bluebird",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "ground_gleaner",
+    "migratory_status": "short_distance_migrant"
+  },
+  "07680": {
+    "common_name": "Mountain Bluebird",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "ground_gleaner",
+    "migratory_status": "short_distance_migrant"
+  },
+  "07540": {
+    "common_name": "Townsend's Solitaire",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "ground_gleaner",
+    "migratory_status": "short_distance_migrant"
+  },
+  "07560": {
+    "common_name": "Veery",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "ground_gleaner",
+    "migratory_status": "short_distance_migrant"
+  },
+  "07570": {
+    "common_name": "Gray-cheeked Thrush",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "ground_gleaner",
+    "migratory_status": "neotropical_migrant"
+  },
+  "07571": {
+    "common_name": "Bicknell's Thrush",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "ground_gleaner",
+    "migratory_status": "neotropical_migrant"
+  },
+  "07580": {
+    "common_name": "Swainson's Thrush",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "ground_gleaner",
+    "migratory_status": "neotropical_migrant"
+  },
+  "07590": {
+    "common_name": "Hermit Thrush",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "ground_gleaner",
+    "migratory_status": "short_distance_migrant"
+  },
+  "07550": {
+    "common_name": "Wood Thrush",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "ground_gleaner",
+    "migratory_status": "neotropical_migrant"
+  },
+  "07614": {
+    "common_name": "Dusky Thrush",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "ground_gleaner",
+    "migratory_status": "neotropical_migrant"
+  },
+  "07621": {
+    "common_name": "Clay-colored Thrush",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "ground_gleaner",
+    "migratory_status": "neotropical_migrant"
+  },
+  "07610": {
+    "common_name": "American Robin",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "ground_gleaner",
+    "migratory_status": "short_distance_migrant"
+  },
+  "07630": {
+    "common_name": "Varied Thrush",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "ground_gleaner",
+    "migratory_status": "short_distance_migrant"
+  },
+  "07640": {
+    "common_name": "Bluethroat",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "foliage_gleaner",
+    "migratory_status": "short_distance_migrant"
+  },
+  "07650": {
+    "common_name": "Northern Wheatear",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "foliage_gleaner",
+    "migratory_status": "short_distance_migrant"
+  },
+  "06510": {
+    "common_name": "Olive Warbler",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "foliage_gleaner",
+    "migratory_status": "short_distance_migrant"
+  },
+  "19500": {
+    "common_name": "Northern Red Bishop",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "granivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "19510": {
+    "common_name": "Pin-tailed Whydah",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "foliage_gleaner",
+    "migratory_status": "short_distance_migrant"
+  },
+  "08110": {
+    "common_name": "Scaly-breasted Munia",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "granivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "06882": {
+    "common_name": "House Sparrow",
+    "breeding_habitat": "urban",
+    "foraging_guild": "granivore",
+    "migratory_status": "resident"
+  },
+  "06883": {
+    "common_name": "Eurasian Tree Sparrow",
+    "breeding_habitat": "urban",
+    "foraging_guild": "granivore",
+    "migratory_status": "resident"
+  },
+  "06960": {
+    "common_name": "Eastern Yellow Wagtail",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "ground_gleaner",
+    "migratory_status": "short_distance_migrant"
+  },
+  "06940": {
+    "common_name": "White Wagtail",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "ground_gleaner",
+    "migratory_status": "short_distance_migrant"
+  },
+  "06990": {
+    "common_name": "Red-throated Pipit",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "ground_gleaner",
+    "migratory_status": "short_distance_migrant"
+  },
+  "06970": {
+    "common_name": "American Pipit",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "ground_gleaner",
+    "migratory_status": "short_distance_migrant"
+  },
+  "07000": {
+    "common_name": "Sprague's Pipit",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "ground_gleaner",
+    "migratory_status": "short_distance_migrant"
+  },
+  "05140": {
+    "common_name": "Evening Grosbeak",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "granivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "05150": {
+    "common_name": "Pine Grosbeak",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "granivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "05240": {
+    "common_name": "Gray-crowned Rosy-Finch",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "granivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "05250": {
+    "common_name": "Black Rosy-Finch",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "granivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "05260": {
+    "common_name": "Brown-capped Rosy-Finch",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "granivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "05190": {
+    "common_name": "House Finch",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "granivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "05170": {
+    "common_name": "Purple Finch",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "granivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "05180": {
+    "common_name": "Cassin's Finch",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "granivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "05195": {
+    "common_name": "unid. Purple Finch / Cassin's Finch / House Finch",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "granivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "05280": {
+    "common_name": "(Common Redpoll) Redpoll",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "granivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "05270": {
+    "common_name": "(Hoary Redpoll) Redpoll",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "granivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "05275": {
+    "common_name": "(unid. Common / Hoary) Redpoll",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "granivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "05210": {
+    "common_name": "Red Crossbill",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "granivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "05212": {
+    "common_name": "unid. Cassia Crossbill / Red Crossbill",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "granivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "05220": {
+    "common_name": "White-winged Crossbill",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "granivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "05225": {
+    "common_name": "unid. Red Crossbill / White-winged Crossbill",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "granivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "05261": {
+    "common_name": "European Goldfinch",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "granivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "05330": {
+    "common_name": "Pine Siskin",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "granivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "05300": {
+    "common_name": "Lesser Goldfinch",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "granivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "05310": {
+    "common_name": "Lawrence's Goldfinch",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "granivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "05290": {
+    "common_name": "American Goldfinch",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "granivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "05360": {
+    "common_name": "Lapland Longspur",
+    "breeding_habitat": "grassland",
+    "foraging_guild": "granivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "05380": {
+    "common_name": "Chestnut-collared Longspur",
+    "breeding_habitat": "grassland",
+    "foraging_guild": "granivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "05370": {
+    "common_name": "Smith's Longspur",
+    "breeding_habitat": "grassland",
+    "foraging_guild": "granivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "05390": {
+    "common_name": "Thick-billed Longspur",
+    "breeding_habitat": "grassland",
+    "foraging_guild": "granivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "05340": {
+    "common_name": "Snow Bunting",
+    "breeding_habitat": "early_successional",
+    "foraging_guild": "ground_gleaner",
+    "migratory_status": "short_distance_migrant"
+  },
+  "05790": {
+    "common_name": "Rufous-winged Sparrow",
+    "breeding_habitat": "early_successional",
+    "foraging_guild": "granivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "05760": {
+    "common_name": "Botteri's Sparrow",
+    "breeding_habitat": "early_successional",
+    "foraging_guild": "granivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "05780": {
+    "common_name": "Cassin's Sparrow",
+    "breeding_habitat": "early_successional",
+    "foraging_guild": "granivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "05750": {
+    "common_name": "Bachman's Sparrow",
+    "breeding_habitat": "early_successional",
+    "foraging_guild": "granivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "05460": {
+    "common_name": "Grasshopper Sparrow",
+    "breeding_habitat": "grassland",
+    "foraging_guild": "granivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "05860": {
+    "common_name": "Olive Sparrow",
+    "breeding_habitat": "early_successional",
+    "foraging_guild": "granivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "05730": {
+    "common_name": "Black-throated Sparrow",
+    "breeding_habitat": "arid",
+    "foraging_guild": "granivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "05520": {
+    "common_name": "Lark Sparrow",
+    "breeding_habitat": "grassland",
+    "foraging_guild": "granivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "06050": {
+    "common_name": "Lark Bunting",
+    "breeding_habitat": "grassland",
+    "foraging_guild": "ground_gleaner",
+    "migratory_status": "short_distance_migrant"
+  },
+  "05600": {
+    "common_name": "Chipping Sparrow",
+    "breeding_habitat": "early_successional",
+    "foraging_guild": "granivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "05610": {
+    "common_name": "Clay-colored Sparrow",
+    "breeding_habitat": "early_successional",
+    "foraging_guild": "granivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "05650": {
+    "common_name": "Black-chinned Sparrow",
+    "breeding_habitat": "early_successional",
+    "foraging_guild": "granivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "05630": {
+    "common_name": "Field Sparrow",
+    "breeding_habitat": "early_successional",
+    "foraging_guild": "granivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "05620": {
+    "common_name": "Brewer's Sparrow",
+    "breeding_habitat": "early_successional",
+    "foraging_guild": "granivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "05850": {
+    "common_name": "Fox Sparrow",
+    "breeding_habitat": "early_successional",
+    "foraging_guild": "granivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "05590": {
+    "common_name": "American Tree Sparrow",
+    "breeding_habitat": "early_successional",
+    "foraging_guild": "granivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "05670": {
+    "common_name": "(Slate-colored Junco) Dark-eyed Junco",
+    "breeding_habitat": "early_successional",
+    "foraging_guild": "ground_gleaner",
+    "migratory_status": "short_distance_migrant"
+  },
+  "05671": {
+    "common_name": "(Oregon Junco) Dark-eyed Junco",
+    "breeding_habitat": "early_successional",
+    "foraging_guild": "ground_gleaner",
+    "migratory_status": "short_distance_migrant"
+  },
+  "05680": {
+    "common_name": "(Pink-sided Junco) Dark-eyed Junco",
+    "breeding_habitat": "early_successional",
+    "foraging_guild": "ground_gleaner",
+    "migratory_status": "short_distance_migrant"
+  },
+  "05660": {
+    "common_name": "(White-winged Junco) Dark-eyed Junco",
+    "breeding_habitat": "early_successional",
+    "foraging_guild": "ground_gleaner",
+    "migratory_status": "short_distance_migrant"
+  },
+  "05690": {
+    "common_name": "(Gray-headed Junco) Dark-eyed Junco",
+    "breeding_habitat": "early_successional",
+    "foraging_guild": "ground_gleaner",
+    "migratory_status": "short_distance_migrant"
+  },
+  "05677": {
+    "common_name": "(unid. race) Dark-eyed Junco",
+    "breeding_habitat": "early_successional",
+    "foraging_guild": "ground_gleaner",
+    "migratory_status": "short_distance_migrant"
+  },
+  "05700": {
+    "common_name": "Yellow-eyed Junco",
+    "breeding_habitat": "early_successional",
+    "foraging_guild": "ground_gleaner",
+    "migratory_status": "short_distance_migrant"
+  },
+  "05540": {
+    "common_name": "White-crowned Sparrow",
+    "breeding_habitat": "early_successional",
+    "foraging_guild": "granivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "05570": {
+    "common_name": "Golden-crowned Sparrow",
+    "breeding_habitat": "early_successional",
+    "foraging_guild": "granivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "05530": {
+    "common_name": "Harris's Sparrow",
+    "breeding_habitat": "early_successional",
+    "foraging_guild": "granivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "05580": {
+    "common_name": "White-throated Sparrow",
+    "breeding_habitat": "early_successional",
+    "foraging_guild": "granivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "05739": {
+    "common_name": "Bell's Sparrow",
+    "breeding_habitat": "arid",
+    "foraging_guild": "granivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "05740": {
+    "common_name": "unid. Sagebrush Sparrow / Bell's Sparrow",
+    "breeding_habitat": "arid",
+    "foraging_guild": "granivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "05738": {
+    "common_name": "Sagebrush Sparrow",
+    "breeding_habitat": "arid",
+    "foraging_guild": "granivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "05400": {
+    "common_name": "Vesper Sparrow",
+    "breeding_habitat": "grassland",
+    "foraging_guild": "granivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "05480": {
+    "common_name": "LeConte's Sparrow",
+    "breeding_habitat": "early_successional",
+    "foraging_guild": "granivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "05500": {
+    "common_name": "Seaside Sparrow",
+    "breeding_habitat": "wetland",
+    "foraging_guild": "granivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "05491": {
+    "common_name": "Nelson's Sparrow",
+    "breeding_habitat": "wetland",
+    "foraging_guild": "granivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "05490": {
+    "common_name": "Saltmarsh Sparrow",
+    "breeding_habitat": "wetland",
+    "foraging_guild": "granivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "05450": {
+    "common_name": "Baird's Sparrow",
+    "breeding_habitat": "early_successional",
+    "foraging_guild": "granivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "05470": {
+    "common_name": "Henslow's Sparrow",
+    "breeding_habitat": "grassland",
+    "foraging_guild": "granivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "05420": {
+    "common_name": "Savannah Sparrow",
+    "breeding_habitat": "grassland",
+    "foraging_guild": "granivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "05810": {
+    "common_name": "Song Sparrow",
+    "breeding_habitat": "early_successional",
+    "foraging_guild": "granivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "05830": {
+    "common_name": "Lincoln's Sparrow",
+    "breeding_habitat": "early_successional",
+    "foraging_guild": "granivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "05840": {
+    "common_name": "Swamp Sparrow",
+    "breeding_habitat": "wetland",
+    "foraging_guild": "granivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "05910": {
+    "common_name": "Canyon Towhee",
+    "breeding_habitat": "arid",
+    "foraging_guild": "ground_gleaner",
+    "migratory_status": "resident"
+  },
+  "05920": {
+    "common_name": "Abert's Towhee",
+    "breeding_habitat": "arid",
+    "foraging_guild": "ground_gleaner",
+    "migratory_status": "resident"
+  },
+  "05911": {
+    "common_name": "California Towhee",
+    "breeding_habitat": "early_successional",
+    "foraging_guild": "ground_gleaner",
+    "migratory_status": "resident"
+  },
+  "05800": {
+    "common_name": "Rufous-crowned Sparrow",
+    "breeding_habitat": "early_successional",
+    "foraging_guild": "granivore",
+    "migratory_status": "short_distance_migrant"
+  },
+  "05900": {
+    "common_name": "Green-tailed Towhee",
+    "breeding_habitat": "early_successional",
+    "foraging_guild": "ground_gleaner",
+    "migratory_status": "resident"
+  },
+  "05880": {
+    "common_name": "Spotted Towhee",
+    "breeding_habitat": "early_successional",
+    "foraging_guild": "ground_gleaner",
+    "migratory_status": "resident"
+  },
+  "05870": {
+    "common_name": "Eastern Towhee",
+    "breeding_habitat": "early_successional",
+    "foraging_guild": "ground_gleaner",
+    "migratory_status": "resident"
+  },
+  "05871": {
+    "common_name": "unid. Spotted Towhee / Eastern Towhee",
+    "breeding_habitat": "early_successional",
+    "foraging_guild": "ground_gleaner",
+    "migratory_status": "resident"
+  },
+  "06830": {
+    "common_name": "Yellow-breasted Chat",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "foliage_gleaner",
+    "migratory_status": "neotropical_migrant"
+  },
+  "04970": {
+    "common_name": "Yellow-headed Blackbird",
+    "breeding_habitat": "wetland",
+    "foraging_guild": "ground_gleaner",
+    "migratory_status": "short_distance_migrant"
+  },
+  "04940": {
+    "common_name": "Bobolink",
+    "breeding_habitat": "grassland",
+    "foraging_guild": "ground_gleaner",
+    "migratory_status": "neotropical_migrant"
+  },
+  "05009": {
+    "common_name": "Chihuahuan Meadowlark",
+    "breeding_habitat": "grassland",
+    "foraging_guild": "ground_gleaner",
+    "migratory_status": "short_distance_migrant"
+  },
+  "05010": {
+    "common_name": "Eastern Meadowlark",
+    "breeding_habitat": "grassland",
+    "foraging_guild": "ground_gleaner",
+    "migratory_status": "short_distance_migrant"
+  },
+  "05011": {
+    "common_name": "Western Meadowlark",
+    "breeding_habitat": "grassland",
+    "foraging_guild": "ground_gleaner",
+    "migratory_status": "short_distance_migrant"
+  },
+  "05012": {
+    "common_name": "unid. Meadowlark",
+    "breeding_habitat": "grassland",
+    "foraging_guild": "ground_gleaner",
+    "migratory_status": "short_distance_migrant"
+  },
+  "05060": {
+    "common_name": "Orchard Oriole",
+    "breeding_habitat": "generalist",
+    "foraging_guild": "foliage_gleaner",
+    "migratory_status": "neotropical_migrant"
+  },
+  "05050": {
+    "common_name": "Hooded Oriole",
+    "breeding_habitat": "generalist",
+    "foraging_guild": "foliage_gleaner",
+    "migratory_status": "neotropical_migrant"
+  },
+  "05080": {
+    "common_name": "Bullock's Oriole",
+    "breeding_habitat": "generalist",
+    "foraging_guild": "foliage_gleaner",
+    "migratory_status": "neotropical_migrant"
+  },
+  "05032": {
+    "common_name": "Spot-breasted Oriole",
+    "breeding_habitat": "generalist",
+    "foraging_guild": "foliage_gleaner",
+    "migratory_status": "neotropical_migrant"
+  },
+  "05031": {
+    "common_name": "Altamira Oriole",
+    "breeding_habitat": "generalist",
+    "foraging_guild": "foliage_gleaner",
+    "migratory_status": "neotropical_migrant"
+  },
+  "05030": {
+    "common_name": "Audubon's Oriole",
+    "breeding_habitat": "generalist",
+    "foraging_guild": "foliage_gleaner",
+    "migratory_status": "neotropical_migrant"
+  },
+  "05070": {
+    "common_name": "Baltimore Oriole",
+    "breeding_habitat": "generalist",
+    "foraging_guild": "foliage_gleaner",
+    "migratory_status": "neotropical_migrant"
+  },
+  "05078": {
+    "common_name": "hybrid Bullock's Oriole x Baltimore Oriole",
+    "breeding_habitat": "generalist",
+    "foraging_guild": "foliage_gleaner",
+    "migratory_status": "neotropical_migrant"
+  },
+  "05077": {
+    "common_name": "unid. Bullock's Oriole / Baltimore Oriole",
+    "breeding_habitat": "generalist",
+    "foraging_guild": "foliage_gleaner",
+    "migratory_status": "neotropical_migrant"
+  },
+  "05040": {
+    "common_name": "Scott's Oriole",
+    "breeding_habitat": "generalist",
+    "foraging_guild": "foliage_gleaner",
+    "migratory_status": "neotropical_migrant"
+  },
+  "04980": {
+    "common_name": "Red-winged Blackbird",
+    "breeding_habitat": "wetland",
+    "foraging_guild": "ground_gleaner",
+    "migratory_status": "short_distance_migrant"
+  },
+  "05000": {
+    "common_name": "Tricolored Blackbird",
+    "breeding_habitat": "generalist",
+    "foraging_guild": "ground_gleaner",
+    "migratory_status": "short_distance_migrant"
+  },
+  "04961": {
+    "common_name": "Shiny Cowbird",
+    "breeding_habitat": "generalist",
+    "foraging_guild": "ground_gleaner",
+    "migratory_status": "short_distance_migrant"
+  },
+  "04960": {
+    "common_name": "Bronzed Cowbird",
+    "breeding_habitat": "generalist",
+    "foraging_guild": "ground_gleaner",
+    "migratory_status": "short_distance_migrant"
+  },
+  "04950": {
+    "common_name": "Brown-headed Cowbird",
+    "breeding_habitat": "generalist",
+    "foraging_guild": "ground_gleaner",
+    "migratory_status": "short_distance_migrant"
+  },
+  "04955": {
+    "common_name": "unid. Bronzed Cowbird / Brown-headed Cowbird",
+    "breeding_habitat": "generalist",
+    "foraging_guild": "ground_gleaner",
+    "migratory_status": "short_distance_migrant"
+  },
+  "05090": {
+    "common_name": "Rusty Blackbird",
+    "breeding_habitat": "generalist",
+    "foraging_guild": "ground_gleaner",
+    "migratory_status": "short_distance_migrant"
+  },
+  "05100": {
+    "common_name": "Brewer's Blackbird",
+    "breeding_habitat": "generalist",
+    "foraging_guild": "ground_gleaner",
+    "migratory_status": "short_distance_migrant"
+  },
+  "05110": {
+    "common_name": "Common Grackle",
+    "breeding_habitat": "generalist",
+    "foraging_guild": "ground_gleaner",
+    "migratory_status": "short_distance_migrant"
+  },
+  "05130": {
+    "common_name": "Boat-tailed Grackle",
+    "breeding_habitat": "wetland",
+    "foraging_guild": "ground_gleaner",
+    "migratory_status": "short_distance_migrant"
+  },
+  "05120": {
+    "common_name": "Great-tailed Grackle",
+    "breeding_habitat": "generalist",
+    "foraging_guild": "ground_gleaner",
+    "migratory_status": "short_distance_migrant"
+  },
+  "05135": {
+    "common_name": "unid. Boat-tailed Grackle / Great-tailed Grackle",
+    "breeding_habitat": "wetland",
+    "foraging_guild": "ground_gleaner",
+    "migratory_status": "short_distance_migrant"
+  },
+  "06740": {
+    "common_name": "Ovenbird",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "ground_gleaner",
+    "migratory_status": "neotropical_migrant"
+  },
+  "06390": {
+    "common_name": "Worm-eating Warbler",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "foliage_gleaner",
+    "migratory_status": "neotropical_migrant"
+  },
+  "06760": {
+    "common_name": "Louisiana Waterthrush",
+    "breeding_habitat": "wetland",
+    "foraging_guild": "ground_gleaner",
+    "migratory_status": "neotropical_migrant"
+  },
+  "06750": {
+    "common_name": "Northern Waterthrush",
+    "breeding_habitat": "wetland",
+    "foraging_guild": "ground_gleaner",
+    "migratory_status": "neotropical_migrant"
+  },
+  "06420": {
+    "common_name": "Golden-winged Warbler",
+    "breeding_habitat": "early_successional",
+    "foraging_guild": "foliage_gleaner",
+    "migratory_status": "neotropical_migrant"
+  },
+  "06410": {
+    "common_name": "Blue-winged Warbler",
+    "breeding_habitat": "early_successional",
+    "foraging_guild": "foliage_gleaner",
+    "migratory_status": "neotropical_migrant"
+  },
+  "06412": {
+    "common_name": "Brewster's Warbler (Golden-winged x Blue-winged)",
+    "breeding_habitat": "early_successional",
+    "foraging_guild": "foliage_gleaner",
+    "migratory_status": "neotropical_migrant"
+  },
+  "06413": {
+    "common_name": "Lawrence's Warbler (Golden-winged x Blue-winged)",
+    "breeding_habitat": "early_successional",
+    "foraging_guild": "foliage_gleaner",
+    "migratory_status": "neotropical_migrant"
+  },
+  "06360": {
+    "common_name": "Black-and-white Warbler",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "foliage_gleaner",
+    "migratory_status": "neotropical_migrant"
+  },
+  "06370": {
+    "common_name": "Prothonotary Warbler",
+    "breeding_habitat": "wetland",
+    "foraging_guild": "foliage_gleaner",
+    "migratory_status": "neotropical_migrant"
+  },
+  "06380": {
+    "common_name": "Swainson's Warbler",
+    "breeding_habitat": "wetland",
+    "foraging_guild": "foliage_gleaner",
+    "migratory_status": "neotropical_migrant"
+  },
+  "06470": {
+    "common_name": "Tennessee Warbler",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "foliage_gleaner",
+    "migratory_status": "neotropical_migrant"
+  },
+  "06460": {
+    "common_name": "Orange-crowned Warbler",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "foliage_gleaner",
+    "migratory_status": "short_distance_migrant"
+  },
+  "06430": {
+    "common_name": "Lucy's Warbler",
+    "breeding_habitat": "arid",
+    "foraging_guild": "foliage_gleaner",
+    "migratory_status": "neotropical_migrant"
+  },
+  "06450": {
+    "common_name": "Nashville Warbler",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "foliage_gleaner",
+    "migratory_status": "neotropical_migrant"
+  },
+  "06440": {
+    "common_name": "Virginia's Warbler",
+    "breeding_habitat": "arid",
+    "foraging_guild": "foliage_gleaner",
+    "migratory_status": "neotropical_migrant"
+  },
+  "06780": {
+    "common_name": "Connecticut Warbler",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "foliage_gleaner",
+    "migratory_status": "neotropical_migrant"
+  },
+  "06800": {
+    "common_name": "MacGillivray's Warbler",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "foliage_gleaner",
+    "migratory_status": "neotropical_migrant"
+  },
+  "06790": {
+    "common_name": "Mourning Warbler",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "foliage_gleaner",
+    "migratory_status": "neotropical_migrant"
+  },
+  "06770": {
+    "common_name": "Kentucky Warbler",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "foliage_gleaner",
+    "migratory_status": "neotropical_migrant"
+  },
+  "06810": {
+    "common_name": "Common Yellowthroat",
+    "breeding_habitat": "early_successional",
+    "foraging_guild": "foliage_gleaner",
+    "migratory_status": "neotropical_migrant"
+  },
+  "06840": {
+    "common_name": "Hooded Warbler",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "foliage_gleaner",
+    "migratory_status": "neotropical_migrant"
+  },
+  "06870": {
+    "common_name": "American Redstart",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "foliage_gleaner",
+    "migratory_status": "neotropical_migrant"
+  },
+  "06700": {
+    "common_name": "Kirtland's Warbler",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "foliage_gleaner",
+    "migratory_status": "neotropical_migrant"
+  },
+  "06500": {
+    "common_name": "Cape May Warbler",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "foliage_gleaner",
+    "migratory_status": "neotropical_migrant"
+  },
+  "06580": {
+    "common_name": "Cerulean Warbler",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "foliage_gleaner",
+    "migratory_status": "neotropical_migrant"
+  },
+  "06480": {
+    "common_name": "Northern Parula",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "foliage_gleaner",
+    "migratory_status": "neotropical_migrant"
+  },
+  "06490": {
+    "common_name": "Tropical Parula",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "foliage_gleaner",
+    "migratory_status": "neotropical_migrant"
+  },
+  "06570": {
+    "common_name": "Magnolia Warbler",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "foliage_gleaner",
+    "migratory_status": "neotropical_migrant"
+  },
+  "06600": {
+    "common_name": "Bay-breasted Warbler",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "foliage_gleaner",
+    "migratory_status": "neotropical_migrant"
+  },
+  "06620": {
+    "common_name": "Blackburnian Warbler",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "foliage_gleaner",
+    "migratory_status": "neotropical_migrant"
+  },
+  "06520": {
+    "common_name": "Yellow Warbler",
+    "breeding_habitat": "early_successional",
+    "foraging_guild": "foliage_gleaner",
+    "migratory_status": "neotropical_migrant"
+  },
+  "06590": {
+    "common_name": "Chestnut-sided Warbler",
+    "breeding_habitat": "early_successional",
+    "foraging_guild": "foliage_gleaner",
+    "migratory_status": "neotropical_migrant"
+  },
+  "06610": {
+    "common_name": "Blackpoll Warbler",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "foliage_gleaner",
+    "migratory_status": "neotropical_migrant"
+  },
+  "06540": {
+    "common_name": "Black-throated Blue Warbler",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "foliage_gleaner",
+    "migratory_status": "neotropical_migrant"
+  },
+  "06720": {
+    "common_name": "Palm Warbler",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "foliage_gleaner",
+    "migratory_status": "neotropical_migrant"
+  },
+  "06710": {
+    "common_name": "Pine Warbler",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "foliage_gleaner",
+    "migratory_status": "short_distance_migrant"
+  },
+  "06550": {
+    "common_name": "(Myrtle Warbler) Yellow-rumped Warbler",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "foliage_gleaner",
+    "migratory_status": "short_distance_migrant"
+  },
+  "06560": {
+    "common_name": "(Audubon's Warbler) Yellow-rumped Warbler",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "foliage_gleaner",
+    "migratory_status": "short_distance_migrant"
+  },
+  "06556": {
+    "common_name": "(unid. Myrtle / Audubon's) Yellow-rumped Warbler",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "foliage_gleaner",
+    "migratory_status": "short_distance_migrant"
+  },
+  "06630": {
+    "common_name": "Yellow-throated Warbler",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "foliage_gleaner",
+    "migratory_status": "neotropical_migrant"
+  },
+  "06730": {
+    "common_name": "Prairie Warbler",
+    "breeding_habitat": "early_successional",
+    "foraging_guild": "foliage_gleaner",
+    "migratory_status": "neotropical_migrant"
+  },
+  "06640": {
+    "common_name": "Grace's Warbler",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "foliage_gleaner",
+    "migratory_status": "neotropical_migrant"
+  },
+  "06650": {
+    "common_name": "Black-throated Gray Warbler",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "foliage_gleaner",
+    "migratory_status": "neotropical_migrant"
+  },
+  "06680": {
+    "common_name": "Townsend's Warbler",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "foliage_gleaner",
+    "migratory_status": "neotropical_migrant"
+  },
+  "06690": {
+    "common_name": "Hermit Warbler",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "foliage_gleaner",
+    "migratory_status": "neotropical_migrant"
+  },
+  "06686": {
+    "common_name": "hybrid Townsend's Warbler x Hermit Warbler",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "foliage_gleaner",
+    "migratory_status": "neotropical_migrant"
+  },
+  "06685": {
+    "common_name": "unid. Townsend's Warbler / Hermit Warbler",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "foliage_gleaner",
+    "migratory_status": "neotropical_migrant"
+  },
+  "06660": {
+    "common_name": "Golden-cheeked Warbler",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "foliage_gleaner",
+    "migratory_status": "neotropical_migrant"
+  },
+  "06670": {
+    "common_name": "Black-throated Green Warbler",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "foliage_gleaner",
+    "migratory_status": "neotropical_migrant"
+  },
+  "06860": {
+    "common_name": "Canada Warbler",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "foliage_gleaner",
+    "migratory_status": "neotropical_migrant"
+  },
+  "06850": {
+    "common_name": "Wilson's Warbler",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "foliage_gleaner",
+    "migratory_status": "neotropical_migrant"
+  },
+  "06900": {
+    "common_name": "Red-faced Warbler",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "foliage_gleaner",
+    "migratory_status": "neotropical_migrant"
+  },
+  "06880": {
+    "common_name": "Painted Redstart",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "foliage_gleaner",
+    "migratory_status": "neotropical_migrant"
+  },
+  "06090": {
+    "common_name": "Hepatic Tanager",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "foliage_gleaner",
+    "migratory_status": "neotropical_migrant"
+  },
+  "06100": {
+    "common_name": "Summer Tanager",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "foliage_gleaner",
+    "migratory_status": "neotropical_migrant"
+  },
+  "06080": {
+    "common_name": "Scarlet Tanager",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "foliage_gleaner",
+    "migratory_status": "neotropical_migrant"
+  },
+  "06070": {
+    "common_name": "Western Tanager",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "foliage_gleaner",
+    "migratory_status": "neotropical_migrant"
+  },
+  "05930": {
+    "common_name": "Northern Cardinal",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "granivore",
+    "migratory_status": "resident"
+  },
+  "05940": {
+    "common_name": "Pyrrhuloxia",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "granivore",
+    "migratory_status": "neotropical_migrant"
+  },
+  "05935": {
+    "common_name": "unid. Northern Cardinal / Pyrrhuloxia",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "granivore",
+    "migratory_status": "resident"
+  },
+  "05950": {
+    "common_name": "Rose-breasted Grosbeak",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "granivore",
+    "migratory_status": "neotropical_migrant"
+  },
+  "05960": {
+    "common_name": "Black-headed Grosbeak",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "granivore",
+    "migratory_status": "neotropical_migrant"
+  },
+  "05970": {
+    "common_name": "Blue Grosbeak",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "granivore",
+    "migratory_status": "neotropical_migrant"
+  },
+  "05990": {
+    "common_name": "Lazuli Bunting",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "granivore",
+    "migratory_status": "neotropical_migrant"
+  },
+  "05980": {
+    "common_name": "Indigo Bunting",
+    "breeding_habitat": "early_successional",
+    "foraging_guild": "foliage_gleaner",
+    "migratory_status": "neotropical_migrant"
+  },
+  "05986": {
+    "common_name": "hybrid Lazuli Bunting x Indigo Bunting",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "granivore",
+    "migratory_status": "neotropical_migrant"
+  },
+  "06000": {
+    "common_name": "Varied Bunting",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "granivore",
+    "migratory_status": "neotropical_migrant"
+  },
+  "06010": {
+    "common_name": "Painted Bunting",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "granivore",
+    "migratory_status": "neotropical_migrant"
+  },
+  "06040": {
+    "common_name": "Dickcissel",
+    "breeding_habitat": "forest_interior",
+    "foraging_guild": "granivore",
+    "migratory_status": "neotropical_migrant"
+  }
+}
