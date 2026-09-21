@@ -29,10 +29,10 @@
 - [x] Phase 4 Gate: 100% test pass on taxonomic set algebra and covariate computation; atomic commit tagged[cite: 1].
 
 ## Phase 5: 4-Step Cartesian Zero-Filling Engine
-- [ ] Task 5.1: Implement `zero_fill.py` Step 1 (scan 1966–present history for route-confirmed species $\mathcal{S}_r$)[cite: 3].
-- [ ] Task 5.2: Implement Steps 2–4 (construct $\mathcal{Y}_r \times \mathcal{S}_r$ Cartesian grid, left-join counts, impute zeros for $1 \dots \text{TotalStops}$, NULL for $> \text{TotalStops}$)[cite: 3].
-- [ ] Task 5.3: Implement failure-path and property tests in `test_zero_fill.py` ensuring zero geographic species leakage[cite: 1, 3].
-- [ ] Phase 5 Gate: 100% test pass; verified that extirpated/absent species never leak into unconfirmed routes; atomic commit tagged[cite: 1].
+- [x] Task 5.1: Implement `zero_fill.py` Step 1 (scan 1966–present history for route-confirmed species $\mathcal{S}_r$)[cite: 3].
+- [x] Task 5.2: Implement Steps 2–4 (construct $\mathcal{Y}_r \times \mathcal{S}_r$ Cartesian grid, left-join counts, impute zeros for $1 \dots \text{TotalStops}$, NULL for $> \text{TotalStops}$)[cite: 3].
+- [x] Task 5.3: Implement failure-path and property tests in `test_zero_fill.py` ensuring zero geographic species leakage[cite: 1, 3].
+- [x] Phase 5 Gate: 100% test pass; verified that extirpated/absent species never leak into unconfirmed routes; atomic commit tagged[cite: 1].
 
 ## Phase 6: Spatial Anchoring, Serialization & Provenance Metadata
 - [ ] Task 6.1: Implement `spatial.py` converting NAD83 route starting coordinates into target projections (`EPSG:4326`, `EPSG:5070`, `EPSG:32119`, arbitrary EPSG)[cite: 3].
