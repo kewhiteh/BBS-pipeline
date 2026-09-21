@@ -437,14 +437,16 @@ def _load_csv_from_zip_or_raw(
                 io.BytesIO(csv_bytes),
                 schema_overrides=schema,
                 encoding="latin1",
-                infer_schema_length=0,
+                null_values=["", "NA", "null", "NULL", "*", "None"],
+                truncate_ragged_lines=True,
             )
     else:  # Raw CSV buffer
         return pl.read_csv(
             buf,
             schema_overrides=schema,
             encoding="latin1",
-            infer_schema_length=0,
+            null_values=["", "NA", "null", "NULL", "*", "None"],
+            truncate_ragged_lines=True,
         )
 
 
@@ -472,7 +474,8 @@ def _load_observation_data(
                     io.BytesIO(raw_bytes),
                     schema_overrides=FIFTY_STOP_SCHEMA,
                     encoding="latin1",
-                    infer_schema_length=0,
+                    null_values=["", "NA", "null", "NULL", "*", "None"],
+                    truncate_ragged_lines=True,
                 )
                 if df.is_empty():
                     continue
@@ -494,7 +497,8 @@ def _load_observation_data(
             buf,
             schema_overrides=FIFTY_STOP_SCHEMA,
             encoding="latin1",
-            infer_schema_length=0,
+            null_values=["", "NA", "null", "NULL", "*", "None"],
+            truncate_ragged_lines=True,
         )
         if "RouteKey" not in df.columns and {"CountryNum", "StateNum", "Route"}.issubset(df.columns):
             df = add_route_key(df)

@@ -153,7 +153,8 @@ def _read_csv_from_bytes(
         buf,
         schema_overrides=schema_overrides,
         has_header=has_header,
-        infer_schema_length=0,  # disable inference globally
+        null_values=["", "NA", "null", "NULL", "*", "None"],
+        truncate_ragged_lines=True,
         try_parse_dates=False,
     )
 
