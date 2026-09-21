@@ -42,7 +42,7 @@
 - [x] Phase 6 Gate: 100% test pass across all export formats; provenance fields verified in metadata; atomic commit tagged[cite: 1].
 
 ## Phase 7: Dual Interface (CLI & Reactive Streamlit Dashboard)
-- [ ] Task 7.1: Implement CLI (`cli.py` / `extract_bbs.py`) exposing all spatial, temporal, taxonomic, and export arguments[cite: 3].
-- [ ] Task 7.2: Implement reactive Streamlit dashboard (`gui.py` / `run_gui.py`) with synchronized filter pills, map preview, and streaming download button[cite: 3].
-- [ ] Task 7.3: Implement end-to-end integration tests in `test_cli.py` executing a full in-memory pipeline dry-run[cite: 1].
-- [ ] Phase 7 Gate: All CLI options verified; Streamlit app verified; full test suite passes with zero warnings; final commit tagged[cite: 1].
+- [x] Task 7.1: Implement CLI (`cli.py` / `extract_bbs.py`) exposing all spatial, temporal, taxonomic, and export arguments[cite: 3].
+- [x] Task 7.2: Implement reactive Streamlit dashboard (`gui.py` / `run_gui.py`) with synchronized filter pills, map preview, and streaming download button[cite: 3].
+- [x] Task 7.3: Implement end-to-end integration tests in `test_cli.py` executing a full in-memory pipeline dry-run[cite: 1].
+- [x] Phase 7 Gate: All CLI options verified; Streamlit app verified; full test suite passes with zero warnings; final commit tagged[cite: 1].
