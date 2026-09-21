@@ -35,11 +35,11 @@
 - [x] Phase 5 Gate: 100% test pass; verified that extirpated/absent species never leak into unconfirmed routes; atomic commit tagged[cite: 1].
 
 ## Phase 6: Spatial Anchoring, Serialization & Provenance Metadata
-- [ ] Task 6.1: Implement `spatial.py` converting NAD83 route starting coordinates into target projections (`EPSG:4326`, `EPSG:5070`, `EPSG:32119`, arbitrary EPSG)[cite: 3].
-- [ ] Task 6.2: Implement `serializer.py` outputting wide/long tabular shapes to OGC GeoPackage, GeoJSON, Parquet, and CSV[cite: 3].
-- [ ] Task 6.3: Implement Git hash extraction (`git rev-parse --short HEAD`) and provenance metadata header stamping[cite: 1, 3].
-- [ ] Task 6.4: Implement serialization test suite in `test_export.py`[cite: 1].
-- [ ] Phase 6 Gate: 100% test pass across all export formats; provenance fields verified in metadata; atomic commit tagged[cite: 1].
+- [x] Task 6.1: Implement `spatial.py` converting NAD83 route starting coordinates into target projections (`EPSG:4326`, `EPSG:5070`, `EPSG:32119`, arbitrary EPSG)[cite: 3].
+- [x] Task 6.2: Implement `serializer.py` outputting wide/long tabular shapes to OGC GeoPackage, GeoJSON, Parquet, and CSV[cite: 3].
+- [x] Task 6.3: Implement Git hash extraction (`git rev-parse --short HEAD`) and provenance metadata header stamping[cite: 1, 3].
+- [x] Task 6.4: Implement serialization test suite in `test_export.py`[cite: 1].
+- [x] Phase 6 Gate: 100% test pass across all export formats; provenance fields verified in metadata; atomic commit tagged[cite: 1].
 
 ## Phase 7: Dual Interface (CLI & Reactive Streamlit Dashboard)
 - [ ] Task 7.1: Implement CLI (`cli.py` / `extract_bbs.py`) exposing all spatial, temporal, taxonomic, and export arguments[cite: 3].
