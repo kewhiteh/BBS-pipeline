@@ -1,7 +1,7 @@
 """Reactive Streamlit web dashboard for USGS BBS Pipeline.
 
 Implements Task 7.2 (docs/04_TASKS.md) and §4 of docs/project_intake_brief_usgs_breeding_bird_survey_pipeline.md:
-- Reactive multi-select pills for States, BCRs, Strata, and candidate Routes.
+- Searchable multi-select for States, BCRs, Strata, and candidate Routes.
 - Dynamic taxonomic filters (Clade, Family, Ecological Guild) synchronizing species pills.
 - Dynamic survey year dual-slider adapting to the discovered dataset temporal horizon.
 - Sub-route stop slicing and route continuity dual-sliders.
@@ -189,48 +189,50 @@ def main() -> None:
         # Distinct States
         num_to_abbr = {v: k for k, v in STATE_ABBR_TO_NUM.items() if len(k) == 2}
         available_statenums = sorted(routes_df["StateNum"].unique().to_list())
-        state_labels = [f"{num_to_abbr.get(sn, sn)} ({sn})" for sn in available_statenums]
-        label_to_num = dict(zip(state_labels, available_statenums))
+        state_options = [f"{num_to_abbr.get(sn, sn)} ({sn})" for sn in available_statenums]
+        label_to_num = dict(zip(state_options, available_statenums))
 
-        selected_state_labels = render_pills_or_multiselect(
-            "States / Provinces (Pills)",
-            options=state_labels,
-            key="spatial_state_pills",
+        selected_state_labels = st.multiselect(
+            "States / Provinces",
+            options=state_options,
+            default=[],
+            placeholder="Search or select states...",
         )
         selected_states = [label_to_num[lbl] for lbl in selected_state_labels]
 
-        # Filter routes by selected states for downstream pills
+        # Filter routes by selected states for downstream widgets
         active_routes = routes_df
         if selected_states:
             active_routes = active_routes.filter(pl.col("StateNum").is_in(selected_states))
 
         # BCRs and Strata
-        available_bcrs = sorted(active_routes["BCR"].drop_nulls().unique().to_list())
-        selected_bcrs = render_pills_or_multiselect(
+        bcr_options = sorted(active_routes["BCR"].drop_nulls().unique().to_list())
+        selected_bcrs = st.multiselect(
             "Bird Conservation Regions (BCR)",
-            options=available_bcrs,
-            key="spatial_bcr_pills",
+            options=bcr_options,
+            default=[],
+            placeholder="Search BCRs...",
         )
         if selected_bcrs:
             active_routes = active_routes.filter(pl.col("BCR").is_in(selected_bcrs))
 
-        available_strata = sorted(active_routes["Stratum"].drop_nulls().unique().to_list())
-        selected_strata = render_pills_or_multiselect(
+        strata_options = sorted(active_routes["Stratum"].drop_nulls().unique().to_list())
+        selected_strata = st.multiselect(
             "Physiographic Strata",
-            options=available_strata,
-            key="spatial_strata_pills",
+            options=strata_options,
+            default=[],
+            placeholder="Search strata...",
         )
         if selected_strata:
             active_routes = active_routes.filter(pl.col("Stratum").is_in(selected_strata))
 
-        # Candidate Routes Pills
+        # Candidate Routes
         route_options = sorted(active_routes["RouteKey"].unique().to_list())
-        # Cap display to prevent UI overload
-        display_routes = route_options[:100]
-        selected_routes = render_pills_or_multiselect(
-            f"Candidate Routes ({len(route_options)} available, top {len(display_routes)} shown)",
-            options=display_routes,
-            key="spatial_route_pills",
+        selected_routes = st.multiselect(
+            "Candidate Routes",
+            options=route_options,
+            default=[],
+            placeholder="Search routes by ID/name...",
         )
         if selected_routes:
             active_routes = active_routes.filter(pl.col("RouteKey").is_in(selected_routes))
