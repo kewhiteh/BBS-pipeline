@@ -172,11 +172,12 @@ class TestRoutesParsing:
         for col in ("CountryNum", "StateNum", "Route", "Stratum", "BCR"):
             assert df.schema[col] == pl.String, f"{col} must be pl.String, not numeric"
 
-    def test_parse_routes_latitude_longitude_are_float(self, synthetic_zip_builder):
+    def test_parse_routes_latitude_longitude_are_string(self, synthetic_zip_builder):
+        """Arithmetic Typing Invariant: Latitude and Longitude must be ingested as pl.String."""
         zip_buf = synthetic_zip_builder({"routes.csv": _routes_csv()})
         df = parse_routes(zip_buf)
-        assert df.schema["Latitude"] == pl.Float64
-        assert df.schema["Longitude"] == pl.Float64
+        assert df.schema["Latitude"] == pl.String
+        assert df.schema["Longitude"] == pl.String
 
 
 class TestFiftyStopParsing:

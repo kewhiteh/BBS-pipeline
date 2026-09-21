@@ -234,6 +234,18 @@ class TestSpatialAnchoring:
         with pytest.raises(ValueError, match="missing required coordinate columns"):
             anchor_routes_spatial(df=sample_observations_df, routes_df=bad_routes)
 
+    def test_anchor_routes_handles_string_coordinates(
+        self, sample_observations_df: pl.DataFrame, sample_routes_df: pl.DataFrame
+    ) -> None:
+        """Arithmetic Typing Invariant: string coordinates are safely cast downstream."""
+        routes_str_coords = sample_routes_df.with_columns(
+            pl.col("Latitude").cast(pl.String),
+            pl.col("Longitude").cast(pl.String),
+        )
+        gdf = anchor_routes_spatial(df=sample_observations_df, routes_df=routes_str_coords)
+        assert round(gdf.geometry.iloc[0].x, 3) == -87.616
+        assert round(gdf.geometry.iloc[0].y, 3) == 34.867
+
 
 # ---------------------------------------------------------------------------
 # 2. Tabular Output Shaping (serializer.py)

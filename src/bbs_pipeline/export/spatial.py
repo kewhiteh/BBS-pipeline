@@ -191,7 +191,11 @@ def anchor_routes_spatial(
     # Extract distinct route coordinate dictionary to ensure strict 1:1 origin anchoring
     # and avoid Cartesian duplication if routes_df contains duplicates
     route_coords = (
-        working_routes.select([route_key_col, "Latitude", "Longitude"])
+        working_routes.select([
+            pl.col(route_key_col),
+            pl.col("Latitude").cast(pl.Float64, strict=False),
+            pl.col("Longitude").cast(pl.Float64, strict=False),
+        ])
         .unique(subset=[route_key_col], keep="first")
     )
 

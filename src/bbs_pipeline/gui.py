@@ -356,8 +356,14 @@ def main() -> None:
     # -----------------------------------------------------------------------
     st.subheader(f"🗺️ Route Origins Map Preview ({active_routes.height} routes selected)")
 
-    valid_coords_df = active_routes.filter(
-        pl.col("Latitude").is_not_null() & pl.col("Longitude").is_not_null()
+    valid_coords_df = (
+        active_routes.with_columns(
+            pl.col("Latitude").cast(pl.Float64, strict=False),
+            pl.col("Longitude").cast(pl.Float64, strict=False),
+        )
+        .filter(
+            pl.col("Latitude").is_not_null() & pl.col("Longitude").is_not_null()
+        )
     )
 
     if not valid_coords_df.is_empty():
