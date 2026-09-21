@@ -23,10 +23,10 @@
 - [x] Phase 3 Gate: 100% test pass on continuity logic and stop filtering; atomic commit tagged[cite: 1].
 
 ## Phase 4: Taxonomic Set-Union Resolver & Observer Covariates
-- [ ] Task 4.1: Implement `taxonomy.py` evaluating set-unions across orders, families, guilds, and individual AOUs, applying migrant exclusions[cite: 1, 3].
-- [ ] Task 4.2: Implement `covariates.py` calculating career survey counts, route tenure, first-year Kendall bias indicators, and traffic metrics[cite: 3].
-- [ ] Task 4.3: Implement unit and negative tests in `test_taxonomy.py` and `test_covariates.py`[cite: 1].
-- [ ] Phase 4 Gate: 100% test pass on taxonomic set algebra and covariate computation; atomic commit tagged[cite: 1].
+- [x] Task 4.1: Implement `taxonomy.py` evaluating set-unions across orders, families, guilds, and individual AOUs, applying migrant exclusions[cite: 1, 3].
+- [x] Task 4.2: Implement `covariates.py` calculating career survey counts, route tenure, first-year Kendall bias indicators, and traffic metrics[cite: 3].
+- [x] Task 4.3: Implement unit and negative tests in `test_taxonomy.py` and `test_covariates.py`[cite: 1].
+- [x] Phase 4 Gate: 100% test pass on taxonomic set algebra and covariate computation; atomic commit tagged[cite: 1].
 
 ## Phase 5: 4-Step Cartesian Zero-Filling Engine
 - [ ] Task 5.1: Implement `zero_fill.py` Step 1 (scan 1966–present history for route-confirmed species $\mathcal{S}_r$)[cite: 3].
