@@ -10,10 +10,10 @@
 - [x] Phase 1 Gate: `pytest tests/` runs cleanly; `git status` shows clean tree; atomic commit tagged.
 
 ## Phase 2: In-Memory ScienceBase Client & Tabular Parsers
-- [ ] Task 2.1: Implement `sciencebase.py` HTTP client streaming remote archives into `io.BytesIO` with exponential backoff on 429/5xx[cite: 1, 3].
-- [ ] Task 2.2: Implement `parser.py` parsing nested in-memory ZIP/CSV streams using explicit Polars schema overrides[cite: 1, 3].
-- [ ] Task 2.3: Implement unit and failure-path tests in `test_client.py` using mocked byte streams (verify zero disk access and schema compliance)[cite: 1, 3].
-- [ ] Phase 2 Gate: 100% test pass on mocked network streaming and parsing; zero disk writes verified; atomic commit tagged[cite: 1].
+- [x] Task 2.1: Implement `sciencebase.py` HTTP client streaming remote archives into `io.BytesIO` with exponential backoff on 429/5xx[cite: 1, 3].
+- [x] Task 2.2: Implement `parser.py` parsing nested in-memory ZIP/CSV streams using explicit Polars schema overrides[cite: 1, 3].
+- [x] Task 2.3: Implement unit and failure-path tests in `test_client.py` using mocked byte streams (verify zero disk access and schema compliance)[cite: 1, 3].
+- [x] Phase 2 Gate: 100% test pass on mocked network streaming and parsing; zero disk writes verified; atomic commit tagged[cite: 1].
 
 ## Phase 3: Domain Filters, Continuity & Dynamic Temporal Discovery
 - [ ] Task 3.1: Implement `discovery.py` to extract `max_observed_year` from weather records and compute eligible year sets excluding 2020[cite: 3].
