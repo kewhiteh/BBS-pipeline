@@ -499,3 +499,113 @@ class TestZeroDiskVerification:
         )
         files_after = set(tmp_path.rglob("*"))
         assert files_before == files_after, f"Unexpected disk files created: {files_after - files_before}"
+
+
+# ---------------------------------------------------------------------------
+# Section 5: Covariate Execution Order & 10-Stop vs 50-Stop Temporal Guard
+# ---------------------------------------------------------------------------
+
+
+class TestCovariateOrderAndTemporalGuard:
+    """Integration tests for covariate compute→filter ordering and 10/50-stop epoch guard.
+
+    Defect fixed: 'CarsPerStop' not found in DataFrame — filter_traffic was
+    called before compute_traffic_covariates + join were executed.
+
+    Domain requirement enforced: BBS 50-stop data only exists from 1997+.
+    """
+
+    def test_full_pipeline_with_covariate_filtering_both_tenure_and_traffic(
+        self, mock_sciencebase_endpoints
+    ) -> None:
+        """Integration: observer tenure + traffic covariate filtering together.
+
+        Verifies that covariate computation (compute_observer_covariates and
+        compute_traffic_covariates + join) precedes filter_observer_tenure and
+        filter_traffic without raising ColumnNotFoundError.
+
+        Mock data: 2 cars per stop across 50 stops → CarTotal=100, CarsPerStop=2.0
+        max_cars_per_stop=3.0 (accepts all runs); min_obs_tenure=1 (accepts all runs).
+        """
+        data = run_pipeline(
+            states=["AL"],
+            species=["07610"],
+            start_year=2018,
+            end_year=2019,
+            include_covariates=True,
+            min_obs_tenure=1,           # observer tenure filter enabled (compute must run first)
+            max_cars_per_stop=3.0,      # traffic filter enabled (join must run first)
+            output_path=None,
+            format="parquet",
+            shape="wide",
+        )
+        assert isinstance(data, bytes), "Pipeline must return bytes in RAM mode."
+        assert data.startswith(b"PAR1"), "Output must be valid Parquet."
+        tbl = pq.read_table(io.BytesIO(data))
+        col_names = tbl.column_names
+        # Covariate columns must be present in output
+        assert "RouteTenure" in col_names, "RouteTenure covariate must be computed before filtering."
+        assert "CarTotal" in col_names or "CarsPerStop" in col_names, (
+            "Traffic covariates must be joined and present before filter_traffic runs."
+        )
+
+    def test_full_pipeline_covariate_filtering_excludes_high_traffic(
+        self, mock_sciencebase_endpoints
+    ) -> None:
+        """Integration: traffic filter with threshold below mock data level prunes all runs.
+
+        Mock data has CarsPerStop=2.0; max_cars_per_stop=1.0 should reject all runs.
+        This test also verifies the join and computation order is correct (no ColumnNotFoundError).
+        """
+        # NEGATIVE: threshold below 2.0 cars/stop must eliminate all runs
+        with pytest.raises(ValueError, match="No survey runs satisfied the vehicle traffic criteria"):
+            run_pipeline(
+                states=["AL"],
+                species=["07610"],
+                start_year=2018,
+                end_year=2019,
+                include_covariates=True,
+                max_cars_per_stop=1.0,
+                output_path=None,
+                format="parquet",
+            )
+
+    def test_fifty_stop_pre1997_start_year_clamped_to_1997(
+        self, mock_sciencebase_endpoints
+    ) -> None:
+        """10-Stop vs 50-Stop guard: start_year < 1997 with 50-stop data clamps to 1997.
+
+        The pipeline uses 50-StopData.zip as its observation source; individual
+        stop records only exist from 1997+. When start_year precedes 1997 the
+        guard must emit a warning and clamp start_year to 1997.
+
+        This test supplies start_year=1990 but mocked data only has 2018/2019
+        records, so after clamping the effective range is [1997, 2019].
+        The pipeline should succeed (records exist in the clamped window).
+        """
+        # Should not raise; guard clamps start_year silently with a warning
+        data = run_pipeline(
+            states=["AL"],
+            species=["07610"],
+            start_year=1990,    # Pre-1997 — guard must clamp this
+            end_year=2019,
+            output_path=None,
+            format="parquet",
+            shape="wide",
+        )
+        assert isinstance(data, bytes), "Pipeline should succeed after clamping start_year to 1997."
+        assert len(data) > 0
+
+    def test_fifty_stop_entirely_pre1997_raises_value_error(self) -> None:
+        """# NEGATIVE: Requesting 50-stop data for a range entirely before 1997 must raise.
+
+        No 50-stop individual-stop records exist before 1997; the guard must
+        raise a ValueError with an informative message.
+        """
+        with pytest.raises(ValueError, match="50-stop individual-stop records are only available from 1997"):
+            run_pipeline(
+                start_year=1966,
+                end_year=1996,   # Entirely pre-1997 — no 50-stop data
+                all_species=True,
+            )
+

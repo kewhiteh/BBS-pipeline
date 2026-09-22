@@ -44,6 +44,7 @@ from bbs_pipeline.core.discovery import (
 )
 from bbs_pipeline.core.filters import (
     add_route_key,
+    enforce_fifty_stop_temporal_guard,
     filter_by_continuity,
     filter_by_min_stops,
     filter_observer_tenure,
@@ -737,6 +738,20 @@ def run_pipeline(
             raise ValueError(
                 f"min_completeness_pct must be in (0, 100], got {min_completeness_pct}"
             )
+
+    # -----------------------------------------------------------------------
+    # 10-Stop vs 50-Stop Temporal Resolution Guard
+    # BBS 50-stop individual records (50-StopData.zip) only exist from 1997+.
+    # Pre-1997 surveys exist only as 10-stop aggregates in States.zip.
+    # The pipeline currently targets 50-stop data; enforce the epoch boundary.
+    # -----------------------------------------------------------------------
+    start_year, end_year = enforce_fifty_stop_temporal_guard(
+        start_year=start_year,
+        end_year=end_year,
+        resolution="50stop",
+        start_stop=slice_start,
+        end_stop=slice_end,
+    )
 
     # Determine output format
     export_format = format

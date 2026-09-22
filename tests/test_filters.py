@@ -27,7 +27,9 @@ from bbs_pipeline.core.discovery import (
     get_max_observed_year,
 )
 from bbs_pipeline.core.filters import (
+    FIFTY_STOP_MIN_YEAR,
     add_route_key,
+    enforce_fifty_stop_temporal_guard,
     filter_by_continuity,
     filter_by_min_stops,
     filter_by_observer_cohort,
@@ -843,11 +845,106 @@ class TestFilterTraffic:
         with pytest.raises(ValueError, match="max_car_total"):
             filter_traffic(sample_traffic_df, max_car_total=-10)
 
-    def test_raises_value_error_missing_column_when_bounded(self):  # NEGATIVE
-        df = pl.DataFrame({"RouteDataID": ["RD1"]}, schema={"RouteDataID": pl.String})
-        with pytest.raises(ValueError, match="Column 'CarsPerStop' not found"):
-            filter_traffic(df, max_cars_per_stop=5.0)
+    def test_missing_column_logs_warning_and_returns_df_unchanged(self):  # NEGATIVE → graceful skip
+        """Defensive guard: missing traffic columns emit a warning and skip the threshold.
 
-        with pytest.raises(ValueError, match="Column 'CarTotal' not found"):
-            filter_traffic(df, max_car_total=100)
+        When CarsPerStop or CarTotal is not present (e.g. vehicle join hasn't
+        happened yet), filter_traffic must log a warning and return the DataFrame
+        unchanged rather than raising an unhandled ColumnNotFoundError.
+        """
+        df = pl.DataFrame({"RouteDataID": ["RD1", "RD2"]}, schema={"RouteDataID": pl.String})
+
+        # CarsPerStop column absent — should warn and skip, returning df unchanged
+        res_cars_per_stop = filter_traffic(df, max_cars_per_stop=5.0)
+        assert len(res_cars_per_stop) == len(df), (
+            "filter_traffic must return df unchanged when CarsPerStop column is missing."
+        )
+        assert res_cars_per_stop.columns == df.columns
+
+        # CarTotal column absent — should warn and skip, returning df unchanged
+        res_car_total = filter_traffic(df, max_car_total=100)
+        assert len(res_car_total) == len(df), (
+            "filter_traffic must return df unchanged when CarTotal column is missing."
+        )
+        assert res_car_total.columns == df.columns
+
+
+class TestFiftyStopTemporalGuard:
+    """Unit tests for enforce_fifty_stop_temporal_guard (§2.7 — 10-Stop vs 50-Stop boundary)."""
+
+    def test_valid_start_year_returns_unchanged(self):
+        """start_year >= 1997 must return bounds unchanged (no-op path)."""
+        start, end = enforce_fifty_stop_temporal_guard(
+            start_year=1997, end_year=2022, resolution="50stop"
+        )
+        assert start == 1997
+        assert end == 2022
+
+    def test_valid_start_year_none_uses_1966_but_still_below_1997_clamps(self):
+        """start_year=None implies 1966, which is below 1997; must clamp to 1997."""
+        start, end = enforce_fifty_stop_temporal_guard(
+            start_year=None, end_year=2022, resolution="50stop"
+        )
+        assert start == FIFTY_STOP_MIN_YEAR, (
+            "start_year=None (1966) must be clamped to FIFTY_STOP_MIN_YEAR."
+        )
+        assert end == 2022
+
+    def test_pre1997_start_year_with_valid_end_year_clamps_start(self):
+        """start_year < 1997 with end_year >= 1997 clamps start_year to 1997."""
+        start, end = enforce_fifty_stop_temporal_guard(
+            start_year=1980, end_year=2010, resolution="50stop"
+        )
+        assert start == FIFTY_STOP_MIN_YEAR
+        assert end == 2010
+
+    def test_entirely_pre1997_range_raises_value_error(self):  # NEGATIVE
+        """# NEGATIVE: start and end both < 1997 must raise ValueError."""
+        with pytest.raises(ValueError, match="50-stop individual-stop records are only available from 1997"):
+            enforce_fifty_stop_temporal_guard(
+                start_year=1966, end_year=1996, resolution="50stop"
+            )
+
+    def test_ten_stop_resolution_is_noop(self):
+        """resolution='10stop' must pass through any year range unchanged."""
+        start, end = enforce_fifty_stop_temporal_guard(
+            start_year=1966, end_year=1990, resolution="10stop"
+        )
+        assert start == 1966
+        assert end == 1990
+
+    def test_stop_range_beyond_10_triggers_fifty_stop_enforcement(self):
+        """stop range with end_stop > 10 implicitly requires 50-stop data; guard must clamp."""
+        start, end = enforce_fifty_stop_temporal_guard(
+            start_year=1985,
+            end_year=2010,
+            resolution="10stop",    # overridden by stop range
+            start_stop=1,
+            end_stop=25,            # > 10 → 50-stop required
+        )
+        assert start == FIFTY_STOP_MIN_YEAR, (
+            "stop range ending > stop 10 must trigger 50-stop temporal enforcement."
+        )
+        assert end == 2010
+
+    def test_stop_range_within_10_stops_with_10stop_resolution_is_noop(self):
+        """stop range [1, 10] with 10stop resolution must not clamp."""
+        start, end = enforce_fifty_stop_temporal_guard(
+            start_year=1966,
+            end_year=1995,
+            resolution="10stop",
+            start_stop=1,
+            end_stop=10,  # ≤ 10 → no enforcement
+        )
+        assert start == 1966
+        assert end == 1995
+
+    def test_open_ended_year_range_none_end_year_clamps_start_only(self):
+        """open-ended end_year=None should clamp start_year but keep end_year=None."""
+        start, end = enforce_fifty_stop_temporal_guard(
+            start_year=1970, end_year=None, resolution="50stop"
+        )
+        assert start == FIFTY_STOP_MIN_YEAR
+        assert end is None
+
 

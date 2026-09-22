@@ -35,6 +35,103 @@ logger = logging.getLogger(__name__)
 #: Stop columns present in the 50-stop wide schema.
 _ALL_STOP_COLS: tuple[str, ...] = tuple(f"Stop{i}" for i in range(1, 51))
 
+#: First year in which USGS BBS 50-stop individual-stop records are available.
+#: Pre-1997 data exists only as 10-stop aggregates (Count10, Count20 … Count50).
+FIFTY_STOP_MIN_YEAR: int = 1997
+
+
+# ---------------------------------------------------------------------------
+# §2.7 — 10-Stop vs 50-Stop Temporal Resolution Guard
+# ---------------------------------------------------------------------------
+
+
+def enforce_fifty_stop_temporal_guard(
+    start_year: Optional[int],
+    end_year: Optional[int],
+    resolution: str = "50stop",
+    start_stop: Optional[int] = None,
+    end_stop: Optional[int] = None,
+) -> tuple[Optional[int], Optional[int]]:
+    """Enforce temporal boundaries for 50-stop vs 10-stop data resolution.
+
+    BBS 50-stop individual-stop records are only available from 1997 onwards.
+    Pre-1997 surveys are aggregated to 10-stop increments (Count10 … Count50).
+
+    If 50-stop resolution or sub-stop slicing beyond stop 10 is requested with
+    a ``start_year`` before 1997, this function:
+
+    - Emits an informative ``logger.warning`` describing the conflict.
+    - Clamps ``start_year`` to ``FIFTY_STOP_MIN_YEAR`` (1997) and returns the
+      adjusted bounds, allowing the caller to gracefully continue.
+
+    For queries that remain entirely within the 10-stop era (both ``start_year``
+    and ``end_year`` before 1997), a ``ValueError`` is raised when 50-stop
+    resolution is explicitly requested because no compatible data exists.
+
+    Parameters
+    ----------
+    start_year:
+        Inclusive lower survey year bound (``None`` means 1966).
+    end_year:
+        Inclusive upper survey year bound (``None`` means no cap).
+    resolution:
+        Data resolution requested: ``\"50stop\"`` (default) or ``\"10stop\"``.
+        When ``\"10stop\"``, this function is a no-op and returns the bounds
+        unchanged.
+    start_stop:
+        Sub-route lower stop bound (1-50). If provided alongside ``end_stop``,
+        a stop range > 10 implies 50-stop resolution.
+    end_stop:
+        Sub-route upper stop bound (1-50).
+
+    Returns
+    -------
+    tuple[Optional[int], Optional[int]]
+        Possibly adjusted ``(start_year, end_year)`` tuple.
+
+    Raises
+    ------
+    ValueError
+        If 50-stop resolution is requested but the entire year range falls
+        before 1997 (no 50-stop data available at all).
+    """
+    # Determine effective resolution: explicit 50stop mode OR stop slicing > 10
+    is_fifty_stop = resolution == "50stop"
+    if start_stop is not None and end_stop is not None:
+        # A stop range touching stops 11-50 requires 50-stop individual records.
+        if end_stop > 10:
+            is_fifty_stop = True
+
+    if not is_fifty_stop:
+        return start_year, end_year
+
+    eff_start = start_year if start_year is not None else 1966
+
+    if eff_start >= FIFTY_STOP_MIN_YEAR:
+        # Already within the valid 50-stop temporal window; nothing to adjust.
+        return start_year, end_year
+
+    eff_end = end_year  # may be None (open-ended toward max_observed_year)
+
+    if eff_end is not None and eff_end < FIFTY_STOP_MIN_YEAR:
+        raise ValueError(
+            f"50-stop individual-stop records are only available from "
+            f"{FIFTY_STOP_MIN_YEAR} onwards. The requested year range "
+            f"[{eff_start}, {eff_end}] falls entirely before this boundary. "
+            f"Use 10-stop (States.zip) data for pre-{FIFTY_STOP_MIN_YEAR} queries."
+        )
+
+    logger.warning(
+        "enforce_fifty_stop_temporal_guard: start_year=%d precedes the "
+        "50-stop data epoch (%d). Pre-%d surveys are available only as "
+        "10-stop aggregates. Clamping start_year to %d.",
+        eff_start,
+        FIFTY_STOP_MIN_YEAR,
+        FIFTY_STOP_MIN_YEAR,
+        FIFTY_STOP_MIN_YEAR,
+    )
+    return FIFTY_STOP_MIN_YEAR, end_year
+
 
 # ---------------------------------------------------------------------------
 # §2.1 — Composite Route Keying
@@ -611,9 +708,13 @@ def filter_traffic(
                 f"max_cars_per_stop must be a non-negative number, got {max_cars_per_stop!r}."
             )
         if cars_per_stop_col not in df.columns:
-            raise ValueError(
-                f"Column '{cars_per_stop_col}' not found in DataFrame for traffic filtering."
+            logger.warning(
+                "filter_traffic: column '%s' not found in DataFrame — "
+                "traffic covariates have not been joined yet. "
+                "Skipping CarsPerStop threshold filter.",
+                cars_per_stop_col,
             )
+            max_cars_per_stop = None  # disable this threshold for the rest of the function
 
     if max_car_total is not None:
         if not isinstance(max_car_total, int) or max_car_total < 0:
@@ -621,9 +722,13 @@ def filter_traffic(
                 f"max_car_total must be a non-negative integer, got {max_car_total!r}."
             )
         if car_total_col not in df.columns:
-            raise ValueError(
-                f"Column '{car_total_col}' not found in DataFrame for traffic filtering."
+            logger.warning(
+                "filter_traffic: column '%s' not found in DataFrame — "
+                "traffic covariates have not been joined yet. "
+                "Skipping CarTotal threshold filter.",
+                car_total_col,
             )
+            max_car_total = None  # disable this threshold for the rest of the function
 
     filtered = df
     if max_cars_per_stop is not None:
