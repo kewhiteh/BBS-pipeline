@@ -229,6 +229,11 @@ def main() -> None:
                         help="Exclude runs where CarTotal exceeds this value.",
                     )
 
+        enforce_quality_toggle = st.checkbox(
+            "Enforce BBS Protocol Quality (RunType=1, Quality=1)",
+            value=False,
+            help="Filter to runs satisfying official USGS BBS protocol standards. Uncheck for raw unfiltered survey runs.",
+        )
         zero_fill_toggle = st.checkbox(
             "Extirpation-Preserving Zero-Filling",
             value=True,
@@ -482,12 +487,20 @@ def main() -> None:
             step=5.0,
             help="Required valid survey runs = ceil(|eligible_years| * pct / 100).",
         )
-        min_stops_val = st.selectbox(
+        stop_options = ["50 (BBS Standard)", "48", "45", "None (Raw / All Stops)"]
+        selected_stop_option = st.selectbox(
             "Stop Effort Guard Threshold",
-            options=[50, 48, 45],
+            options=stop_options,
             index=0,
-            help="Valid runs must satisfy TotalStops >= min_stops.",
+            help="Filter runs by minimum completed stops. Select 'None' to keep all runs regardless of stops completed.",
         )
+        stop_map = {
+            "50 (BBS Standard)": 50,
+            "48": 48,
+            "45": 45,
+            "None (Raw / All Stops)": None,
+        }
+        min_stops_val = stop_map[selected_stop_option]
 
     with ctrl_col3:
         stop_range_val = st.slider(
@@ -553,6 +566,7 @@ def main() -> None:
                     end_year=year_range[1],
                     min_completeness_pct=continuity_pct if continuity_pct > 0 else None,
                     min_stops=min_stops_val,
+                    enforce_quality=enforce_quality_toggle,
                     stop_range=list(stop_range_val) if stop_range_val != (1, 50) else None,
                     include_covariates=include_covariates,
                     min_obs_tenure=None,

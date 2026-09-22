@@ -272,6 +272,13 @@ def build_parser() -> argparse.ArgumentParser:
         help="Discrete stop effort guard threshold (45, 48, or 50).",
     )
     filter_grp.add_argument(
+        "--enforce-quality",
+        action="store_true",
+        default=False,
+        dest="enforce_quality",
+        help="Enforce official BBS protocol: RunType == 1 and QualityCurrentID == 1.",
+    )
+    filter_grp.add_argument(
         "--stop-range",
         type=int,
         nargs=2,
@@ -594,6 +601,7 @@ def run_pipeline(
     months: Optional[Sequence[str]] = None,
     min_completeness_pct: Optional[float] = None,
     min_stops: Optional[int] = None,
+    enforce_quality: bool = False,
     stop_range: Optional[Sequence[int]] = None,
     start_stop: Optional[int] = None,
     end_stop: Optional[int] = None,
@@ -849,6 +857,15 @@ def run_pipeline(
     weather_df = weather_df.filter(
         pl.col("Year").cast(pl.Int32).is_in(eligible_year_ints)
     )
+
+    # Optional BBS protocol quality enforcement
+    if enforce_quality:
+        if "RunType" in weather_df.columns:
+            weather_df = weather_df.filter(pl.col("RunType").str.strip_chars() == "1")
+        if "QualityCurrentID" in weather_df.columns:
+            weather_df = weather_df.filter(pl.col("QualityCurrentID").str.strip_chars() == "1")
+        if weather_df.is_empty():
+            raise ValueError("No survey runs satisfied the RunType=1 and QualityCurrentID=1 criteria.")
 
     # Phenological filtering: months & day-range
     if months:
@@ -1148,6 +1165,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
             months=args.months,
             min_completeness_pct=args.min_completeness_pct,
             min_stops=args.min_stops,
+            enforce_quality=args.enforce_quality,
             stop_range=args.stop_range,
             start_stop=args.start_stop,
             end_stop=args.end_stop,
