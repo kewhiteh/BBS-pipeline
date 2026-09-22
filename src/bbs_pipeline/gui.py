@@ -268,6 +268,10 @@ def main() -> None:
             placeholder="Search or select states...",
         )
         selected_states = [label_to_num[lbl] for lbl in selected_state_labels]
+        if selected_state_labels:
+            with st.expander(f"📋 Selected States ({len(selected_state_labels)})", expanded=False):
+                for lbl in selected_state_labels:
+                    st.caption(f"• {lbl}")
 
         # Filter routes by selected states for downstream widgets
         active_routes = routes_df
@@ -295,6 +299,10 @@ def main() -> None:
             placeholder="Search BCRs...",
         )
         selected_bcrs = [label_to_bcr[lbl] for lbl in selected_bcr_labels]
+        if selected_bcr_labels:
+            with st.expander(f"📋 Selected BCRs ({len(selected_bcr_labels)})", expanded=False):
+                for lbl in selected_bcr_labels:
+                    st.caption(f"• {lbl}")
         if selected_bcrs:
             active_routes = active_routes.filter(
                 pl.col("BCR").str.strip_chars().is_in(selected_bcrs) | pl.col("BCR").is_in(selected_bcrs)
@@ -320,6 +328,10 @@ def main() -> None:
             placeholder="Search strata...",
         )
         selected_strata = [label_to_stratum[lbl] for lbl in selected_strata_labels]
+        if selected_strata_labels:
+            with st.expander(f"📋 Selected Strata ({len(selected_strata_labels)})", expanded=False):
+                for lbl in selected_strata_labels:
+                    st.caption(f"• {lbl}")
         if selected_strata:
             active_routes = active_routes.filter(
                 pl.col("Stratum").str.strip_chars().is_in(selected_strata) | pl.col("Stratum").is_in(selected_strata)
@@ -345,6 +357,10 @@ def main() -> None:
             placeholder="Search routes by ID/name...",
         )
         selected_routes = [label_to_route_key[lbl] for lbl in selected_route_labels]
+        if selected_route_labels:
+            with st.expander(f"📋 Selected Routes ({len(selected_route_labels)})", expanded=True):
+                for lbl in selected_route_labels:
+                    st.caption(f"• {lbl}")
         if selected_routes:
             active_routes = active_routes.filter(pl.col("RouteKey").is_in(selected_routes))
 
@@ -373,6 +389,10 @@ def main() -> None:
                 options=avail_orders,
                 key="taxa_orders",
             )
+            if selected_orders:
+                with st.expander(f"📋 Selected Orders ({len(selected_orders)})", expanded=False):
+                    for o in selected_orders:
+                        st.caption(f"• {o}")
 
             # Family filter
             active_species = species_df
@@ -386,6 +406,9 @@ def main() -> None:
                 key="taxa_families",
             )
             if selected_families:
+                with st.expander(f"📋 Selected Families ({len(selected_families)})", expanded=False):
+                    for f in selected_families:
+                        st.caption(f"• {f}")
                 active_species = active_species.filter(pl.col("Family").is_in(selected_families))
 
             # Guild traits filter
@@ -402,6 +425,10 @@ def main() -> None:
                 placeholder="Search or select ecological guilds...",
                 key="taxa_guild_multiselect",
             )
+            if selected_guilds:
+                with st.expander(f"📋 Selected Guilds ({len(selected_guilds)})", expanded=False):
+                    for g in selected_guilds:
+                        st.caption(f"• {g}")
 
             # Synchronized Species Multi-Select
             # Extract candidate species names
@@ -421,6 +448,10 @@ def main() -> None:
                 key="taxa_species_multiselect",
             )
             selected_species_aous = [sp_name_to_aou[lbl] for lbl in selected_sp_labels]
+            if selected_sp_labels:
+                with st.expander(f"📋 Selected Species ({len(selected_sp_labels)})", expanded=True):
+                    for sp in selected_sp_labels:
+                        st.caption(f"• {sp}")
         else:
             st.info("Community mode enabled: extracting full breeding avifauna matrix.")
 
