@@ -72,40 +72,42 @@ logger = logging.getLogger(__name__)
 # State abbreviation & name lookup table to BBS 2-digit zero-padded StateNum
 # ---------------------------------------------------------------------------
 STATE_ABBR_TO_NUM: Dict[str, str] = {
-    # US States
-    "AL": "02", "AK": "03", "AZ": "04", "AR": "05", "CA": "06", "CO": "07",
-    "CT": "08", "DE": "09", "DC": "10", "FL": "11", "GA": "12", "ID": "14",
-    "IL": "15", "IN": "16", "IA": "17", "KS": "18", "KY": "19", "LA": "20",
-    "ME": "21", "MD": "22", "MA": "23", "MI": "24", "MN": "25", "MS": "26",
-    "MO": "27", "MT": "28", "NE": "29", "NV": "30", "NH": "31", "NJ": "32",
-    "NM": "33", "NY": "34", "NC": "35", "ND": "36", "OH": "37", "OK": "38",
-    "OR": "39", "PA": "40", "RI": "41", "SC": "42", "SD": "43", "TN": "44",
-    "TX": "45", "UT": "46", "VT": "47", "VA": "48", "WA": "49", "WV": "50",
-    "WI": "51", "WY": "52",
-    # Canadian Provinces / Territories
-    "AB": "04", "BC": "11", "MB": "24", "NB": "56", "NL": "59", "NT": "65",
-    "NS": "68", "ON": "75", "PE": "76", "QC": "79", "SK": "85", "YT": "93",
-    "NU": "66",
+    # US States & Territories (USGS BBS Official StateNums)
+    "AL": "02", "AK": "03", "AZ": "07", "AR": "06", "CA": "14", "CO": "17",
+    "CT": "18", "DE": "21", "FL": "25", "GA": "27", "ID": "33", "IL": "34",
+    "IN": "35", "IA": "36", "KS": "38", "KY": "39", "LA": "42", "ME": "44",
+    "MD": "46", "MA": "45", "MI": "49", "MN": "50", "MS": "52", "MO": "51",
+    "MT": "53", "NE": "54", "NV": "57", "NH": "58", "NJ": "59", "NM": "60",
+    "NY": "61", "NC": "63", "ND": "64", "OH": "66", "OK": "67", "OR": "69",
+    "PA": "72", "RI": "77", "SC": "80", "SD": "81", "TN": "82", "TX": "83",
+    "UT": "85", "VT": "87", "VA": "88", "WA": "89", "WV": "90", "WI": "91",
+    "WY": "92",
+    # Canadian Provinces & Territories (USGS BBS)
+    "AB": "04", "BC": "11", "MB": "47", "NB": "56", "NL": "62", "NT": "65",
+    "NS": "68", "NU": "65", "ON": "68", "PE": "76", "QC": "78", "SK": "79",
+    "YT": "93",
 }
 
 STATE_NAME_TO_NUM: Dict[str, str] = {
-    "ALABAMA": "02", "ALASKA": "03", "ARIZONA": "04", "ARKANSAS": "05",
-    "CALIFORNIA": "06", "COLORADO": "07", "CONNECTICUT": "08", "DELAWARE": "09",
-    "DISTRICT OF COLUMBIA": "10", "FLORIDA": "11", "GEORGIA": "12", "IDAHO": "14",
-    "ILLINOIS": "15", "INDIANA": "16", "IOWA": "17", "KANSAS": "18",
-    "KENTUCKY": "19", "LOUISIANA": "20", "MAINE": "21", "MARYLAND": "22",
-    "MASSACHUSETTS": "23", "MICHIGAN": "24", "MINNESOTA": "25", "MISSISSIPPI": "26",
-    "MISSOURI": "27", "MONTANA": "28", "NEBRASKA": "29", "NEVADA": "30",
-    "NEW HAMPSHIRE": "31", "NEW JERSEY": "32", "NEW MEXICO": "33", "NEW YORK": "34",
-    "NORTH CAROLINA": "35", "NORTH DAKOTA": "36", "OHIO": "37", "OKLAHOMA": "38",
-    "OREGON": "39", "PENNSYLVANIA": "40", "RHODE ISLAND": "41", "SOUTH CAROLINA": "42",
-    "SOUTH DAKOTA": "43", "TENNESSEE": "44", "TEXAS": "45", "UTAH": "46",
-    "VERMONT": "47", "VIRGINIA": "48", "WASHINGTON": "49", "WEST VIRGINIA": "50",
-    "WISCONSIN": "51", "WYOMING": "52",
-    "ALBERTA": "04", "BRITISH COLUMBIA": "11", "MANITOBA": "24", "NEW BRUNSWICK": "56",
-    "NEWFOUNDLAND": "59", "NORTHWEST TERRITORIES": "65", "NOVA SCOIA": "68",
-    "ONTARIO": "75", "PRINCE EDWARD ISLAND": "76", "QUEBEC": "79", "SASKATCHEWAN": "85",
-    "YUKON": "93", "NUNAVUT": "66",
+    # US States & Territories (USGS BBS Official StateNums)
+    "ALABAMA": "02", "ALASKA": "03", "ARIZONA": "07", "ARKANSAS": "06",
+    "CALIFORNIA": "14", "COLORADO": "17", "CONNECTICUT": "18", "DELAWARE": "21",
+    "FLORIDA": "25", "GEORGIA": "27", "IDAHO": "33", "ILLINOIS": "34",
+    "INDIANA": "35", "IOWA": "36", "KANSAS": "38", "KENTUCKY": "39",
+    "LOUISIANA": "42", "MAINE": "44", "MARYLAND": "46", "MASSACHUSETTS": "45",
+    "MICHIGAN": "49", "MINNESOTA": "50", "MISSISSIPPI": "52", "MISSOURI": "51",
+    "MONTANA": "53", "NEBRASKA": "54", "NEVADA": "57", "NEW HAMPSHIRE": "58",
+    "NEW JERSEY": "59", "NEW MEXICO": "60", "NEW YORK": "61", "NORTH CAROLINA": "63",
+    "NORTH DAKOTA": "64", "OHIO": "66", "OKLAHOMA": "67", "OREGON": "69",
+    "PENNSYLVANIA": "72", "RHODE ISLAND": "77", "SOUTH CAROLINA": "80",
+    "SOUTH DAKOTA": "81", "TENNESSEE": "82", "TEXAS": "83", "UTAH": "85",
+    "VERMONT": "87", "VIRGINIA": "88", "WASHINGTON": "89", "WEST VIRGINIA": "90",
+    "WISCONSIN": "91", "WYOMING": "92",
+    # Canadian Provinces & Territories (USGS BBS)
+    "ALBERTA": "04", "BRITISH COLUMBIA": "11", "MANITOBA": "47", "NEW BRUNSWICK": "56",
+    "NEWFOUNDLAND": "62", "NORTHWEST TERRITORIES": "65", "NOVA SCOTIA": "68",
+    "NUNAVUT": "65", "ONTARIO": "68", "PRINCE EDWARD ISLAND": "76", "QUEBEC": "78",
+    "SASKATCHEWAN": "79", "YUKON": "93",
 }
 
 
@@ -448,10 +450,12 @@ def _find_and_read_file(
     if raw_dir is not None and raw_dir.exists():
         # Match case-insensitively in raw_dir
         for p in raw_dir.glob("*"):
+            if ":Zone.Identifier" in p.name:
+                continue
             if p.name.lower() == filename.lower():
                 return io.BytesIO(p.read_bytes())
         # Try finding as nested zip or file pattern
-        matches = list(raw_dir.glob(f"*{filename}*"))
+        matches = [p for p in raw_dir.glob(f"*{filename}*") if ":Zone.Identifier" not in p.name]
         if matches:
             return io.BytesIO(matches[0].read_bytes())
 
@@ -1019,6 +1023,16 @@ def run_pipeline(
                 combined_bh.append(clean_g)
                 combined_fg.append(clean_g)
 
+    has_taxa_filter = bool(
+        species
+        or guilds
+        or breeding_habitats
+        or foraging_guilds
+        or families
+        or orders
+    )
+    effective_all_species = all_species or not has_taxa_filter
+
     target_species = resolve_target_species(
         species_df=species_df,
         guilds=guilds_dict,
@@ -1028,7 +1042,7 @@ def run_pipeline(
         guild_breeding_habitats=combined_bh if combined_bh else None,
         guild_foraging_guilds=combined_fg if combined_fg else None,
         custom_aous=custom_aous if custom_aous else None,
-        all_species=all_species,
+        all_species=effective_all_species,
     )
 
     if not target_species:

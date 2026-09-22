@@ -23,6 +23,7 @@ import requests_mock as requests_mock_module
 
 from bbs_pipeline.cli import (
     STATE_ABBR_TO_NUM,
+    _find_and_read_file,
     build_parser,
     main,
     normalize_state_input,
@@ -42,7 +43,7 @@ def _mock_routes_csv() -> str:
         "CountryNum,StateNum,Route,RouteName,Active,Latitude,Longitude,Stratum,BCR,RouteTypeID,RouteTypeDetailID\n"
         "840,02,001,ST. FLORIAN,1,34.867,-87.616,02,24,1,1\n"
         "840,02,002,MOUNT HOPE,1,34.453,-87.478,02,24,1,1\n"
-        "840,35,001,OCRACOKE,1,35.112,-75.981,04,28,1,1\n"
+        "840,63,001,OCRACOKE,1,35.112,-75.981,04,28,1,1\n"
     )
 
 
@@ -53,7 +54,7 @@ def _mock_weather_csv() -> str:
         "RD001,840,02,001,101,2018,06,10,00112,40,18.0,22.0,C,0,1,0,0,0530,0930,0,1,1\n"
         "RD002,840,02,001,101,2019,06,12,00112,42,19.0,23.5,C,0,1,0,0,0530,0930,0,1,1\n"
         "RD003,840,02,002,101,2019,06,15,00225,35,20.0,24.0,C,0,1,0,0,0545,0945,0,1,1\n"
-        "RD004,840,35,001,101,2019,06,20,00331,38,21.0,25.0,C,0,1,0,0,0515,0915,0,1,1\n"
+        "RD004,840,63,001,101,2019,06,20,00331,38,21.0,25.0,C,0,1,0,0,0515,0915,0,1,1\n"
     )
 
 
@@ -69,7 +70,7 @@ def _mock_vehicle_csv() -> str:
         f"RD001,840,02,001,101,2018,1,{cars},{noise}\n"
         f"RD002,840,02,001,101,2019,1,{cars},{noise}\n"
         f"RD003,840,02,002,101,2019,1,{cars},{noise}\n"
-        f"RD004,840,35,001,101,2019,1,{cars},{noise}\n"
+        f"RD004,840,63,001,101,2019,1,{cars},{noise}\n"
     )
 
 
@@ -93,7 +94,7 @@ def _mock_fifty_stop_csv() -> str:
         f"RD001,840,02,001,101,2018,07610,{stops_robin}\n"
         f"RD002,840,02,001,101,2019,07610,{stops_robin}\n"
         f"RD003,840,02,002,101,2019,04770,{stops_jay}\n"
-        f"RD004,840,35,001,101,2019,07610,{stops_robin}\n"
+        f"RD004,840,63,001,101,2019,07610,{stops_robin}\n"
     )
 
 
@@ -240,11 +241,23 @@ class TestCliArgumentParser:
         assert args.layer_name == "my_birds"
 
     def test_normalize_state_input(self) -> None:
-        assert normalize_state_input("NC") == "35"
+        assert normalize_state_input("NC") == "63"
         assert normalize_state_input("al") == "02"
-        assert normalize_state_input("North Carolina") == "35"
+        assert normalize_state_input("North Carolina") == "63"
         assert normalize_state_input("2") == "02"
         assert normalize_state_input("02") == "02"
+
+    def test_find_and_read_file_ignores_zone_identifier(self, tmp_path: Path) -> None:
+        """Verify that _find_and_read_file ignores Windows NTFS Zone.Identifier streams."""
+        real_file = tmp_path / "routes.csv"
+        real_file.write_text("CountryNum,StateNum,Route\n840,02,001\n", encoding="utf-8")
+        zone_file = tmp_path / "routes.csv:Zone.Identifier"
+        zone_file.write_text("[ZoneTransfer]\nZoneId=3\n", encoding="utf-8")
+
+        buf = _find_and_read_file("routes.csv", raw_dir=tmp_path)
+        content = buf.read().decode("utf-8")
+        assert "ZoneTransfer" not in content
+        assert "CountryNum,StateNum,Route" in content
 
 
 # ---------------------------------------------------------------------------
