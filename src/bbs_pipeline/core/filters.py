@@ -390,15 +390,30 @@ def nullify_stops_beyond_total(
     nullify_exprs = []
     for stop_col in present_stop_cols:
         stop_index = int(stop_col.removeprefix("Stop"))  # 1-based
-        # NULL when stop_index > TotalStops; keep value otherwise.
+        # Defensive cast: strip whitespace, parse as Int32 (strict=False →
+        # unparseable values become null), then zero-fill genuine nulls.
+        # Columns may arrive as pl.String (FIFTY_STOP_SCHEMA universal-string
+        # ingestion) or already as pl.Int32.
+        col_dtype = df[stop_col].dtype
+        if col_dtype == pl.String:
+            cast_expr = (
+                pl.col(stop_col)
+                .str.strip_chars()
+                .cast(pl.Int32, strict=False)
+                .fill_null(0)
+            )
+        else:
+            cast_expr = pl.col(stop_col).cast(pl.Int32, strict=False).fill_null(0)
+        # NULL when stop_index > TotalStops; keep cast value otherwise.
         nullify_exprs.append(
             pl.when(pl.col(total_stops_col) < stop_index)
             .then(pl.lit(None, dtype=pl.Int32))
-            .otherwise(pl.col(stop_col))
+            .otherwise(cast_expr)
             .alias(stop_col)
         )
 
     return df.with_columns(nullify_exprs)
+
 
 
 # ---------------------------------------------------------------------------
@@ -470,9 +485,22 @@ def slice_stop_range(
             f"No Stop columns found for range [{start_stop}, {end_stop}] in DataFrame."
         )
 
+    # Defensive cast: stop columns may be pl.String (universal-string ingestion)
+    # or pl.Int32.  Strip whitespace, cast non-strictly, zero-fill nulls.
+    def _stop_numeric(col: str) -> pl.Expr:
+        if df[col].dtype == pl.String:
+            return (
+                pl.col(col)
+                .str.strip_chars()
+                .cast(pl.Int32, strict=False)
+                .fill_null(0)
+            )
+        return pl.col(col).cast(pl.Int32, strict=False).fill_null(0)
+
     return df.with_columns(
-        pl.sum_horizontal([pl.col(c) for c in cols_in_range]).alias(segment_col)
+        pl.sum_horizontal([_stop_numeric(c) for c in cols_in_range]).alias(segment_col)
     )
+
 
 
 # ---------------------------------------------------------------------------
@@ -732,15 +760,21 @@ def filter_traffic(
 
     filtered = df
     if max_cars_per_stop is not None:
+        cars_per_stop_expr = pl.col(cars_per_stop_col)
+        if df.schema.get(cars_per_stop_col) in (pl.String, pl.Utf8):
+            cars_per_stop_expr = cars_per_stop_expr.str.strip_chars().cast(pl.Float64, strict=False)
         filtered = filtered.filter(
-            pl.col(cars_per_stop_col).is_not_null()
-            & (pl.col(cars_per_stop_col) <= max_cars_per_stop)
+            cars_per_stop_expr.is_not_null()
+            & (cars_per_stop_expr <= max_cars_per_stop)
         )
 
     if max_car_total is not None:
+        car_total_expr = pl.col(car_total_col)
+        if df.schema.get(car_total_col) in (pl.String, pl.Utf8):
+            car_total_expr = car_total_expr.str.strip_chars().cast(pl.Int32, strict=False)
         filtered = filtered.filter(
-            pl.col(car_total_col).is_not_null()
-            & (pl.col(car_total_col) <= max_car_total)
+            car_total_expr.is_not_null()
+            & (car_total_expr <= max_car_total)
         )
 
     return filtered

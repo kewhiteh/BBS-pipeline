@@ -30,13 +30,13 @@ TEN_STOP_SCHEMA = {
     "RPID": pl.String,
     "Year": pl.String,
     "AOU": pl.String,
-    "Count10": pl.Int32,
-    "Count20": pl.Int32,
-    "Count30": pl.Int32,
-    "Count40": pl.Int32,
-    "Count50": pl.Int32,
-    "StopTotal": pl.Int32,
-    "SpeciesTotal": pl.Int32,
+    "Count10": pl.String,
+    "Count20": pl.String,
+    "Count30": pl.String,
+    "Count40": pl.String,
+    "Count50": pl.String,
+    "StopTotal": pl.String,
+    "SpeciesTotal": pl.String,
 }
 ```
 
@@ -78,8 +78,8 @@ VEHICLE_SCHEMA = {
     "RPID": pl.String,
     "Year": pl.String,
     "RecordedCar": pl.String,
-    **{f"Car{i}": pl.Int32 for i in range(1, 51)},
-    **{f"Noise{i}": pl.UInt8 for i in range(1, 51)},
+    **{f"Car{i}": pl.String for i in range(1, 51)},
+    **{f"Noise{i}": pl.String for i in range(1, 51)},
 }
 ```
 

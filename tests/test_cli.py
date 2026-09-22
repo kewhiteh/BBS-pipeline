@@ -58,8 +58,8 @@ def _mock_weather_csv() -> str:
 
 
 def _mock_vehicle_csv() -> str:
-    cars = ",".join("2" for _ in range(50))
-    noise = ",".join("0" for _ in range(50))
+    cars = ",".join("2       " for _ in range(50))
+    noise = ",".join("0      " for _ in range(50))
     return (
         "RouteDataID,CountryNum,StateNum,Route,RPID,Year,RecordedCar,"
         + ",".join(f"Car{i}" for i in range(1, 51))

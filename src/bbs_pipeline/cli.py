@@ -892,7 +892,10 @@ def run_pipeline(
         weather_df = compute_observer_covariates(weather_df)
 
     if include_covariates or has_traffic_filter:
-        # Vehicle & noise covariates
+        # Vehicle & noise covariates — MUST be joined before filter_traffic is called.
+        # When the user has requested a traffic threshold (has_traffic_filter), any
+        # failure here is fatal: raising prevents filter_traffic from silently
+        # no-op'ing because the covariate columns are absent from weather_df.
         try:
             veh_buf = _find_and_read_file("VehicleData.csv", raw_dir=raw_dir, item_id=item_id, session=session)
             veh_df = _load_csv_from_zip_or_raw(veh_buf, "VehicleData.csv", VEHICLE_SCHEMA)
@@ -900,13 +903,20 @@ def run_pipeline(
                 veh_df = veh_df.with_columns(pl.lit(50, dtype=pl.Int32).alias("TotalStops"))
             veh_df = compute_traffic_covariates(veh_df)
 
-            # Left join traffic covariates into weather runs
+            # Left join traffic covariates into weather runs BEFORE any filter_traffic call.
             traffic_cols = ["RouteDataID", "CarTotal", "CarsPerStop"]
             if "RouteDataID" in weather_df.columns and "RouteDataID" in veh_df.columns:
                 veh_sub = veh_df.select([c for c in traffic_cols if c in veh_df.columns])
                 weather_df = weather_df.join(veh_sub, on="RouteDataID", how="left", coalesce=True)
         except Exception as exc:
-            logger.debug("Could not compute traffic covariates: %s", exc)
+            if has_traffic_filter:
+                # Traffic columns are required for the requested filter — do not silently skip.
+                raise RuntimeError(
+                    f"Traffic covariate join failed but --max-cars-per-stop / "
+                    f"--max-car-total was requested. Cannot apply filter without "
+                    f"CarsPerStop / CarTotal columns. Underlying error: {exc}"
+                ) from exc
+            logger.warning("Could not compute traffic covariates (covariates only): %s", exc)
 
     if has_tenure_filter:
         weather_df = filter_observer_tenure(
@@ -927,6 +937,7 @@ def run_pipeline(
         )
         if weather_df.is_empty():
             raise ValueError("No survey runs satisfied the vehicle traffic criteria.")
+
 
     if has_tenure_filter or has_traffic_filter:
         valid_route_keys = frozenset(weather_df["RouteKey"].to_list())

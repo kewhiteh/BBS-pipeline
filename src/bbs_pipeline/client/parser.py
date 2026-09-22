@@ -23,6 +23,10 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 
 #: Schema for 50-stop individual stop-count observation files.
+#: Profile A Data Invariant: Stop columns are ingested as pl.String to
+#: tolerate trailing whitespace and dirty values in raw CSVs.  Callers that
+#: need numeric totals must cast defensively:
+#:   pl.col(col).str.strip_chars().cast(pl.Int32, strict=False).fill_null(0)
 FIFTY_STOP_SCHEMA: Dict[str, type] = {
     "RouteDataID": pl.String,
     "CountryNum": pl.String,
@@ -31,10 +35,14 @@ FIFTY_STOP_SCHEMA: Dict[str, type] = {
     "RPID": pl.String,
     "Year": pl.String,
     "AOU": pl.String,
-    **{f"Stop{i}": pl.Int32 for i in range(1, 51)},
+    **{f"Stop{i}": pl.String for i in range(1, 51)},
 }
 
 #: Schema for 10-stop count-band summary files.
+#: Profile A Data Invariant: Count and total columns are ingested as pl.String
+#: to tolerate trailing whitespace and dirty values in raw CSVs. Callers that
+#: need numeric totals must cast defensively:
+#:   pl.col(col).str.strip_chars().cast(pl.Int32, strict=False).fill_null(0)
 TEN_STOP_SCHEMA: Dict[str, type] = {
     "RouteDataID": pl.String,
     "CountryNum": pl.String,
@@ -43,13 +51,13 @@ TEN_STOP_SCHEMA: Dict[str, type] = {
     "RPID": pl.String,
     "Year": pl.String,
     "AOU": pl.String,
-    "Count10": pl.Int32,
-    "Count20": pl.Int32,
-    "Count30": pl.Int32,
-    "Count40": pl.Int32,
-    "Count50": pl.Int32,
-    "StopTotal": pl.Int32,
-    "SpeciesTotal": pl.Int32,
+    "Count10": pl.String,
+    "Count20": pl.String,
+    "Count30": pl.String,
+    "Count40": pl.String,
+    "Count50": pl.String,
+    "StopTotal": pl.String,
+    "SpeciesTotal": pl.String,
 }
 
 #: Schema for weather and operational history records.
@@ -79,6 +87,10 @@ WEATHER_SCHEMA: Dict[str, type] = {
 }
 
 #: Schema for vehicle and noise records.
+#: Profile A Data Invariant: Car and Noise columns are ingested as pl.String to
+#: tolerate trailing whitespace and dirty values in raw CSVs. Callers that
+#: need numeric totals must cast defensively:
+#:   pl.col(col).str.strip_chars().cast(pl.Int32, strict=False).fill_null(0)
 VEHICLE_SCHEMA: Dict[str, type] = {
     "RouteDataID": pl.String,
     "CountryNum": pl.String,
@@ -87,8 +99,8 @@ VEHICLE_SCHEMA: Dict[str, type] = {
     "RPID": pl.String,
     "Year": pl.String,
     "RecordedCar": pl.String,
-    **{f"Car{i}": pl.Int32 for i in range(1, 51)},
-    **{f"Noise{i}": pl.UInt8 for i in range(1, 51)},
+    **{f"Car{i}": pl.String for i in range(1, 51)},
+    **{f"Noise{i}": pl.String for i in range(1, 51)},
 }
 
 #: Schema for route geographic directory.

@@ -197,11 +197,11 @@ class TestFiftyStopParsing:
                 f"Column {col!r}: expected {expected_dtype}, got {df.schema[col]}"
             )
 
-    def test_fifty_stop_columns_are_int32(self, synthetic_zip_builder):
+    def test_fifty_stop_columns_are_string(self, synthetic_zip_builder):
         zip_buf = synthetic_zip_builder({"fifty1.csv": _fifty_stop_csv()})
         df = parse_fifty_stop(zip_buf, "fifty1.csv")
         for i in range(1, 51):
-            assert df.schema[f"Stop{i}"] == pl.Int32
+            assert df.schema[f"Stop{i}"] == pl.String
 
     def test_fifty_stop_aou_is_string(self, synthetic_zip_builder):
         zip_buf = synthetic_zip_builder({"fifty1.csv": _fifty_stop_csv()})
@@ -229,11 +229,15 @@ class TestTenStopParsing:
             assert col in df.columns, f"Column {col!r} missing"
             assert df.schema[col] == expected_dtype
 
-    def test_ten_stop_count_columns_are_int32(self, synthetic_zip_builder):
+    def test_ten_stop_count_columns_are_string(self, synthetic_zip_builder):
+        """Count10..Count50, StopTotal, SpeciesTotal must be pl.String per Universal String Ingestion."""
         zip_buf = synthetic_zip_builder({"Alabama.csv": _ten_stop_csv()})
         df = parse_ten_stop(zip_buf, "Alabama.csv")
         for col in ("Count10", "Count20", "Count30", "Count40", "Count50", "StopTotal", "SpeciesTotal"):
-            assert df.schema[col] == pl.Int32
+            assert df.schema[col] == pl.String
+
+    # Alias for backwards compatibility
+    test_ten_stop_count_columns_are_int32 = test_ten_stop_count_columns_are_string
 
 
 class TestWeatherParsing:
@@ -282,17 +286,80 @@ class TestVehicleParsing:
             assert col in df.columns, f"Column {col!r} missing"
             assert df.schema[col] == expected_dtype
 
-    def test_vehicle_car_columns_are_int32(self, synthetic_zip_builder):
+    def test_vehicle_car_columns_are_string(self, synthetic_zip_builder):
         zip_buf = synthetic_zip_builder({"VehicleData.csv": _vehicle_csv()})
         df = parse_vehicle(zip_buf)
         for i in range(1, 51):
-            assert df.schema[f"Car{i}"] == pl.Int32
+            assert df.schema[f"Car{i}"] == pl.String
 
-    def test_vehicle_noise_columns_are_uint8(self, synthetic_zip_builder):
+    # Aliases for naming consistency
+    test_vehicle_car_columns_are_int32 = test_vehicle_car_columns_are_string
+    test_vehicle_columns_are_int32 = test_vehicle_car_columns_are_string
+
+    def test_vehicle_car_columns_with_trailing_whitespace(self, synthetic_zip_builder):
+        """Verify Car columns with trailing whitespace parse cleanly without error."""
+        car_values = ",".join("1       " for _ in range(50))
+        noise_values = ",".join("0" for _ in range(50))
+        csv_content = (
+            "RouteDataID,CountryNum,StateNum,Route,RPID,Year,RecordedCar,"
+            + ",".join(f"Car{i}" for i in range(1, 51))
+            + ","
+            + ",".join(f"Noise{i}" for i in range(1, 51))
+            + "\n"
+            "10001,840,02,001,1,2022,1," + car_values + "," + noise_values + "\n"
+        )
+        zip_buf = synthetic_zip_builder({"VehicleData.csv": csv_content})
+        df = parse_vehicle(zip_buf)
+        assert df["Car1"][0] == "1       "
+        assert df.schema["Car1"] == pl.String
+
+    def test_vehicle_noise_columns_are_string(self, synthetic_zip_builder):
+        """Noise1..Noise50 must be pl.String per Universal String Ingestion."""
         zip_buf = synthetic_zip_builder({"VehicleData.csv": _vehicle_csv()})
         df = parse_vehicle(zip_buf)
         for i in range(1, 51):
-            assert df.schema[f"Noise{i}"] == pl.UInt8
+            assert df.schema[f"Noise{i}"] == pl.String
+
+    # Alias for backwards compatibility
+    test_vehicle_noise_columns_are_uint8 = test_vehicle_noise_columns_are_string
+
+    def test_vehicle_noise_columns_with_trailing_whitespace(self, synthetic_zip_builder):
+        """Verify Noise columns with trailing whitespace parse cleanly without error."""
+        car_values = ",".join("1" for _ in range(50))
+        noise_values = ",".join("0      " for _ in range(50))
+        csv_content = (
+            "RouteDataID,CountryNum,StateNum,Route,RPID,Year,RecordedCar,"
+            + ",".join(f"Car{i}" for i in range(1, 51))
+            + ","
+            + ",".join(f"Noise{i}" for i in range(1, 51))
+            + "\n"
+            "10001,840,02,001,1,2022,1," + car_values + "," + noise_values + "\n"
+        )
+        zip_buf = synthetic_zip_builder({"VehicleData.csv": csv_content})
+        df = parse_vehicle(zip_buf)
+        assert df["Noise1"][0] == "0      "
+        assert df.schema["Noise1"] == pl.String
+
+    def test_vehicle_all_columns_are_string(self, synthetic_zip_builder):
+        """Profile A Invariant: Every column in VEHICLE_SCHEMA must be pl.String."""
+        zip_buf = synthetic_zip_builder({"VehicleData.csv": _vehicle_csv()})
+        df = parse_vehicle(zip_buf)
+        for col, expected_dtype in VEHICLE_SCHEMA.items():
+            assert expected_dtype == pl.String, f"VEHICLE_SCHEMA column {col!r} must be pl.String"
+            assert df.schema[col] == pl.String, f"Parsed VehicleData column {col!r} must be pl.String"
+
+    def test_vehicle_schema_zero_numeric_dtypes(self):
+        """Section 1 & 9 Ingestion Isolation: Zero numeric dtypes permitted at ingestion."""
+        numeric_dtypes = (
+            pl.UInt8, pl.UInt16, pl.UInt32, pl.UInt64,
+            pl.Int8, pl.Int16, pl.Int32, pl.Int64,
+            pl.Float32, pl.Float64,
+        )
+        for col, dtype in VEHICLE_SCHEMA.items():
+            assert dtype not in numeric_dtypes, (
+                f"VEHICLE_SCHEMA column {col!r} has forbidden numeric dtype {dtype}"
+            )
+            assert dtype == pl.String, f"VEHICLE_SCHEMA column {col!r} must be pl.String"
 
 
 class TestNestedZipParsing:

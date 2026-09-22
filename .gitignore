@@ -41,3 +41,4 @@ Thumbs.db
 *.swo
 *~
 *Zone.Identifier
+.agents/skills/developing-with-streamlit

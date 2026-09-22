@@ -21,6 +21,7 @@ from bbs_pipeline.core.covariates import (
     OBSERVER_COHORTS,
     STRATA_NAMES,
     classify_observer_cohort,
+    compute_noise_covariates,
     compute_observer_covariates,
     compute_traffic_covariates,
     filter_by_observer_cohort,
@@ -67,8 +68,8 @@ _VEHICLE_SCHEMA: dict[str, type[pl.DataType]] = {
     "RPID": pl.String,
     "Year": pl.String,
     "RecordedCar": pl.String,
-    **{f"Car{i}": pl.Int32 for i in range(1, 51)},
-    **{f"Noise{i}": pl.UInt8 for i in range(1, 51)},
+    **{f"Car{i}": pl.String for i in range(1, 51)},
+    **{f"Noise{i}": pl.String for i in range(1, 51)},
     "TotalStops": pl.Int32,
 }
 
@@ -121,7 +122,7 @@ def _make_weather_df(rows: list[dict]) -> pl.DataFrame:
 
 def _make_vehicle_row(
     total_stops: int,
-    car_counts: list[int] | None = None,
+    car_counts: list[int | str] | None = None,
     route_data_id: str = "0001",
     year: str = "2000",
 ) -> dict[str, object]:
@@ -140,9 +141,9 @@ def _make_vehicle_row(
         "TotalStops": total_stops,
     }
     for i, val in enumerate(cars, start=1):
-        row[f"Car{i}"] = val
+        row[f"Car{i}"] = str(val)
     for i in range(1, 51):
-        row[f"Noise{i}"] = 0
+        row[f"Noise{i}"] = "0"
     return row
 
 
@@ -152,7 +153,8 @@ def _make_vehicle_df(rows: list[dict]) -> pl.DataFrame:
     cols: dict[str, list] = {k: [] for k in _VEHICLE_SCHEMA}
     for row in rows:
         for k in _VEHICLE_SCHEMA:
-            cols[k].append(row.get(k, 0))
+            default_val = "0" if _VEHICLE_SCHEMA[k] == pl.String else 0
+            cols[k].append(row.get(k, default_val))
     return pl.DataFrame(cols, schema=_VEHICLE_SCHEMA)
 
 
@@ -396,6 +398,94 @@ class TestComputeTrafficCovariates:
         assert result["CarTotal"][0] == 0, (
             "Car4 must not contribute to CarTotal when TotalStops=3."
         )
+
+    def test_dirty_space_padded_car_and_noise_strings_handled_defensively(self):
+        """Profile A Invariant: Car and Noise strings with trailing/leading spaces parse safely."""
+        row = _make_vehicle_row(total_stops=3)
+        row["Car1"] = "2       "
+        row["Car2"] = "   3  "
+        row["Car3"] = "5"
+        row["Car4"] = "99      "  # > TotalStops=3, should be ignored
+        row["Noise1"] = "0      "
+        row["Noise2"] = " 1 "
+        df = _make_vehicle_df([row])
+        result = compute_traffic_covariates(df)
+
+        assert result["CarTotal"][0] == 10
+        assert result["CarsPerStop"][0] == pytest.approx(10.0 / 3.0)
+
+    def test_string_total_stops_with_padding_handled_defensively(self):
+        """String TotalStops (e.g. ' 3 ') is stripped and cast defensively without comparison errors."""
+        row = _make_vehicle_row(total_stops=50)
+        row["TotalStops"] = "  3  "
+        row["Car1"] = "4 "
+        row["Car2"] = " 6"
+        row["Car3"] = " 10 "
+        row["Car4"] = "99"  # Beyond TotalStops=3
+        df = pl.DataFrame([row], schema={**_VEHICLE_SCHEMA, "TotalStops": pl.String})
+        result = compute_traffic_covariates(df)
+
+        assert result["CarTotal"][0] == 20
+        assert result["CarsPerStop"][0] == pytest.approx(20.0 / 3.0)
+        assert result["CarsPerStop"].dtype == pl.Float64
+
+    def test_zero_and_null_total_stops_division_guarded_defensively(self):
+        """TotalStops=0 or None yields null CarsPerStop without divide-by-zero, NaN, or exceptions."""
+        row_zero = _make_vehicle_row(total_stops=0)
+        row_zero["Car1"] = "5"
+        row_null = _make_vehicle_row(total_stops=50)
+        row_null["TotalStops"] = None
+        row_null["Car1"] = "5"
+        df = pl.DataFrame([row_zero, row_null], schema=_VEHICLE_SCHEMA)
+        result = compute_traffic_covariates(df)
+
+        assert result["CarTotal"].to_list() == [0, 0]
+        assert result["CarsPerStop"].to_list() == [None, None]
+        assert result["CarsPerStop"].dtype == pl.Float64
+
+    def test_unparseable_dirty_strings_fallback_to_zero(self):
+        """Unparseable string values ('NA', 'corrupt', empty) fall back safely to 0."""
+        row = _make_vehicle_row(total_stops=4)
+        row["Car1"] = "NA"
+        row["Car2"] = "corrupt"
+        row["Car3"] = ""
+        row["Car4"] = " 8 "
+        df = _make_vehicle_df([row])
+        result = compute_traffic_covariates(df)
+
+        assert result["CarTotal"][0] == 8
+        assert result["CarsPerStop"][0] == pytest.approx(2.0)
+
+    def test_input_dataframe_car_string_columns_preserved_without_mutation(self):
+        """compute_traffic_covariates must not mutate Car columns from pl.String in input DataFrame."""
+        row = _make_vehicle_row(total_stops=2)
+        row["Car1"] = "3   "
+        row["Car2"] = " 7"
+        df = _make_vehicle_df([row])
+        result = compute_traffic_covariates(df)
+
+        assert result["Car1"][0] == "3   "
+        assert result.schema["Car1"] == pl.String
+        assert result["CarTotal"][0] == 10
+        assert result["CarsPerStop"][0] == pytest.approx(5.0)
+
+    def test_compute_noise_covariates_defensive_parsing(self):
+        """Noise columns are defensively parsed and aggregated row-wise within TotalStops."""
+        row = _make_vehicle_row(total_stops=3)
+        row["Noise1"] = "0      "
+        row["Noise2"] = " 1 "
+        row["Noise3"] = "2"
+        row["Noise4"] = "5"  # > TotalStops=3, ignored
+        df = _make_vehicle_df([row])
+        result = compute_noise_covariates(df)
+
+        assert result["NoiseTotal"][0] == 3
+        assert result["NoiseTotal"].dtype == pl.Int32
+
+    def test_traffic_covariates_import_from_covariates_package(self):
+        """Verify compute_traffic_covariates is directly importable from bbs_pipeline.covariates.traffic."""
+        from bbs_pipeline.covariates.traffic import compute_traffic_covariates as traffic_fn
+        assert traffic_fn is compute_traffic_covariates
 
     # NEGATIVE: non-DataFrame raises TypeError
     def test_raises_type_error_on_non_dataframe(self):  # NEGATIVE

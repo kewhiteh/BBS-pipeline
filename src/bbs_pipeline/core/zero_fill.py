@@ -44,6 +44,18 @@ logger = logging.getLogger(__name__)
 #: All 50 Stop columns expected in the 50-stop wide schema.
 _ALL_STOP_COLS: tuple[str, ...] = tuple(f"Stop{i}" for i in range(1, 51))
 
+#: Explicit detection/non-detection count column names that are zero-filled.
+_EXPLICIT_COUNT_COLS: tuple[str, ...] = (
+    "Count",
+    "SpeciesTotal",
+    "StopTotal",
+    "Count10",
+    "Count20",
+    "Count30",
+    "Count40",
+    "Count50",
+)
+
 
 # ---------------------------------------------------------------------------
 # Step 1: Lifetime Route Taxa Identification (S_r)
@@ -157,9 +169,20 @@ def get_confirmed_route_taxa(
         count_expr = pl.col("StopTotal").fill_null(0) >= 1
     elif any(c in df.columns for c in _ALL_STOP_COLS):
         present_stops = [c for c in _ALL_STOP_COLS if c in df.columns]
+        # Defensive cast: stop columns may be pl.String (universal-string ingestion).
+        def _stop_int(col: str) -> pl.Expr:
+            if df[col].dtype == pl.String:
+                return (
+                    pl.col(col)
+                    .str.strip_chars()
+                    .cast(pl.Int32, strict=False)
+                    .fill_null(0)
+                )
+            return pl.col(col).fill_null(0)
         count_expr = (
-            pl.sum_horizontal([pl.col(c).fill_null(0) for c in present_stops]) >= 1
+            pl.sum_horizontal([_stop_int(c) for c in present_stops]) >= 1
         )
+
     elif "Count" in df.columns:
         count_expr = pl.col("Count").fill_null(0) >= 1
     else:
@@ -462,6 +485,9 @@ def impute_zero_observations(
         for i in range(1, 51):
             schema[f"Stop{i}"] = pl.Int32
         schema["SpeciesTotal"] = pl.Int32
+        for col in _EXPLICIT_COUNT_COLS:
+            if col in observations_df.columns:
+                schema[col] = pl.Int32
         return pl.DataFrame(schema=schema)
 
     # TotalStops guard
@@ -516,7 +542,9 @@ def impute_zero_observations(
     if "RPID" in grid.columns and "RPID" in obs.columns:
         join_keys.append("RPID")
 
-    # Select only join keys, available stop columns, and SpeciesTotal from obs
+    # Select only join keys and explicit count columns from obs.
+    # Covariates in obs (e.g. weather, observer, traffic) are strictly ignored
+    # so they never collide with or overwrite carryover covariates from grid_df.
     present_stop_cols = [c for c in _ALL_STOP_COLS if c in obs.columns]
     has_species_total = "SpeciesTotal" in obs.columns
 
@@ -524,8 +552,9 @@ def impute_zero_observations(
     for c in present_stop_cols:
         if c not in obs_cols:
             obs_cols.append(c)
-    if has_species_total and "SpeciesTotal" not in obs_cols:
-        obs_cols.append("SpeciesTotal")
+    for c in _EXPLICIT_COUNT_COLS:
+        if c in obs.columns and c not in obs_cols:
+            obs_cols.append(c)
 
     obs_subset = obs.select(obs_cols).unique(subset=join_keys)
 
@@ -542,7 +571,17 @@ def impute_zero_observations(
     for i in range(1, 51):
         col_name = f"Stop{i}"
         if col_name in joined.columns:
-            val_expr = pl.col(col_name).cast(pl.Int32).fill_null(0)
+            # Defensive cast: columns may be pl.String (universal-string ingestion)
+            # or already pl.Int32. Strip whitespace, cast non-strictly, zero-fill.
+            if joined[col_name].dtype == pl.String:
+                val_expr = (
+                    pl.col(col_name)
+                    .str.strip_chars()
+                    .cast(pl.Int32, strict=False)
+                    .fill_null(0)
+                )
+            else:
+                val_expr = pl.col(col_name).cast(pl.Int32, strict=False).fill_null(0)
         else:
             val_expr = pl.lit(0, dtype=pl.Int32)
 
@@ -555,25 +594,110 @@ def impute_zero_observations(
 
     imputed = joined.with_columns(stop_exprs)
 
-    # Impute SpeciesTotal:
+    # Impute explicit count columns (SpeciesTotal, Count, StopTotal, Count10..Count50).
+    # Environmental, observer, and traffic covariates (e.g. StartTemp, EndTemp,
+    # Wind, Sky, CarsPerStop, CarTotal, ObserverTenure, FirstYearRun) are strictly
+    # preserved without blanket .fill_null(0) coercion.
+    count_mutation_exprs: list[pl.Expr] = []
+
+    # 1. SpeciesTotal:
     # If observed and present: retain observed count (or 0 if null).
     # If missing: 0 (or sum of Stop1..Stop_TotalStops).
     if has_species_total and "SpeciesTotal" in joined.columns:
+        if joined["SpeciesTotal"].dtype == pl.String:
+            st_val = (
+                pl.col("SpeciesTotal")
+                .str.strip_chars()
+                .cast(pl.Int32, strict=False)
+                .fill_null(0)
+            )
+        else:
+            st_val = pl.col("SpeciesTotal").cast(pl.Int32, strict=False).fill_null(0)
+
         species_total_expr = (
             pl.when(pl.col("SpeciesTotal").is_not_null())
-            .then(pl.col("SpeciesTotal").cast(pl.Int32))
+            .then(st_val)
             .otherwise(
                 pl.sum_horizontal([pl.col(f"Stop{i}").fill_null(0) for i in range(1, 51)])
+                if present_stop_cols
+                else (pl.col("Count").fill_null(0) if "Count" in joined.columns else pl.lit(0, dtype=pl.Int32))
             )
             .alias("SpeciesTotal")
         )
     else:
-        species_total_expr = (
-            pl.sum_horizontal([pl.col(f"Stop{i}").fill_null(0) for i in range(1, 51)])
-            .alias("SpeciesTotal")
+        if present_stop_cols or any(c in joined.columns for c in _ALL_STOP_COLS):
+            species_total_expr = (
+                pl.sum_horizontal([pl.col(f"Stop{i}").fill_null(0) for i in range(1, 51)])
+                .alias("SpeciesTotal")
+            )
+        elif "Count" in joined.columns:
+            species_total_expr = pl.col("Count").fill_null(0).alias("SpeciesTotal")
+        else:
+            species_total_expr = (
+                pl.sum_horizontal([pl.col(f"Stop{i}").fill_null(0) for i in range(1, 51)])
+                .alias("SpeciesTotal")
+            )
+    count_mutation_exprs.append(species_total_expr)
+
+    # 2. Count:
+    if "Count" in joined.columns:
+        if joined["Count"].dtype == pl.String:
+            count_val = (
+                pl.col("Count")
+                .str.strip_chars()
+                .cast(pl.Int32, strict=False)
+                .fill_null(0)
+            )
+        else:
+            count_val = pl.col("Count").cast(pl.Int32, strict=False).fill_null(0)
+
+        count_mutation_exprs.append(
+            pl.when(pl.col("Count").is_not_null())
+            .then(count_val)
+            .otherwise(pl.lit(0, dtype=pl.Int32))
+            .alias("Count")
         )
 
-    result = imputed.with_columns(species_total_expr)
+    # 3. StopTotal:
+    if "StopTotal" in joined.columns:
+        if joined["StopTotal"].dtype == pl.String:
+            stoptotal_val = (
+                pl.col("StopTotal")
+                .str.strip_chars()
+                .cast(pl.Int32, strict=False)
+                .fill_null(0)
+            )
+        else:
+            stoptotal_val = pl.col("StopTotal").cast(pl.Int32, strict=False).fill_null(0)
+
+        count_mutation_exprs.append(
+            pl.when(pl.col("StopTotal").is_not_null())
+            .then(stoptotal_val)
+            .otherwise(pl.lit(0, dtype=pl.Int32))
+            .alias("StopTotal")
+        )
+
+    # 4. 10-stop summary count columns (Count10..Count50):
+    for c in ("Count10", "Count20", "Count30", "Count40", "Count50"):
+        if c in joined.columns:
+            if joined[c].dtype == pl.String:
+                c_val = (
+                    pl.col(c)
+                    .str.strip_chars()
+                    .cast(pl.Int32, strict=False)
+                    .fill_null(0)
+                )
+            else:
+                c_val = pl.col(c).cast(pl.Int32, strict=False).fill_null(0)
+
+            count_mutation_exprs.append(
+                pl.when(pl.col(c).is_not_null())
+                .then(c_val)
+                .otherwise(pl.lit(0, dtype=pl.Int32))
+                .alias(c)
+            )
+
+    result = imputed.with_columns(count_mutation_exprs)
 
     sort_keys = [route_key_col, year_col, aou_col]
     return result.sort(sort_keys)

@@ -494,6 +494,153 @@ class TestImputeZeroObservations:
         assert result["Stop49"][0] is None  # Guarded: NULL, not 99
         assert result["Stop50"][0] is None
 
+    def test_covariates_preserved_for_unobserved_species(self) -> None:
+        """Environmental and observer covariates must retain true values or NULLs.
+
+        Defect / Risk:
+        Zero-filling logic must NEVER touch environmental or observer covariates.
+        Taxonomic counts represent detection/non-detection (where null -> 0 is valid
+        for confirmed route taxa). Covariates (temperatures, winds, observer tenure,
+        car counts/per-stop) represent environmental/effort conditions; missing values
+        must remain NULL and never passed through a blanket .fill_null(0).
+        """
+        grid = pl.DataFrame(
+            [
+                {
+                    "RouteKey": "840_02_001",
+                    "Year": "2019",
+                    "AOU": "07610",
+                    "TotalStops": 50,
+                    # Covariates with mix of valid values and nulls:
+                    "StartTemp": None,
+                    "EndTemp": 75.5,
+                    "StartWind": None,
+                    "EndWind": "2",
+                    "StartSky": None,
+                    "EndSky": "1",
+                    "Wind": None,
+                    "Sky": None,
+                    "CarsPerStop": None,
+                    "CarTotal": None,
+                    "ObserverTenure": None,
+                    "FirstYearRun": None,
+                    "RouteTenure": 5,
+                    "IsFirstYearObserver": 0,
+                }
+            ],
+            schema={
+                "RouteKey": pl.String,
+                "Year": pl.String,
+                "AOU": pl.String,
+                "TotalStops": pl.Int32,
+                "StartTemp": pl.Float64,
+                "EndTemp": pl.Float64,
+                "StartWind": pl.String,
+                "EndWind": pl.String,
+                "StartSky": pl.String,
+                "EndSky": pl.String,
+                "Wind": pl.String,
+                "Sky": pl.String,
+                "CarsPerStop": pl.Float64,
+                "CarTotal": pl.Int32,
+                "ObserverTenure": pl.Int32,
+                "FirstYearRun": pl.Int32,
+                "RouteTenure": pl.Int32,
+                "IsFirstYearObserver": pl.Int32,
+            },
+        )
+        # Empty observations -> unobserved species
+        obs = pl.DataFrame(schema=_OBS_SCHEMA)
+        result = impute_zero_observations(grid, obs)
+
+        assert len(result) == 1
+        # Explicit count columns MUST be 0
+        assert result["SpeciesTotal"][0] == 0
+        for i in range(1, 51):
+            assert result[f"Stop{i}"][0] == 0
+
+        # Environmental covariates must remain null or true joined values (NEVER coerced to 0)
+        assert result["StartTemp"][0] is None, "StartTemp must remain NULL, not 0.0"
+        assert result["EndTemp"][0] == 75.5
+        assert result["StartWind"][0] is None, "StartWind must remain NULL"
+        assert result["EndWind"][0] == "2"
+        assert result["StartSky"][0] is None, "StartSky must remain NULL"
+        assert result["EndSky"][0] == "1"
+        assert result["Wind"][0] is None, "Wind must remain NULL"
+        assert result["Sky"][0] is None, "Sky must remain NULL"
+
+        # Vehicle covariates must remain null (NEVER coerced to 0)
+        assert result["CarsPerStop"][0] is None, "CarsPerStop must remain NULL, not 0.0"
+        assert result["CarTotal"][0] is None, "CarTotal must remain NULL, not 0"
+
+        # Observer covariates must remain null or true values (NEVER coerced to 0)
+        assert result["ObserverTenure"][0] is None, "ObserverTenure must remain NULL, not 0"
+        assert result["FirstYearRun"][0] is None, "FirstYearRun must remain NULL, not 0"
+        assert result["RouteTenure"][0] == 5
+        assert result["IsFirstYearObserver"][0] == 0
+
+    def test_explicit_count_column_scoped_zero_fill(self) -> None:
+        """Explicit count column 'Count' is zero-filled while covariates remain NULL."""
+        grid = pl.DataFrame(
+            [
+                {
+                    "RouteKey": "840_02_001",
+                    "Year": "2019",
+                    "AOU": "07610",  # Unobserved species
+                    "TotalStops": 50,
+                    "StartTemp": None,
+                    "CarsPerStop": None,
+                },
+                {
+                    "RouteKey": "840_02_001",
+                    "Year": "2019",
+                    "AOU": "04770",  # Observed species
+                    "TotalStops": 50,
+                    "StartTemp": None,
+                    "CarsPerStop": None,
+                },
+            ],
+            schema={
+                "RouteKey": pl.String,
+                "Year": pl.String,
+                "AOU": pl.String,
+                "TotalStops": pl.Int32,
+                "StartTemp": pl.Float64,
+                "CarsPerStop": pl.Float64,
+            },
+        )
+        obs = pl.DataFrame(
+            [
+                {
+                    "RouteKey": "840_02_001",
+                    "Year": "2019",
+                    "AOU": "04770",
+                    "Count": 8,
+                }
+            ],
+            schema={
+                "RouteKey": pl.String,
+                "Year": pl.String,
+                "AOU": pl.String,
+                "Count": pl.Int32,
+            },
+        )
+        result = impute_zero_observations(grid, obs)
+
+        # Unobserved species (07610): Count is zero-filled to 0, StartTemp and CarsPerStop remain NULL
+        unobs = result.filter(pl.col("AOU") == "07610")
+        assert unobs["Count"][0] == 0
+        assert unobs["SpeciesTotal"][0] == 0
+        assert unobs["StartTemp"][0] is None
+        assert unobs["CarsPerStop"][0] is None
+
+        # Observed species (04770): Count is 8, StartTemp and CarsPerStop remain NULL
+        obs_row = result.filter(pl.col("AOU") == "04770")
+        assert obs_row["Count"][0] == 8
+        assert obs_row["SpeciesTotal"][0] == 8
+        assert obs_row["StartTemp"][0] is None
+        assert obs_row["CarsPerStop"][0] is None
+
     # --- NEGATIVE failure assertions ---
 
     def test_raises_type_error_on_non_dataframe(self) -> None:
@@ -671,3 +818,123 @@ class TestZeroFillPipelineIntegration:
 
         # pl.Object is banned
         assert pl.Object not in result.schema.values()
+
+    def test_pipeline_zero_fill_preserves_null_covariates_for_unobserved_species(
+        self,
+    ) -> None:
+        """Integration test: pipeline zero-fill preserves null/true covariates on unobserved records.
+
+        Defect / Risk:
+        Zero-filling logic must NEVER touch environmental or observer covariates.
+        Taxonomic counts represent detection/non-detection (where null -> 0 is valid
+        for confirmed route taxa). Covariates (temperatures, winds, observer tenure,
+        car counts/per-stop) represent environmental/effort conditions; missing values
+        must remain NULL and never passed through a blanket .fill_null(0).
+        """
+        history = pl.DataFrame(
+            [
+                # Robin observed in 1970 (establishes confirmed taxa on route)
+                _make_obs_row("840_02_001", "1970", "07610", stop_counts={1: 4}),
+            ],
+            schema=_OBS_SCHEMA,
+        )
+
+        runs = pl.DataFrame(
+            [
+                # 2018 run has complete covariates
+                {
+                    "RouteDataID": "RD001",
+                    "CountryNum": "840",
+                    "StateNum": "02",
+                    "Route": "001",
+                    "RPID": "101",
+                    "Year": "2018",
+                    "TotalStops": 50,
+                    "RouteKey": "840_02_001",
+                    "StartTemp": 60.0,
+                    "EndTemp": 72.0,
+                    "Wind": "1",
+                    "Sky": "0",
+                    "CarsPerStop": 1.2,
+                    "CarTotal": 60,
+                    "ObserverTenure": 3,
+                    "FirstYearRun": 0,
+                },
+                # 2019 run has NULL covariates (environmental/effort missing values)
+                {
+                    "RouteDataID": "RD002",
+                    "CountryNum": "840",
+                    "StateNum": "02",
+                    "Route": "001",
+                    "RPID": "101",
+                    "Year": "2019",
+                    "TotalStops": 50,
+                    "RouteKey": "840_02_001",
+                    "StartTemp": None,
+                    "EndTemp": None,
+                    "Wind": None,
+                    "Sky": None,
+                    "CarsPerStop": None,
+                    "CarTotal": None,
+                    "ObserverTenure": None,
+                    "FirstYearRun": None,
+                },
+            ],
+            schema={
+                "RouteDataID": pl.String,
+                "CountryNum": pl.String,
+                "StateNum": pl.String,
+                "Route": pl.String,
+                "RPID": pl.String,
+                "Year": pl.String,
+                "TotalStops": pl.Int32,
+                "RouteKey": pl.String,
+                "StartTemp": pl.Float64,
+                "EndTemp": pl.Float64,
+                "Wind": pl.String,
+                "Sky": pl.String,
+                "CarsPerStop": pl.Float64,
+                "CarTotal": pl.Int32,
+                "ObserverTenure": pl.Int32,
+                "FirstYearRun": pl.Int32,
+            },
+        )
+
+        # Observations in 2018/2019 have NO Robin detections (unobserved)
+        empty_obs = pl.DataFrame(schema=_OBS_SCHEMA)
+
+        result = zero_fill_route_observations(
+            history_df=history,
+            survey_runs_df=runs,
+            observations_df=empty_obs,
+        )
+
+        assert len(result) == 2
+
+        # 2018 Robin row: counts are 0, covariates retain 2018 values
+        r2018 = result.filter(pl.col("Year") == "2018")
+        assert r2018["SpeciesTotal"][0] == 0
+        assert r2018["Stop1"][0] == 0
+        assert r2018["StartTemp"][0] == 60.0
+        assert r2018["EndTemp"][0] == 72.0
+        assert r2018["Wind"][0] == "1"
+        assert r2018["Sky"][0] == "0"
+        assert r2018["CarsPerStop"][0] == 1.2
+        assert r2018["CarTotal"][0] == 60
+        assert r2018["ObserverTenure"][0] == 3
+        assert r2018["FirstYearRun"][0] == 0
+
+        # 2019 Robin row: counts are 0, missing covariates remain NULL (never coerced to 0)
+        r2019 = result.filter(pl.col("Year") == "2019")
+        assert r2019["SpeciesTotal"][0] == 0
+        assert r2019["Stop1"][0] == 0
+        # # NEGATIVE assertions: missing covariate columns must NOT be coerced to numeric 0
+        assert r2019["StartTemp"][0] is None  # NEGATIVE
+        assert r2019["EndTemp"][0] is None  # NEGATIVE
+        assert r2019["Wind"][0] is None  # NEGATIVE
+        assert r2019["Sky"][0] is None  # NEGATIVE
+        assert r2019["CarsPerStop"][0] is None  # NEGATIVE
+        assert r2019["CarTotal"][0] is None  # NEGATIVE
+        assert r2019["ObserverTenure"][0] is None  # NEGATIVE
+        assert r2019["FirstYearRun"][0] is None  # NEGATIVE
+
