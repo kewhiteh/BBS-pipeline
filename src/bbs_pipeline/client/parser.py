@@ -23,11 +23,12 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 
 #: Schema for 50-stop individual stop-count observation files.
-#: Profile A Data Invariant: Stop columns are ingested as pl.String to
-#: tolerate trailing whitespace and dirty values in raw CSVs.  Callers that
+#: Profile A Data Invariant: Every column is ingested strictly as pl.String to
+#: tolerate trailing whitespace, padding, and dirty values in raw CSVs. Callers that
 #: need numeric totals must cast defensively:
 #:   pl.col(col).str.strip_chars().cast(pl.Int32, strict=False).fill_null(0)
 FIFTY_STOP_SCHEMA: Dict[str, type] = {
+    "RouteDataId": pl.String,
     "RouteDataID": pl.String,
     "CountryNum": pl.String,
     "StateNum": pl.String,
@@ -35,8 +36,12 @@ FIFTY_STOP_SCHEMA: Dict[str, type] = {
     "RPID": pl.String,
     "Year": pl.String,
     "AOU": pl.String,
+    "Count": pl.String,
     **{f"Stop{i}": pl.String for i in range(1, 51)},
 }
+
+#: Canonical alias for fifty-stop observation schemas.
+FIFTY_SCHEMA: Dict[str, type] = FIFTY_STOP_SCHEMA
 
 #: Schema for 10-stop count-band summary files.
 #: Profile A Data Invariant: Count and total columns are ingested as pl.String
@@ -275,6 +280,10 @@ def parse_fifty_stop(zip_buffer: io.BytesIO, csv_filename: str) -> pl.DataFrame:
     pl.DataFrame typed with :data:`FIFTY_STOP_SCHEMA`.
     """
     return parse_zip_csv(zip_buffer, csv_filename, FIFTY_STOP_SCHEMA)
+
+
+#: Canonical alias for parse_fifty_stop.
+parse_fifty = parse_fifty_stop
 
 
 def parse_ten_stop(zip_buffer: io.BytesIO, csv_filename: str) -> pl.DataFrame:

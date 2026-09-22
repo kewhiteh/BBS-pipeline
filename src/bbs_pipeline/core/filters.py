@@ -387,6 +387,12 @@ def nullify_stops_beyond_total(
         # Nothing to nullify; return unchanged.
         return df
 
+    total_stops_guard = (
+        pl.col(total_stops_col).str.strip_chars().cast(pl.Int32, strict=False)
+        if df[total_stops_col].dtype in (pl.String, pl.Utf8)
+        else pl.col(total_stops_col).cast(pl.Int32, strict=False)
+    )
+
     nullify_exprs = []
     for stop_col in present_stop_cols:
         stop_index = int(stop_col.removeprefix("Stop"))  # 1-based
@@ -395,7 +401,7 @@ def nullify_stops_beyond_total(
         # Columns may arrive as pl.String (FIFTY_STOP_SCHEMA universal-string
         # ingestion) or already as pl.Int32.
         col_dtype = df[stop_col].dtype
-        if col_dtype == pl.String:
+        if col_dtype in (pl.String, pl.Utf8):
             cast_expr = (
                 pl.col(stop_col)
                 .str.strip_chars()
@@ -406,7 +412,7 @@ def nullify_stops_beyond_total(
             cast_expr = pl.col(stop_col).cast(pl.Int32, strict=False).fill_null(0)
         # NULL when stop_index > TotalStops; keep cast value otherwise.
         nullify_exprs.append(
-            pl.when(pl.col(total_stops_col) < stop_index)
+            pl.when(total_stops_guard < stop_index)
             .then(pl.lit(None, dtype=pl.Int32))
             .otherwise(cast_expr)
             .alias(stop_col)
@@ -488,7 +494,7 @@ def slice_stop_range(
     # Defensive cast: stop columns may be pl.String (universal-string ingestion)
     # or pl.Int32.  Strip whitespace, cast non-strictly, zero-fill nulls.
     def _stop_numeric(col: str) -> pl.Expr:
-        if df[col].dtype == pl.String:
+        if df[col].dtype in (pl.String, pl.Utf8):
             return (
                 pl.col(col)
                 .str.strip_chars()

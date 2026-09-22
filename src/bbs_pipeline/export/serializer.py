@@ -145,6 +145,15 @@ def shape_dataset(
         .alias("StopNumber")
     ).drop("Stop")
 
+    # Defensive cast of Count if unpivoted from raw string stops
+    if "Count" in melted.columns and melted["Count"].dtype in (pl.String, pl.Utf8):
+        melted = melted.with_columns(
+            pl.col("Count")
+            .str.strip_chars()
+            .cast(pl.Int32, strict=False)
+            .fill_null(0)
+        )
+
     # Establish clean logical column ordering
     primary_order = [
         "RouteDataID",

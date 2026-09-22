@@ -24,6 +24,7 @@ import requests_mock as requests_mock_module
 from bbs_pipeline.client import parser as bbs_parser
 from bbs_pipeline.client import sciencebase as bbs_sb
 from bbs_pipeline.client.parser import (
+    FIFTY_SCHEMA,
     FIFTY_STOP_SCHEMA,
     ROUTES_SCHEMA,
     TEN_STOP_SCHEMA,
@@ -191,10 +192,10 @@ class TestFiftyStopParsing:
     def test_parse_fifty_stop_schema_compliance(self, synthetic_zip_builder):
         zip_buf = synthetic_zip_builder({"fifty1.csv": _fifty_stop_csv()})
         df = parse_fifty_stop(zip_buf, "fifty1.csv")
-        for col, expected_dtype in FIFTY_STOP_SCHEMA.items():
-            assert col in df.columns, f"Column {col!r} missing"
-            assert df.schema[col] == expected_dtype, (
-                f"Column {col!r}: expected {expected_dtype}, got {df.schema[col]}"
+        for col in df.columns:
+            assert col in FIFTY_STOP_SCHEMA, f"Column {col!r} missing from FIFTY_STOP_SCHEMA"
+            assert df.schema[col] == FIFTY_STOP_SCHEMA[col], (
+                f"Column {col!r}: expected {FIFTY_STOP_SCHEMA[col]}, got {df.schema[col]}"
             )
 
     def test_fifty_stop_columns_are_string(self, synthetic_zip_builder):
@@ -212,6 +213,66 @@ class TestFiftyStopParsing:
         zip_buf = synthetic_zip_builder({"fifty1.csv": _fifty_stop_csv()})
         df = parse_fifty_stop(zip_buf, "fifty1.csv")
         assert df.schema["Year"] == pl.String
+
+    def test_fifty_schema_all_columns_are_string(self):
+        """Mandate: Every column in FIFTY_SCHEMA must ingest strictly as pl.String."""
+        required = [
+            "RouteDataId", "CountryNum", "StateNum", "Route", "RPID",
+            "Year", "AOU", "Count", *[f"Stop{i}" for i in range(1, 51)],
+        ]
+        for col in required:
+            assert col in FIFTY_SCHEMA, f"Column {col!r} missing from FIFTY_SCHEMA"
+            assert FIFTY_SCHEMA[col] == pl.String, f"FIFTY_SCHEMA column {col!r} must be pl.String"
+
+    def test_fifty_schema_zero_numeric_dtypes(self):
+        """Audit invariant: zero numeric dtypes in FIFTY_SCHEMA and FIFTY_STOP_SCHEMA."""
+        numeric_dtypes = (
+            pl.UInt8, pl.UInt16, pl.UInt32, pl.UInt64,
+            pl.Int8, pl.Int16, pl.Int32, pl.Int64,
+            pl.Float32, pl.Float64,
+        )
+        for col, dtype in FIFTY_SCHEMA.items():
+            assert dtype not in numeric_dtypes, (
+                f"FIFTY_SCHEMA column {col!r} has forbidden numeric dtype {dtype}"
+            )
+            assert dtype == pl.String, f"FIFTY_SCHEMA column {col!r} must be pl.String"
+
+    def test_fifty_stop_space_padded_values_parse_without_panic(self, synthetic_zip_builder):
+        """Real-world crash regression: space-padded '0      ' in Stop1..Stop50 and Count must not panic."""
+        csv_data = (
+            "RouteDataId,CountryNum,StateNum,Route,RPID,Year,AOU,Count,"
+            + ",".join(f"Stop{i}" for i in range(1, 51))
+            + "\n"
+            "10001,840,02,001,1,2022,04990,0      ,"
+            + ",".join("0      " for _ in range(50))
+            + "\n"
+        )
+        zip_buf = synthetic_zip_builder({"fifty1.csv": csv_data})
+        df = parse_fifty_stop(zip_buf, "fifty1.csv")
+        assert df["Stop1"][0] == "0      "
+        assert df.schema["Stop1"] == pl.String
+        assert df["Count"][0] == "0      "
+        assert df.schema["Count"] == pl.String
+
+    def test_fifty_stop_defensive_aggregation_with_space_padded_values(self, synthetic_zip_builder):
+        """Verify horizontal sums handle dirty space-padded observation strings defensively."""
+        csv_data = (
+            "RouteDataId,CountryNum,StateNum,Route,RPID,Year,AOU,Count,"
+            + ",".join(f"Stop{i}" for i in range(1, 51))
+            + "\n"
+            "10001,840,02,001,1,2022,04990,5      ,"
+            + "1      ," + ",".join("0      " for _ in range(49))
+            + "\n"
+        )
+        zip_buf = synthetic_zip_builder({"fifty1.csv": csv_data})
+        df = parse_fifty_stop(zip_buf, "fifty1.csv")
+        total = df.select(
+            pl.sum_horizontal([
+                pl.col(f"Stop{i}").str.strip_chars().cast(pl.Int32, strict=False).fill_null(0)
+                for i in range(1, 51)
+            ]).alias("StopSum")
+        )
+        assert total["StopSum"][0] == 1
 
 
 class TestTenStopParsing:
@@ -695,9 +756,34 @@ class TestSchemaObjectBan:
         for col, dtype in WEATHER_SCHEMA.items():
             assert dtype != pl.Object, f"WEATHER_SCHEMA column {col!r} must not be pl.Object"
 
+    def test_fifty_schema_has_no_object_type(self):
+        for col, dtype in FIFTY_SCHEMA.items():
+            assert dtype != pl.Object, f"FIFTY_SCHEMA column {col!r} must not be pl.Object"
+
     def test_vehicle_schema_has_no_object_type(self):
         for col, dtype in VEHICLE_SCHEMA.items():
             assert dtype != pl.Object, f"VEHICLE_SCHEMA column {col!r} must not be pl.Object"
+
+    def test_all_schemas_in_parser_contain_zero_numeric_types(self):
+        """Universal Ingestion Isolation: audit that no schema in parser.py contains numeric types."""
+        numeric_dtypes = (
+            pl.UInt8, pl.UInt16, pl.UInt32, pl.UInt64,
+            pl.Int8, pl.Int16, pl.Int32, pl.Int64,
+            pl.Float32, pl.Float64,
+        )
+        for schema_name, schema in (
+            ("FIFTY_SCHEMA", FIFTY_SCHEMA),
+            ("FIFTY_STOP_SCHEMA", FIFTY_STOP_SCHEMA),
+            ("TEN_STOP_SCHEMA", TEN_STOP_SCHEMA),
+            ("WEATHER_SCHEMA", WEATHER_SCHEMA),
+            ("VEHICLE_SCHEMA", VEHICLE_SCHEMA),
+            ("ROUTES_SCHEMA", ROUTES_SCHEMA),
+        ):
+            for col, dtype in schema.items():
+                assert dtype not in numeric_dtypes, (
+                    f"{schema_name} column {col!r} has forbidden numeric dtype {dtype}"
+                )
+                assert dtype == pl.String, f"{schema_name} column {col!r} must be pl.String"
 
 
 # ---------------------------------------------------------------------------

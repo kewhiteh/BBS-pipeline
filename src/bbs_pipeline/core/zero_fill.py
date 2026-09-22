@@ -158,33 +158,36 @@ def get_confirmed_route_taxa(
     df = df.with_columns(pl.col(aou_col).cast(pl.String).str.zfill(5))
 
     # Construct temporal filter
-    year_expr = pl.col(year_col).cast(pl.Int32) >= min_year
+    if df[year_col].dtype in (pl.String, pl.Utf8):
+        year_num_expr = pl.col(year_col).str.strip_chars().cast(pl.Int32, strict=False)
+    else:
+        year_num_expr = pl.col(year_col).cast(pl.Int32, strict=False)
+    year_expr = year_num_expr >= min_year
     if max_year is not None:
-        year_expr = year_expr & (pl.col(year_col).cast(pl.Int32) <= max_year)
+        year_expr = year_expr & (year_num_expr <= max_year)
+
+    def _defensive_count_int(col_name: str) -> pl.Expr:
+        if df[col_name].dtype in (pl.String, pl.Utf8):
+            return (
+                pl.col(col_name)
+                .str.strip_chars()
+                .cast(pl.Int32, strict=False)
+                .fill_null(0)
+            )
+        return pl.col(col_name).cast(pl.Int32, strict=False).fill_null(0)
 
     # Construct count filter: Count(r, y, s) >= 1
     if "SpeciesTotal" in df.columns:
-        count_expr = pl.col("SpeciesTotal").fill_null(0) >= 1
+        count_expr = _defensive_count_int("SpeciesTotal") >= 1
     elif "StopTotal" in df.columns:
-        count_expr = pl.col("StopTotal").fill_null(0) >= 1
+        count_expr = _defensive_count_int("StopTotal") >= 1
     elif any(c in df.columns for c in _ALL_STOP_COLS):
         present_stops = [c for c in _ALL_STOP_COLS if c in df.columns]
-        # Defensive cast: stop columns may be pl.String (universal-string ingestion).
-        def _stop_int(col: str) -> pl.Expr:
-            if df[col].dtype == pl.String:
-                return (
-                    pl.col(col)
-                    .str.strip_chars()
-                    .cast(pl.Int32, strict=False)
-                    .fill_null(0)
-                )
-            return pl.col(col).fill_null(0)
         count_expr = (
-            pl.sum_horizontal([_stop_int(c) for c in present_stops]) >= 1
+            pl.sum_horizontal([_defensive_count_int(c) for c in present_stops]) >= 1
         )
-
     elif "Count" in df.columns:
-        count_expr = pl.col("Count").fill_null(0) >= 1
+        count_expr = _defensive_count_int("Count") >= 1
     else:
         # If no explicit count column is present, treat rows as presence records
         count_expr = pl.lit(True)
@@ -585,8 +588,13 @@ def impute_zero_observations(
         else:
             val_expr = pl.lit(0, dtype=pl.Int32)
 
+        total_stops_guard = (
+            pl.col(total_stops_col).str.strip_chars().cast(pl.Int32, strict=False)
+            if joined[total_stops_col].dtype in (pl.String, pl.Utf8)
+            else pl.col(total_stops_col).cast(pl.Int32, strict=False)
+        )
         stop_exprs.append(
-            pl.when(pl.col(total_stops_col) >= i)
+            pl.when(total_stops_guard >= i)
             .then(val_expr)
             .otherwise(pl.lit(None, dtype=pl.Int32))
             .alias(col_name)
@@ -600,57 +608,50 @@ def impute_zero_observations(
     # preserved without blanket .fill_null(0) coercion.
     count_mutation_exprs: list[pl.Expr] = []
 
-    # 1. SpeciesTotal:
-    # If observed and present: retain observed count (or 0 if null).
-    # If missing: 0 (or sum of Stop1..Stop_TotalStops).
-    if has_species_total and "SpeciesTotal" in joined.columns:
-        if joined["SpeciesTotal"].dtype == pl.String:
-            st_val = (
-                pl.col("SpeciesTotal")
+    def _defensive_imputed_int(col_name: str) -> pl.Expr:
+        if col_name in imputed.columns and imputed[col_name].dtype in (pl.String, pl.Utf8):
+            return (
+                pl.col(col_name)
                 .str.strip_chars()
                 .cast(pl.Int32, strict=False)
                 .fill_null(0)
             )
-        else:
-            st_val = pl.col("SpeciesTotal").cast(pl.Int32, strict=False).fill_null(0)
+        return pl.col(col_name).cast(pl.Int32, strict=False).fill_null(0)
 
+    # 1. SpeciesTotal:
+    # If observed and present: retain observed count (or 0 if null).
+    # If missing: 0 (or sum of Stop1..Stop_TotalStops).
+    if has_species_total and "SpeciesTotal" in imputed.columns:
+        st_val = _defensive_imputed_int("SpeciesTotal")
         species_total_expr = (
             pl.when(pl.col("SpeciesTotal").is_not_null())
             .then(st_val)
             .otherwise(
-                pl.sum_horizontal([pl.col(f"Stop{i}").fill_null(0) for i in range(1, 51)])
+                pl.sum_horizontal([_defensive_imputed_int(f"Stop{i}") for i in range(1, 51) if f"Stop{i}" in imputed.columns])
                 if present_stop_cols
-                else (pl.col("Count").fill_null(0) if "Count" in joined.columns else pl.lit(0, dtype=pl.Int32))
+                else (_defensive_imputed_int("Count") if "Count" in imputed.columns else pl.lit(0, dtype=pl.Int32))
             )
             .alias("SpeciesTotal")
         )
     else:
         if present_stop_cols or any(c in joined.columns for c in _ALL_STOP_COLS):
+            stops_to_sum = [c for c in _ALL_STOP_COLS if c in imputed.columns]
             species_total_expr = (
-                pl.sum_horizontal([pl.col(f"Stop{i}").fill_null(0) for i in range(1, 51)])
+                pl.sum_horizontal([_defensive_imputed_int(c) for c in stops_to_sum])
                 .alias("SpeciesTotal")
             )
         elif "Count" in joined.columns:
-            species_total_expr = pl.col("Count").fill_null(0).alias("SpeciesTotal")
+            species_total_expr = _defensive_imputed_int("Count").alias("SpeciesTotal")
         else:
             species_total_expr = (
-                pl.sum_horizontal([pl.col(f"Stop{i}").fill_null(0) for i in range(1, 51)])
+                pl.sum_horizontal([_defensive_imputed_int(f"Stop{i}") for i in range(1, 51) if f"Stop{i}" in imputed.columns])
                 .alias("SpeciesTotal")
             )
     count_mutation_exprs.append(species_total_expr)
 
     # 2. Count:
-    if "Count" in joined.columns:
-        if joined["Count"].dtype == pl.String:
-            count_val = (
-                pl.col("Count")
-                .str.strip_chars()
-                .cast(pl.Int32, strict=False)
-                .fill_null(0)
-            )
-        else:
-            count_val = pl.col("Count").cast(pl.Int32, strict=False).fill_null(0)
-
+    if "Count" in imputed.columns:
+        count_val = _defensive_imputed_int("Count")
         count_mutation_exprs.append(
             pl.when(pl.col("Count").is_not_null())
             .then(count_val)
@@ -659,17 +660,8 @@ def impute_zero_observations(
         )
 
     # 3. StopTotal:
-    if "StopTotal" in joined.columns:
-        if joined["StopTotal"].dtype == pl.String:
-            stoptotal_val = (
-                pl.col("StopTotal")
-                .str.strip_chars()
-                .cast(pl.Int32, strict=False)
-                .fill_null(0)
-            )
-        else:
-            stoptotal_val = pl.col("StopTotal").cast(pl.Int32, strict=False).fill_null(0)
-
+    if "StopTotal" in imputed.columns:
+        stoptotal_val = _defensive_imputed_int("StopTotal")
         count_mutation_exprs.append(
             pl.when(pl.col("StopTotal").is_not_null())
             .then(stoptotal_val)
@@ -679,17 +671,8 @@ def impute_zero_observations(
 
     # 4. 10-stop summary count columns (Count10..Count50):
     for c in ("Count10", "Count20", "Count30", "Count40", "Count50"):
-        if c in joined.columns:
-            if joined[c].dtype == pl.String:
-                c_val = (
-                    pl.col(c)
-                    .str.strip_chars()
-                    .cast(pl.Int32, strict=False)
-                    .fill_null(0)
-                )
-            else:
-                c_val = pl.col(c).cast(pl.Int32, strict=False).fill_null(0)
-
+        if c in imputed.columns:
+            c_val = _defensive_imputed_int(c)
             count_mutation_exprs.append(
                 pl.when(pl.col(c).is_not_null())
                 .then(c_val)
