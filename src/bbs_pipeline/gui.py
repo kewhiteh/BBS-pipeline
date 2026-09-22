@@ -50,8 +50,15 @@ def load_metadata_cache(
     # 1. Routes
     routes_buf = _find_and_read_file("routes.csv", raw_dir=raw_dir, item_id=item_id, session=session)
     routes_df = _load_csv_from_zip_or_raw(routes_buf, "routes.csv", ROUTES_SCHEMA)
-    if "RouteKey" not in routes_df.columns:
-        routes_df = add_route_key(routes_df)
+    routes_df = routes_df.with_columns([
+        pl.col("CountryNum").str.strip_chars().str.zfill(3),
+        pl.col("StateNum").str.strip_chars().str.zfill(2),
+        pl.col("Route").str.strip_chars().str.zfill(3),
+        pl.col("RouteName").str.strip_chars().fill_null(""),
+    ])
+    if "RouteKey" in routes_df.columns:
+        routes_df = routes_df.drop("RouteKey")
+    routes_df = add_route_key(routes_df)
 
     # 2. Weather & max year
     weather_buf = _find_and_read_file("weather.csv", raw_dir=raw_dir, item_id=item_id, session=session)
@@ -326,13 +333,13 @@ def main() -> None:
             .to_dicts()
         )
         route_labels = [
-            f"{r['RouteKey']} - {r['RouteName']}" if r.get("RouteName") else str(r["RouteKey"])
+            f"{r['RouteKey']} - {r['RouteName']}" if r.get("RouteName") and str(r["RouteName"]).strip() else str(r["RouteKey"])
             for r in route_records
         ]
         label_to_route_key = dict(zip(route_labels, [r["RouteKey"] for r in route_records]))
 
         selected_route_labels = st.multiselect(
-            "Candidate Routes",
+            f"Candidate Routes ({len(route_records)} available)",
             options=route_labels,
             default=[],
             placeholder="Search routes by ID/name...",
