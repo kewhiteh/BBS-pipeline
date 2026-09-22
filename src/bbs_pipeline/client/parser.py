@@ -166,14 +166,16 @@ def _read_csv_from_bytes(
     pl.DataFrame
     """
     buf = io.BytesIO(data)
-    return pl.read_csv(
+    df = pl.read_csv(
         buf,
         schema_overrides=schema_overrides,
         has_header=has_header,
+        infer_schema_length=0,
         null_values=["", "NA", "null", "NULL", "*", "None"],
         truncate_ragged_lines=True,
         try_parse_dates=False,
     )
+    return df.rename({c: c.strip() for c in df.columns})
 
 
 # ---------------------------------------------------------------------------

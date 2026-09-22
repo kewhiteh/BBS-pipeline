@@ -478,21 +478,25 @@ def _load_csv_from_zip_or_raw(
             if not matching:
                 raise KeyError(f"Could not find '{csv_name}' in zip archive members: {zf.namelist()}")
             csv_bytes = zf.read(matching[0])
-            return pl.read_csv(
+            df = pl.read_csv(
                 io.BytesIO(csv_bytes),
                 schema_overrides=schema,
+                infer_schema_length=0,
                 encoding="latin1",
                 null_values=["", "NA", "null", "NULL", "*", "None"],
                 truncate_ragged_lines=True,
             )
+            return df.rename({c: c.strip() for c in df.columns})
     else:  # Raw CSV buffer
-        return pl.read_csv(
+        df = pl.read_csv(
             buf,
             schema_overrides=schema,
+            infer_schema_length=0,
             encoding="latin1",
             null_values=["", "NA", "null", "NULL", "*", "None"],
             truncate_ragged_lines=True,
         )
+        return df.rename({c: c.strip() for c in df.columns})
 
 
 def _load_observation_data(
@@ -518,10 +522,12 @@ def _load_observation_data(
                 df = pl.read_csv(
                     io.BytesIO(raw_bytes),
                     schema_overrides=FIFTY_STOP_SCHEMA,
+                    infer_schema_length=0,
                     encoding="latin1",
                     null_values=["", "NA", "null", "NULL", "*", "None"],
                     truncate_ragged_lines=True,
                 )
+                df = df.rename({c: c.strip() for c in df.columns})
                 if df.is_empty():
                     continue
 
@@ -541,10 +547,12 @@ def _load_observation_data(
         df = pl.read_csv(
             buf,
             schema_overrides=FIFTY_STOP_SCHEMA,
+            infer_schema_length=0,
             encoding="latin1",
             null_values=["", "NA", "null", "NULL", "*", "None"],
             truncate_ragged_lines=True,
         )
+        df = df.rename({c: c.strip() for c in df.columns})
         if "RouteKey" not in df.columns and {"CountryNum", "StateNum", "Route"}.issubset(df.columns):
             df = add_route_key(df)
         if target_states and "StateNum" in df.columns:
