@@ -1201,6 +1201,34 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
     )
 
+    # Resolve export format: CLI flag -> interactive prompt -> default parquet
+    selected_format = args.format
+    if selected_format is None and args.output is None:
+        if sys.stdin.isatty():
+            print("\nSelect export format:")
+            print("  1) csv")
+            print("  2) parquet")
+            print("  3) gpkg (GeoPackage)")
+            print("  4) geojson")
+            choice_map = {"1": "csv", "2": "parquet", "3": "gpkg", "4": "geojson"}
+            raw_choice = input("Enter choice [1-4] (default: 2): ").strip()
+            selected_format = choice_map.get(raw_choice, "parquet")
+        else:
+            selected_format = "parquet"
+    elif selected_format is None and args.output is not None:
+        suffix = Path(args.output).suffix.lstrip(".").lower()
+        selected_format = suffix if suffix in SUPPORTED_FORMATS else "parquet"
+
+    # Auto-derive output destination in data/processed if omitted
+    output_dest = args.output
+    if output_dest is None:
+        state_tag = "_".join(args.states) if args.states else "all"
+        y_start = args.start_year or 1966
+        y_end = args.end_year or "present"
+        out_dir = Path("data/processed")
+        out_dir.mkdir(parents=True, exist_ok=True)
+        output_dest = out_dir / f"bbs_extract_{args.resolution}_{state_tag}_{y_start}_{y_end}.{selected_format}"
+
     try:
         res = run_pipeline(
             states=args.states,
@@ -1236,8 +1264,8 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
             item_id=args.item_id,
             raw_data_dir=args.raw_data_dir,
             guilds_path=args.guilds_path,
-            output_path=args.output,
-            format=args.format,
+            output_path=output_dest,
+            format=selected_format,
             shape=args.shape,
             crs=args.crs,
             layer_name=args.layer_name,
