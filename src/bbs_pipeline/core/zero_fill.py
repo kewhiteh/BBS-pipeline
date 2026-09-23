@@ -485,8 +485,10 @@ def impute_zero_observations(
     # Empty grid handling
     if grid_df.is_empty():
         schema = dict(grid_df.schema)
-        for i in range(1, 51):
-            schema[f"Stop{i}"] = pl.Int32
+        is_ten_stop = any(c in observations_df.columns for c in ("Count10", "Count20", "Count30", "Count40", "Count50"))
+        if not is_ten_stop:
+            for i in range(1, 51):
+                schema[f"Stop{i}"] = pl.Int32
         schema["SpeciesTotal"] = pl.Int32
         for col in _EXPLICIT_COUNT_COLS:
             if col in observations_df.columns:
@@ -564,43 +566,38 @@ def impute_zero_observations(
     # Left-join grid with observations
     joined = grid.join(obs_subset, on=join_keys, how="left", coalesce=True)
 
-    # Impute Stop1..Stop50:
-    # If stop index i <= TotalStops:
-    #   if observed: retain count (fill null with 0)
-    #   if unobserved: impute 0
-    # If stop index i > TotalStops:
-    #   strictly NULL (pl.lit(None, dtype=pl.Int32))
-    stop_exprs = []
-    for i in range(1, 51):
-        col_name = f"Stop{i}"
-        if col_name in joined.columns:
-            # Defensive cast: columns may be pl.String (universal-string ingestion)
-            # or already pl.Int32. Strip whitespace, cast non-strictly, zero-fill.
-            if joined[col_name].dtype == pl.String:
-                val_expr = (
-                    pl.col(col_name)
-                    .str.strip_chars()
-                    .cast(pl.Int32, strict=False)
-                    .fill_null(0)
-                )
+    is_ten_stop = any(c in observations_df.columns for c in ("Count10", "Count20", "Count30", "Count40", "Count50"))
+    if not is_ten_stop:
+        stop_exprs = []
+        for i in range(1, 51):
+            col_name = f"Stop{i}"
+            if col_name in joined.columns:
+                if joined[col_name].dtype == pl.String:
+                    val_expr = (
+                        pl.col(col_name)
+                        .str.strip_chars()
+                        .cast(pl.Int32, strict=False)
+                        .fill_null(0)
+                    )
+                else:
+                    val_expr = pl.col(col_name).cast(pl.Int32, strict=False).fill_null(0)
             else:
-                val_expr = pl.col(col_name).cast(pl.Int32, strict=False).fill_null(0)
-        else:
-            val_expr = pl.lit(0, dtype=pl.Int32)
+                val_expr = pl.lit(0, dtype=pl.Int32)
 
-        total_stops_guard = (
-            pl.col(total_stops_col).str.strip_chars().cast(pl.Int32, strict=False)
-            if joined[total_stops_col].dtype in (pl.String, pl.Utf8)
-            else pl.col(total_stops_col).cast(pl.Int32, strict=False)
-        )
-        stop_exprs.append(
-            pl.when(total_stops_guard >= i)
-            .then(val_expr)
-            .otherwise(pl.lit(None, dtype=pl.Int32))
-            .alias(col_name)
-        )
-
-    imputed = joined.with_columns(stop_exprs)
+            total_stops_guard = (
+                pl.col(total_stops_col).str.strip_chars().cast(pl.Int32, strict=False)
+                if joined[total_stops_col].dtype in (pl.String, pl.Utf8)
+                else pl.col(total_stops_col).cast(pl.Int32, strict=False)
+            )
+            stop_exprs.append(
+                pl.when(total_stops_guard >= i)
+                .then(val_expr)
+                .otherwise(pl.lit(None, dtype=pl.Int32))
+                .alias(col_name)
+            )
+        imputed = joined.with_columns(stop_exprs)
+    else:
+        imputed = joined
 
     # Impute explicit count columns (SpeciesTotal, Count, StopTotal, Count10..Count50).
     # Environmental, observer, and traffic covariates (e.g. StartTemp, EndTemp,
@@ -670,11 +667,19 @@ def impute_zero_observations(
         )
 
     # 4. 10-stop summary count columns (Count10..Count50):
-    for c in ("Count10", "Count20", "Count30", "Count40", "Count50"):
-        if c in imputed.columns:
-            c_val = _defensive_imputed_int(c)
+    band_limits = {"Count10": 10, "Count20": 20, "Count30": 30, "Count40": 40, "Count50": 50}
+    total_stops_guard = (
+        pl.col(total_stops_col).str.strip_chars().cast(pl.Int32, strict=False)
+        if imputed[total_stops_col].dtype in (pl.String, pl.Utf8)
+        else pl.col(total_stops_col).cast(pl.Int32, strict=False)
+    )
+    for c, limit in band_limits.items():
+        if c in imputed.columns or is_ten_stop:
+            c_val = _defensive_imputed_int(c) if c in imputed.columns else pl.lit(0, dtype=pl.Int32)
             count_mutation_exprs.append(
-                pl.when(pl.col(c).is_not_null())
+                pl.when(total_stops_guard < limit)
+                .then(pl.lit(None, dtype=pl.Int32))
+                .when(pl.col(c).is_not_null() if c in imputed.columns else pl.lit(False))
                 .then(c_val)
                 .otherwise(pl.lit(0, dtype=pl.Int32))
                 .alias(c)
