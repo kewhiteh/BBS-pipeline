@@ -460,21 +460,40 @@ def _find_and_read_file(
     """Locate a file in raw_dir or stream it directly into an io.BytesIO RAM buffer.
 
     Enforces Zero-Disk In-Memory Mandate: remote streams are never written to disk.
+    Supports extension fallbacks (.csv <-> .txt) for live ScienceBase catalog differences.
     """
+    candidates = [filename]
+    if filename.endswith(".csv"):
+        candidates.append(filename.removesuffix(".csv") + ".txt")
+    elif filename.endswith(".txt"):
+        candidates.append(filename.removesuffix(".txt") + ".csv")
+
     if raw_dir is not None and raw_dir.exists():
-        # Match case-insensitively in raw_dir
+        # Match case-insensitively in raw_dir across candidates
+        candidate_lowers = {c.lower() for c in candidates}
         for p in raw_dir.glob("*"):
             if ":Zone.Identifier" in p.name:
                 continue
-            if p.name.lower() == filename.lower():
+            if p.name.lower() in candidate_lowers:
                 return io.BytesIO(p.read_bytes())
-        # Try finding as nested zip or file pattern
-        matches = [p for p in raw_dir.glob(f"*{filename}*") if ":Zone.Identifier" not in p.name]
-        if matches:
-            return io.BytesIO(matches[0].read_bytes())
+        # Try finding as nested zip or pattern
+        for cand in candidates:
+            matches = [p for p in raw_dir.glob(f"*{cand}*") if ":Zone.Identifier" not in p.name]
+            if matches:
+                return io.BytesIO(matches[0].read_bytes())
 
-    # Fall back to ScienceBase streaming into io.BytesIO RAM buffer
-    return fetch_file_by_name(filename, item_id=item_id, session=session)
+    # Fall back to ScienceBase streaming into io.BytesIO RAM buffer across candidates
+    last_exc: Optional[Exception] = None
+    for cand in candidates:
+        try:
+            return fetch_file_by_name(cand, item_id=item_id, session=session)
+        except FileNotFoundError as exc:
+            last_exc = exc
+            continue
+
+    if last_exc:
+        raise last_exc
+    raise FileNotFoundError(f"Could not locate {filename} locally or in ScienceBase item {item_id}.")
 
 
 def _load_csv_from_zip_or_raw(
