@@ -291,6 +291,33 @@ class TestShapeDataset:
         )["Count"][0]
         assert row2_stop50 == 100
 
+    def test_route_shape_collapses_stop_columns(
+        self, sample_observations_df: pl.DataFrame
+    ) -> None:
+        route_df = shape_dataset(sample_observations_df, shape="route")
+        assert len(route_df) == len(sample_observations_df)
+        assert "SpeciesTotal" in route_df.columns
+        assert "Stop1" not in route_df.columns
+        assert "Stop50" not in route_df.columns
+        assert "StopNumber" not in route_df.columns
+
+    def test_community_metrics_calculation(
+        self, sample_observations_df: pl.DataFrame, sample_routes_df: pl.DataFrame
+    ) -> None:
+        data = serialize_dataset(
+            data=sample_observations_df,
+            format="parquet",
+            shape="route",
+            routes_df=sample_routes_df,
+            community_metrics=True,
+        )
+        tbl = pq.read_table(io.BytesIO(data))
+        cols = tbl.column_names
+        assert "CommunityRichness" in cols
+        assert "CommunityTotalIndividuals" in cols
+        assert "ShannonDiversity" in cols
+        assert "ShannonEvenness" in cols
+
     def test_raises_value_error_on_invalid_shape(
         self, sample_observations_df: pl.DataFrame
     ) -> None:

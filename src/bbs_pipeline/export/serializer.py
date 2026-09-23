@@ -40,7 +40,7 @@ logger = logging.getLogger(__name__)
 SUPPORTED_FORMATS: tuple[str, ...] = ("parquet", "csv", "geojson", "gpkg")
 
 #: Approved output shapes.
-SUPPORTED_SHAPES: tuple[str, ...] = ("wide", "long")
+SUPPORTED_SHAPES: tuple[str, ...] = ("wide", "long", "route")
 
 #: Fallback pipeline version string.
 PIPELINE_VERSION: str = "0.1.0"
@@ -103,6 +103,36 @@ def shape_dataset(
 
     if norm_shape == "wide":
         return df
+
+    if norm_shape == "route":
+        # Route summary shape: drop granular stop/band counts and retain run-level aggregates
+        stop_band_cols = [
+            c for c in df.columns
+            if (c.startswith("Stop") and c[4:].isdigit())
+            or c in ("Count10", "Count20", "Count30", "Count40", "Count50")
+        ]
+        collapsed = df.drop([c for c in stop_band_cols if c in df.columns])
+
+        summary_order = [
+            "RouteDataID",
+            route_key_col,
+            "CountryNum",
+            "StateNum",
+            "Route",
+            "RPID",
+            year_col,
+            aou_col,
+            "SpeciesTotal",
+            "StopTotal",
+        ]
+        present_summary = [c for c in summary_order if c in collapsed.columns]
+        other_cols = [c for c in collapsed.columns if c not in present_summary]
+        ordered_cols = present_summary + other_cols
+
+        sort_cols = [c for c in [route_key_col, year_col, aou_col] if c in ordered_cols]
+        if sort_cols:
+            return collapsed.select(ordered_cols).sort(sort_cols)
+        return collapsed.select(ordered_cols)
 
     ten_stop_cols = [c for c in ("Count10", "Count20", "Count30", "Count40", "Count50") if c in df.columns]
     is_ten_stop = len(ten_stop_cols) > 0
@@ -532,6 +562,71 @@ def export_to_gpkg(
 # ---------------------------------------------------------------------------
 
 
+def append_community_metrics(df: pl.DataFrame) -> pl.DataFrame:
+    """Calculate and append run-level community diversity metrics (Richness, Shannon H', Evenness).
+
+    Metrics are computed per (RouteKey, Year, RPID) grouping over species with SpeciesTotal > 0.
+    """
+    if "SpeciesTotal" not in df.columns or "RouteKey" not in df.columns or "Year" not in df.columns:
+        return df
+
+    group_keys = ["RouteKey", "Year"]
+    if "RPID" in df.columns:
+        group_keys.append("RPID")
+
+    # Filter to detected species for richness and diversity index calculations
+    st_numeric = (
+        pl.col("SpeciesTotal").str.strip_chars().cast(pl.Int32, strict=False).fill_null(0)
+        if df["SpeciesTotal"].dtype in (pl.String, pl.Utf8)
+        else pl.col("SpeciesTotal").cast(pl.Int32, strict=False).fill_null(0)
+    )
+    detected = df.filter(st_numeric > 0)
+    if detected.is_empty():
+        return df.with_columns([
+            pl.lit(0, dtype=pl.Int32).alias("CommunityRichness"),
+            pl.lit(0, dtype=pl.Int32).alias("CommunityTotalIndividuals"),
+            pl.lit(0.0, dtype=pl.Float64).alias("ShannonDiversity"),
+            pl.lit(0.0, dtype=pl.Float64).alias("ShannonEvenness"),
+        ])
+
+    run_totals = detected.group_by(group_keys).agg(
+        st_numeric.sum().alias("CommunityTotalIndividuals"),
+        pl.col("AOU").n_unique().alias("CommunityRichness"),
+    )
+
+    metrics_df = (
+        detected.join(run_totals, on=group_keys, how="inner")
+        .with_columns(
+            (st_numeric.cast(pl.Float64) / pl.col("CommunityTotalIndividuals").cast(pl.Float64)).alias("_p_i")
+        )
+        .with_columns(
+            (-pl.col("_p_i") * pl.col("_p_i").log()).alias("_h_term")
+        )
+        .group_by(group_keys)
+        .agg(
+            pl.first("CommunityTotalIndividuals"),
+            pl.first("CommunityRichness"),
+            pl.col("_h_term").sum().alias("ShannonDiversity"),
+        )
+        .with_columns(
+            pl.when(pl.col("CommunityRichness") > 1)
+            .then(pl.col("ShannonDiversity") / pl.col("CommunityRichness").log())
+            .otherwise(pl.lit(0.0, dtype=pl.Float64))
+            .alias("ShannonEvenness")
+        )
+    )
+
+    return (
+        df.join(metrics_df, on=group_keys, how="left")
+        .with_columns([
+            pl.col("CommunityRichness").fill_null(0).cast(pl.Int32),
+            pl.col("CommunityTotalIndividuals").fill_null(0).cast(pl.Int32),
+            pl.col("ShannonDiversity").fill_null(0.0).cast(pl.Float64),
+            pl.col("ShannonEvenness").fill_null(0.0).cast(pl.Float64),
+        ])
+    )
+
+
 def serialize_dataset(
     data: Union[pl.DataFrame, gpd.GeoDataFrame],
     format: str,
@@ -541,6 +636,7 @@ def serialize_dataset(
     target_crs: Union[str, int, pyproj.CRS] = DEFAULT_TARGET_CRS,
     metadata: Optional[Dict[str, Any]] = None,
     layer_name: str = "bbs_observations",
+    community_metrics: bool = False,
 ) -> Union[bytes, Path]:
     """Serialize BBS dataset with shaping, spatial anchoring, and provenance.
 
@@ -591,6 +687,8 @@ def serialize_dataset(
     # 1. Apply tabular shaping if input is Polars DataFrame
     working_data = data
     if isinstance(working_data, pl.DataFrame):
+        if community_metrics:
+            working_data = append_community_metrics(working_data)
         working_data = shape_dataset(working_data, shape=shape)
 
     # 2. Extract provenance metadata
