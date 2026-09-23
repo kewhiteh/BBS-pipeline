@@ -104,46 +104,60 @@ def shape_dataset(
     if norm_shape == "wide":
         return df
 
-    # Find stop columns present in df: Stop1..Stop50
-    stop_cols = [
-        c
-        for c in df.columns
-        if c.startswith("Stop") and c[4:].isdigit()
-    ]
-    # Sort stop columns by numerical index
-    stop_cols.sort(key=lambda c: int(c[4:]))
+    ten_stop_cols = [c for c in ("Count10", "Count20", "Count30", "Count40", "Count50") if c in df.columns]
+    is_ten_stop = len(ten_stop_cols) > 0
 
-    if not stop_cols:
-        raise ValueError(
-            "Cannot reshape to 'long': no 'Stop*' count columns found in DataFrame."
-        )
-
-    # All non-stop columns are retained as identifier/attribute columns
-    id_cols = [c for c in df.columns if c not in stop_cols]
-
-    # Unpivot stop columns to long format
-    if hasattr(df, "unpivot"):
-        melted = df.unpivot(
-            index=id_cols,
-            on=stop_cols,
-            variable_name="Stop",
-            value_name="Count",
-        )
+    if is_ten_stop:
+        id_cols = [c for c in df.columns if c not in ten_stop_cols]
+        if hasattr(df, "unpivot"):
+            melted = df.unpivot(
+                index=id_cols,
+                on=ten_stop_cols,
+                variable_name="StopBand",
+                value_name="Count",
+            )
+        else:
+            melted = df.melt(
+                id_vars=id_cols,
+                value_vars=ten_stop_cols,
+                variable_name="StopBand",
+                value_name="Count",
+            )
     else:
-        melted = df.melt(
-            id_vars=id_cols,
-            value_vars=stop_cols,
-            variable_name="Stop",
-            value_name="Count",
-        )
+        stop_cols = [
+            c
+            for c in df.columns
+            if c.startswith("Stop") and c[4:].isdigit()
+        ]
+        stop_cols.sort(key=lambda c: int(c[4:]))
 
-    # Extract integer StopNumber (1..50) and drop raw "Stop" string column
-    melted = melted.with_columns(
-        pl.col("Stop")
-        .str.replace(r"^Stop", "", literal=False)
-        .cast(pl.Int32)
-        .alias("StopNumber")
-    ).drop("Stop")
+        if not stop_cols:
+            raise ValueError(
+                "Cannot reshape to 'long': no 'Stop*' count columns found or 'Count10..Count50' count columns in DataFrame."
+            )
+
+        id_cols = [c for c in df.columns if c not in stop_cols]
+        if hasattr(df, "unpivot"):
+            melted = df.unpivot(
+                index=id_cols,
+                on=stop_cols,
+                variable_name="Stop",
+                value_name="Count",
+            )
+        else:
+            melted = df.melt(
+                id_vars=id_cols,
+                value_vars=stop_cols,
+                variable_name="Stop",
+                value_name="Count",
+            )
+
+        melted = melted.with_columns(
+            pl.col("Stop")
+            .str.replace(r"^Stop", "", literal=False)
+            .cast(pl.Int32)
+            .alias("StopNumber")
+        ).drop("Stop")
 
     # Defensive cast of Count if unpivoted from raw string stops
     if "Count" in melted.columns and melted["Count"].dtype in (pl.String, pl.Utf8):
@@ -164,7 +178,7 @@ def shape_dataset(
         "RPID",
         year_col,
         aou_col,
-        "StopNumber",
+        "StopBand" if is_ten_stop else "StopNumber",
         "Count",
     ]
     leading_cols = [c for c in primary_order if c in melted.columns]
@@ -174,7 +188,7 @@ def shape_dataset(
     # Sort deterministically
     sort_cols = [
         c
-        for c in [route_key_col, year_col, aou_col, "StopNumber"]
+        for c in [route_key_col, year_col, aou_col, "StopBand" if is_ten_stop else "StopNumber"]
         if c in ordered_cols
     ]
     result = melted.select(ordered_cols)

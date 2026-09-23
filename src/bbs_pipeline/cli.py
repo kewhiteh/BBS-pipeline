@@ -378,6 +378,13 @@ def build_parser() -> argparse.ArgumentParser:
     # 7. Operational & Ingestion Group
     op_grp = parser.add_argument_group("Operational & Data Source Options")
     op_grp.add_argument(
+        "--resolution",
+        choices=["10stop", "50stop"],
+        default="50stop",
+        dest="resolution",
+        help="Observation resolution: '50stop' (1997–present) or '10stop' (1966–present).",
+    )
+    op_grp.add_argument(
         "--item-id",
         default=DEFAULT_ITEM_ID,
         dest="item_id",
@@ -453,21 +460,40 @@ def _find_and_read_file(
     """Locate a file in raw_dir or stream it directly into an io.BytesIO RAM buffer.
 
     Enforces Zero-Disk In-Memory Mandate: remote streams are never written to disk.
+    Supports extension fallbacks (.csv <-> .txt) for live ScienceBase catalog differences.
     """
+    candidates = [filename]
+    if filename.endswith(".csv"):
+        candidates.append(filename.removesuffix(".csv") + ".txt")
+    elif filename.endswith(".txt"):
+        candidates.append(filename.removesuffix(".txt") + ".csv")
+
     if raw_dir is not None and raw_dir.exists():
-        # Match case-insensitively in raw_dir
+        # Match case-insensitively in raw_dir across candidates
+        candidate_lowers = {c.lower() for c in candidates}
         for p in raw_dir.glob("*"):
             if ":Zone.Identifier" in p.name:
                 continue
-            if p.name.lower() == filename.lower():
+            if p.name.lower() in candidate_lowers:
                 return io.BytesIO(p.read_bytes())
-        # Try finding as nested zip or file pattern
-        matches = [p for p in raw_dir.glob(f"*{filename}*") if ":Zone.Identifier" not in p.name]
-        if matches:
-            return io.BytesIO(matches[0].read_bytes())
+        # Try finding as nested zip or pattern
+        for cand in candidates:
+            matches = [p for p in raw_dir.glob(f"*{cand}*") if ":Zone.Identifier" not in p.name]
+            if matches:
+                return io.BytesIO(matches[0].read_bytes())
 
-    # Fall back to ScienceBase streaming into io.BytesIO RAM buffer
-    return fetch_file_by_name(filename, item_id=item_id, session=session)
+    # Fall back to ScienceBase streaming into io.BytesIO RAM buffer across candidates
+    last_exc: Optional[Exception] = None
+    for cand in candidates:
+        try:
+            return fetch_file_by_name(cand, item_id=item_id, session=session)
+        except FileNotFoundError as exc:
+            last_exc = exc
+            continue
+
+    if last_exc:
+        raise last_exc
+    raise FileNotFoundError(f"Could not locate {filename} locally or in ScienceBase item {item_id}.")
 
 
 def _load_csv_from_zip_or_raw(
@@ -514,6 +540,7 @@ def _load_observation_data(
     buf: io.BytesIO,
     target_routes: Optional[Sequence[str]] = None,
     target_states: Optional[Sequence[str]] = None,
+    resolution: str = "50stop",
 ) -> pl.DataFrame:
     """Load observation records from 50-StopData.zip (or CSV) entirely in RAM."""
     buf.seek(0)
@@ -521,43 +548,68 @@ def _load_observation_data(
     buf.seek(0)
 
     frames: List[pl.DataFrame] = []
+    active_schema = TEN_STOP_SCHEMA if resolution == "10stop" else FIFTY_STOP_SCHEMA
 
     if header.startswith(b"PK"):  # ZIP file
         with zipfile.ZipFile(buf) as zf:
-            csv_members = [n for n in zf.namelist() if n.lower().endswith(".csv")]
-            if not csv_members:
-                raise ValueError("No CSV files found in observation zip archive.")
+            namelist = zf.namelist()
+            inner_zips = [n for n in namelist if n.lower().endswith(".zip")]
+            if resolution == "10stop" and inner_zips:
+                for inner_zip_name in inner_zips:
+                    inner_bytes = zf.read(inner_zip_name)
+                    with zipfile.ZipFile(io.BytesIO(inner_bytes)) as inner_zf:
+                        csv_members = [n for n in inner_zf.namelist() if n.lower().endswith(".csv")]
+                        for member in csv_members:
+                            raw_bytes = inner_zf.read(member)
+                            df = pl.read_csv(
+                                io.BytesIO(raw_bytes),
+                                schema_overrides=active_schema,
+                                infer_schema_length=0,
+                                encoding="latin1",
+                                null_values=["", "NA", "null", "NULL", "*", "None"],
+                                truncate_ragged_lines=True,
+                            )
+                            df = df.rename({c: c.strip() for c in df.columns})
+                            if df.is_empty():
+                                continue
+                            if "RouteKey" not in df.columns and {"CountryNum", "StateNum", "Route"}.issubset(df.columns):
+                                df = add_route_key(df)
+                            if target_states and "StateNum" in df.columns:
+                                df = df.filter(pl.col("StateNum").is_in(target_states))
+                            if target_routes and "RouteKey" in df.columns:
+                                df = df.filter(pl.col("RouteKey").is_in(target_routes))
+                            if not df.is_empty():
+                                frames.append(df)
+            else:
+                csv_members = [n for n in namelist if n.lower().endswith(".csv")]
+                if not csv_members:
+                    raise ValueError("No CSV files found in observation zip archive.")
 
-            for member in csv_members:
-                raw_bytes = zf.read(member)
-                df = pl.read_csv(
-                    io.BytesIO(raw_bytes),
-                    schema_overrides=FIFTY_STOP_SCHEMA,
-                    infer_schema_length=0,
-                    encoding="latin1",
-                    null_values=["", "NA", "null", "NULL", "*", "None"],
-                    truncate_ragged_lines=True,
-                )
-                df = df.rename({c: c.strip() for c in df.columns})
-                if df.is_empty():
-                    continue
-
-                # Add RouteKey if component columns exist
-                if "RouteKey" not in df.columns and {"CountryNum", "StateNum", "Route"}.issubset(df.columns):
-                    df = add_route_key(df)
-
-                # Filter early to reduce memory pressure
-                if target_states and "StateNum" in df.columns:
-                    df = df.filter(pl.col("StateNum").is_in(target_states))
-                if target_routes and "RouteKey" in df.columns:
-                    df = df.filter(pl.col("RouteKey").is_in(target_routes))
-
-                if not df.is_empty():
-                    frames.append(df)
+                for member in csv_members:
+                    raw_bytes = zf.read(member)
+                    df = pl.read_csv(
+                        io.BytesIO(raw_bytes),
+                        schema_overrides=active_schema,
+                        infer_schema_length=0,
+                        encoding="latin1",
+                        null_values=["", "NA", "null", "NULL", "*", "None"],
+                        truncate_ragged_lines=True,
+                    )
+                    df = df.rename({c: c.strip() for c in df.columns})
+                    if df.is_empty():
+                        continue
+                    if "RouteKey" not in df.columns and {"CountryNum", "StateNum", "Route"}.issubset(df.columns):
+                        df = add_route_key(df)
+                    if target_states and "StateNum" in df.columns:
+                        df = df.filter(pl.col("StateNum").is_in(target_states))
+                    if target_routes and "RouteKey" in df.columns:
+                        df = df.filter(pl.col("RouteKey").is_in(target_routes))
+                    if not df.is_empty():
+                        frames.append(df)
     else:
         df = pl.read_csv(
             buf,
-            schema_overrides=FIFTY_STOP_SCHEMA,
+            schema_overrides=active_schema,
             infer_schema_length=0,
             encoding="latin1",
             null_values=["", "NA", "null", "NULL", "*", "None"],
@@ -573,7 +625,7 @@ def _load_observation_data(
         frames.append(df)
 
     if not frames:
-        return pl.DataFrame(schema=FIFTY_STOP_SCHEMA)
+        return pl.DataFrame(schema=active_schema)
 
     return pl.concat(frames, how="vertical_relaxed")
 
@@ -613,6 +665,7 @@ def run_pipeline(
     max_cars_per_stop: Optional[float] = None,
     max_car_total: Optional[int] = None,
     zero_fill: bool = True,
+    resolution: str = "50stop",
     item_id: str = DEFAULT_ITEM_ID,
     raw_data_dir: Optional[Union[str, Path]] = None,
     guilds_path: Optional[Union[str, Path]] = None,
@@ -768,7 +821,7 @@ def run_pipeline(
     start_year, end_year = enforce_fifty_stop_temporal_guard(
         start_year=start_year,
         end_year=end_year,
-        resolution="50stop",
+        resolution=resolution,
         start_stop=slice_start,
         end_stop=slice_end,
     )
@@ -1068,11 +1121,13 @@ def run_pipeline(
     # -----------------------------------------------------------------------
     # Step 5: Ingest Observations & Cartesian Zero-Filling
     # -----------------------------------------------------------------------
-    obs_buf = _find_and_read_file("50-StopData.zip", raw_dir=raw_dir, item_id=item_id, session=session)
+    obs_filename = "States.zip" if resolution == "10stop" else "50-StopData.zip"
+    obs_buf = _find_and_read_file(obs_filename, raw_dir=raw_dir, item_id=item_id, session=session)
     raw_obs_df = _load_observation_data(
         obs_buf,
         target_routes=list(valid_route_keys),
         target_states=target_state_nums,
+        resolution=resolution,
     )
 
     if zero_fill:
@@ -1146,6 +1201,34 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
     )
 
+    # Resolve export format: CLI flag -> interactive prompt -> default parquet
+    selected_format = args.format
+    if selected_format is None and args.output is None:
+        if sys.stdin.isatty():
+            print("\nSelect export format:")
+            print("  1) csv")
+            print("  2) parquet")
+            print("  3) gpkg (GeoPackage)")
+            print("  4) geojson")
+            choice_map = {"1": "csv", "2": "parquet", "3": "gpkg", "4": "geojson"}
+            raw_choice = input("Enter choice [1-4] (default: 2): ").strip()
+            selected_format = choice_map.get(raw_choice, "parquet")
+        else:
+            selected_format = "parquet"
+    elif selected_format is None and args.output is not None:
+        suffix = Path(args.output).suffix.lstrip(".").lower()
+        selected_format = suffix if suffix in SUPPORTED_FORMATS else "parquet"
+
+    # Auto-derive output destination in data/processed if omitted
+    output_dest = args.output
+    if output_dest is None:
+        state_tag = "_".join(args.states) if args.states else "all"
+        y_start = args.start_year or 1966
+        y_end = args.end_year or "present"
+        out_dir = Path("data/processed")
+        out_dir.mkdir(parents=True, exist_ok=True)
+        output_dest = out_dir / f"bbs_extract_{args.resolution}_{state_tag}_{y_start}_{y_end}.{selected_format}"
+
     try:
         res = run_pipeline(
             states=args.states,
@@ -1177,11 +1260,12 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
             max_cars_per_stop=args.max_cars_per_stop,
             max_car_total=args.max_car_total,
             zero_fill=args.zero_fill,
+            resolution=args.resolution,
             item_id=args.item_id,
             raw_data_dir=args.raw_data_dir,
             guilds_path=args.guilds_path,
-            output_path=args.output,
-            format=args.format,
+            output_path=output_dest,
+            format=selected_format,
             shape=args.shape,
             crs=args.crs,
             layer_name=args.layer_name,
