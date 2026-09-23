@@ -144,6 +144,13 @@ def main() -> None:
             value=DEFAULT_ITEM_ID,
             help="USGS ScienceBase release catalog identifier.",
         )
+        resolution_label = st.radio(
+            "Temporal Resolution & Data Source",
+            options=["50-Stop Detailed (1997–Present)", "10-Stop Summary (1966–Present)"],
+            index=0,
+            help="'50-Stop Detailed' pulls 50-StopData.zip; '10-Stop Summary' pulls States.zip back to 1966.",
+        )
+        resolution = "10stop" if "10-Stop" in resolution_label else "50stop"
 
         st.divider()
         st.header("📦 Output Configuration")
@@ -576,6 +583,7 @@ def main() -> None:
                     max_cars_per_stop=max_cars_per_stop,
                     max_car_total=max_car_total,
                     zero_fill=zero_fill_toggle,
+                    resolution=resolution,
                     item_id=item_id,
                     raw_data_dir=raw_data_dir if raw_data_dir else None,
                     output_path=None,  # Zero-Disk Mandate: return bytes
