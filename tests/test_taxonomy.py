@@ -206,6 +206,23 @@ class TestParseMigrantNonBreeder:
                 f"Migrant AOU '{code}' is not 5-digit zero-padded."
             )
 
+    def test_whitespace_padded_stop_columns_in_migrants_csv(self):
+        """Verify that whitespace-padded numbers like '0     ' in Stop columns do not cause ComputeError."""
+        csv_content = (
+            "RouteDataID,CountryNum,StateNum,Route,RPID,Year,AOU,"
+            + ",".join(f"Stop{i}" for i in range(1, 51))
+            + "\n"
+            + "9999999,840,02,001,101,2000,06890,"
+            + ",".join(["0     "] * 50)
+            + "\n"
+        )
+        buf = io.BytesIO()
+        with zipfile.ZipFile(buf, "w", compression=zipfile.ZIP_DEFLATED) as zf:
+            zf.writestr("MigrantNonBreeder/Migrants.csv", csv_content)
+        buf.seek(0)
+        result = parse_migrant_nonbreeder(buf)
+        assert "06890" in result
+
     # NEGATIVE: non-BytesIO raises TypeError
     def test_raises_type_error_on_wrong_type(self):  # NEGATIVE
         with pytest.raises(TypeError, match="io.BytesIO"):
@@ -417,3 +434,25 @@ class TestFilterSpeciesDf:
         df = _base_species_df()
         with pytest.raises(ValueError, match="non-empty"):
             filter_species_df(df, frozenset())
+
+
+def test_resolve_target_species_custom_aou_bypasses_migrant_exclusion():
+    # Setup minimal species DataFrame
+    df = pl.DataFrame({
+        "AOU": ["07550", "01234"],
+        "Order": ["Passeriformes", "Passeriformes"],
+        "Family": ["Turdidae", "Other"],
+    })
+    guilds = {}
+    migrant_aous = frozenset({"07550"})  # Wood Thrush flagged as migrant
+
+    # Explicit custom selection must survive migrant subtraction
+    result = resolve_target_species(
+        species_df=df,
+        guilds=guilds,
+        migrant_aous=migrant_aous,
+        custom_aous=["07550"],
+        all_species=False,
+    )
+    assert result == frozenset({"07550"})
+

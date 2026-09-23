@@ -42,3 +42,14 @@ Thumbs.db
 *~
 *Zone.Identifier
 .agents/skills/developing-with-streamlit
+
+# Data directory ignore rule (preserves required runtime guild registry)
+data/*
+!data/guilds.json
+
+# Local context dumps & data exports
+bbs_repo_context*.txt
+*.csv
+*.parquet
+*.gpkg
+*.geojson

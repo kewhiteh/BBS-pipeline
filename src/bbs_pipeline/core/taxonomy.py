@@ -52,14 +52,7 @@ SPECIES_LIST_SCHEMA: dict[str, type[pl.DataType]] = {
 # ---------------------------------------------------------------------------
 
 _MIGRANT_AOU_SCHEMA: dict[str, type[pl.DataType]] = {
-    "RouteDataID": pl.String,
-    "CountryNum": pl.String,
-    "StateNum": pl.String,
-    "Route": pl.String,
-    "RPID": pl.String,
-    "Year": pl.String,
     "AOU": pl.String,
-    **{f"Stop{i}": pl.Int32 for i in range(1, 51)},
 }
 
 
@@ -228,10 +221,13 @@ def parse_migrant_nonbreeder(buf: io.BytesIO) -> FrozenSet[str]:
             csv_bytes = zf.read(entry)
             df = pl.read_csv(
                 io.BytesIO(csv_bytes),
-                schema=_MIGRANT_AOU_SCHEMA,
+                schema_overrides=_MIGRANT_AOU_SCHEMA,
                 encoding="latin1",
                 infer_schema_length=0,
+                null_values=["", "NA", "null", "NULL", "*", "None"],
+                truncate_ragged_lines=True,
             )
+            df = df.rename({c: c.strip() for c in df.columns})
             if "AOU" not in df.columns:
                 raise ValueError(
                     f"Migrants CSV '{entry}' has no AOU column."
@@ -327,12 +323,12 @@ def resolve_target_species(
         species_df.select("AOU").to_series().to_list()
     )
 
+    broad_union: set[str] = set()
+
     if all_species:
         # --all-species / --community flag: universe minus migrants
-        union: set[str] = set(all_aous)
+        broad_union.update(all_aous)
     else:
-        union: set[str] = set()
-
         # --- Order filter ---
         if orders:
             order_set = {o.strip() for o in orders}
@@ -343,7 +339,7 @@ def resolve_target_species(
                     .to_series()
                     .to_list()
                 )
-                union.update(matched)
+                broad_union.update(matched)
 
         # --- Family filter ---
         if families:
@@ -355,7 +351,7 @@ def resolve_target_species(
                     .to_series()
                     .to_list()
                 )
-                union.update(matched)
+                broad_union.update(matched)
 
         # --- Guild filters (breeding_habitat and/or foraging_guild) ---
         if guild_breeding_habitats or guild_foraging_guilds:
@@ -373,21 +369,22 @@ def resolve_target_species(
                 bh_match = bh_set is None or traits.get("breeding_habitat") in bh_set
                 fg_match = fg_set is None or traits.get("foraging_guild") in fg_set
                 if bh_match and fg_match:
-                    union.add(aou_code)
+                    broad_union.add(aou_code)
 
-        # --- Custom AOU codes ---
-        if custom_aous:
-            padded = {_pad_aou(a) for a in custom_aous}
-            # Restrict to AOUs known in the SpeciesList universe
-            union.update(padded & all_aous)
+    # --- Custom AOU codes (Explicitly requested species bypass migrant exclusion) ---
+    explicit_set: set[str] = set()
+    if custom_aous:
+        padded = {_pad_aou(a) for a in custom_aous}
+        explicit_set.update(padded & all_aous)
 
-    # Apply migrant/non-breeder exclusion (§2.7)
-    target: FrozenSet[str] = frozenset(union - migrant_aous)
+    # Apply migrant exclusion ONLY to broad taxonomic sets, NOT explicit user selections
+    target: FrozenSet[str] = frozenset((broad_union - migrant_aous) | explicit_set)
 
     logger.debug(
-        "resolve_target_species: union=%d, excluded=%d, target=%d",
-        len(union),
-        len(union & migrant_aous),
+        "resolve_target_species: broad_union=%d, excluded=%d, explicit=%d, target=%d",
+        len(broad_union),
+        len(broad_union & migrant_aous),
+        len(explicit_set),
         len(target),
     )
     return target
