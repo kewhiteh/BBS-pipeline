@@ -428,7 +428,14 @@ def build_parser() -> argparse.ArgumentParser:
         choices=list(SUPPORTED_SHAPES),
         default="wide",
         dest="shape",
-        help="Tabular shape: 'wide' (Stop1..Stop50) or 'long' (unpivoted StopNumber, Count).",
+        help="Tabular shape: 'wide' (Stop1..Stop50), 'long' (unpivoted StopNumber, Count), or 'route' (collapsed run summary per Route-Year-Species).",
+    )
+    out_grp.add_argument(
+        "--community-metrics",
+        action="store_true",
+        default=False,
+        dest="community_metrics",
+        help="Calculate and append run-level community diversity metrics (CommunityRichness, CommunityTotalIndividuals, ShannonDiversity, ShannonEvenness).",
     )
     out_grp.add_argument(
         "--crs",
@@ -675,6 +682,7 @@ def run_pipeline(
     crs: Union[str, int] = DEFAULT_TARGET_CRS,
     layer_name: str = "bbs_observations",
     session: Optional[requests.Session] = None,
+    community_metrics: bool = False,
 ) -> Union[bytes, Path]:
     """Execute the end-to-end BBS pipeline adhering to all architectural invariants.
 
@@ -1181,6 +1189,7 @@ def run_pipeline(
         target_crs=crs,
         metadata=provenance_extra,
         layer_name=layer_name,
+        community_metrics=community_metrics,
     )
 
     return result
@@ -1269,6 +1278,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
             shape=args.shape,
             crs=args.crs,
             layer_name=args.layer_name,
+            community_metrics=args.community_metrics,
         )
         if isinstance(res, Path):
             print(f"[SUCCESS] Export serialized to: {res.resolve()}")

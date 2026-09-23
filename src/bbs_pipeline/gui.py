@@ -162,10 +162,15 @@ def main() -> None:
         )
         shape = st.radio(
             "Tabular Output Shape",
-            options=["wide", "long"],
+            options=["wide", "long", "route"],
             index=0,
             horizontal=True,
-            help="'wide' preserves Stop1..Stop50; 'long' unpivots into normalized records.",
+            help="'wide': individual stop columns. 'long': unpivoted StopNumber/Count rows. 'route': collapsed run summary per (Route, Year, Species) with stop columns omitted.",
+        )
+        community_metrics = st.checkbox(
+            "Append Community Diversity Metrics",
+            value=False,
+            help="Computes run-level metrics: CommunityRichness, CommunityTotalIndividuals, ShannonDiversity (H'), and ShannonEvenness.",
         )
         crs = st.selectbox(
             "Target Projection (CRS)",
@@ -590,6 +595,7 @@ def main() -> None:
                     format=export_format,
                     shape=shape,
                     crs=crs,
+                    community_metrics=community_metrics,
                 )
 
                 mime_types = {
