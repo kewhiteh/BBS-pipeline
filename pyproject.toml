@@ -7,6 +7,7 @@ name = "bbs-pipeline"
 version = "0.1.0"
 description = "USGS Breeding Bird Survey (BBS) High-Performance Extraction, Cleaning, Zero-Filling, and Spatial Export Pipeline"
 readme = "README.md"
+license = { text = "MIT" }
 requires-python = ">=3.10"
 dependencies = [
     "polars>=0.20.0,<1.0.0",
