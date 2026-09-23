@@ -617,7 +617,7 @@ def append_community_metrics(df: pl.DataFrame) -> pl.DataFrame:
     )
 
     return (
-        df.join(metrics_df, on=group_keys, how="left")
+        df.join(metrics_df, on=group_keys, how="left", coalesce=True)
         .with_columns([
             pl.col("CommunityRichness").fill_null(0).cast(pl.Int32),
             pl.col("CommunityTotalIndividuals").fill_null(0).cast(pl.Int32),
