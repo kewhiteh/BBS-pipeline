@@ -1,28 +1,70 @@
-# docs/05_CONSTRAINTS.md
+# Negative Boundaries & Non-Functional Constraints (v2.0)
+## Track B Tool-Lock, Blast-Radius & Architectural Blacklist
 
-# Negative Boundaries & Domain-Specific Invariants
+This document enforces strict negative boundaries, banned design patterns, resource ceilings, and blast-radius rules for USGS Breeding Bird Survey (BBS) Pipeline v2.0.
 
-## 1. Domain Profile A: Negative Boundaries
+---
 
-### 1.1 Strict Zero-Disk In-Memory Mandate
-- **No Temporary Files:** Raw downloaded ZIP archives, unzipped CSVs, temporary parquet chunks, DuckDB instances, and SQLite tables are strictly banned from touching physical disks or local storage mounts (`/tmp`, `./cache`, etc.)[cite: 1, 3].
-- **Streaming RAM Buffers:** All HTTP network streams must be consumed into `io.BytesIO` objects[cite: 1, 3]. ZipFile operations must read streams directly via context managers (`with zipfile.ZipFile(stream) as z:`)[cite: 1].
-- **Export Boundary Only:** Physical file writes are permitted **solely** at the terminal export boundary when `--output` is provided[cite: 1, 3]. In GUI mode, downloads must stream directly to the browser via `st.download_button`[cite: 3].
+## 1. Track B Blast-Radius & File Immutability Constraints
 
-### 1.2 Toolchain Isolation & Engine Blacklist
-- **Pandas Restriction:** The use of `pandas` is prohibited inside all network streaming, parsing, data transformation, taxonomic resolution, and zero-filling modules[cite: 3]. Polars LazyFrame/DataFrame APIs must be used exclusively[cite: 3]. `pandas` and `geopandas` are restricted strictly to `spatial.py` for terminal vector layer creation and GeoPackage packaging[cite: 3].
-- **Zero Schema Inference:** Ingesting CSV files via `pl.read_csv()` or `pl.scan_csv()` without explicit `schema_overrides` is strictly forbidden[cite: 1, 3]. Automatic type inference is completely banned[cite: 3].
-- **Untyped Columns:** `pl.Object` types are strictly prohibited in all schemas[cite: 1].
+The following baseline files are **STRICTLY READ-ONLY**. Modifying, renaming, deleting, or refactoring these files is a critical violation of Track B governance:
 
-### 1.3 The Arithmetic Typing Invariant
-- A column is typed as numeric (`Int32`, `Float64`, etc.) **if and only if** it acts as a direct mathematical operand[cite: 1, 3].
-- The following columns are identifiers and codes, and **must strictly be typed as zero-padded `pl.String`**[cite: 1, 3]:
-  - `CountryNum` (3 digits), `StateNum` (2 digits), `Route` (3 digits), `AOU` (5 digits), `RouteDataID`, `RPID`, `Year`, `Month`, `Day`, `StartTime`, `EndTime`, `JulianDay`, `ObsN`, `Stratum`, `BCR`, `RouteTypeID`, `Active`[cite: 3].
+1. `src/bbs_pipeline/client/parser.py`
+2. `src/bbs_pipeline/client/sciencebase.py`
+3. `src/bbs_pipeline/core/discovery.py`
+4. `src/bbs_pipeline/core/zero_fill.py`
+5. `src/bbs_pipeline/ingestion/routes.py`
+6. `src/bbs_pipeline/processing/aggregation.py`
+7. `tests/test_routes_ingestion.py`
+8. `tests/test_aggregations.py`
 
-### 1.4 Biological & Methodological Guards
-- **Zero Geographic Leakage:** Zero-filling must never generate false-absence records for species that have never been documented on a given route throughout BBS history (1966–present)[cite: 3]. Extirpation-preserving logic is mandatory[cite: 3].
-- **Discrete Stop Bounds:** Stops exceeding `TotalStops` for a route (e.g., stops 49 and 50 on a 48-stop route) must evaluate strictly to `NULL`, never `0`[cite: 3].
-- **No Interpolated Geometries:** Route spatial features must anchor 1:1 to starting coordinates from `routes.csv`[cite: 3]. Interpolating intermediate stop coordinates is prohibited[cite: 3].
+All v2.0 features must be implemented in new modules or isolated additive hooks.
 
-### 1.5 Network & Testing Invariants
-- **No Live Network Calls in Tests:** Automated tests (`pytest`) are strictly forbidden from hitting remote ScienceBase endpoints[cite: 3]. All test routines must inject synthetic in-memory byte buffers via `requests_mock` or fixtures[cite: 3].
+---
+
+## 2. Zero-Disk In-Memory Mandate
+
+- **Strict Ban on Disk Buffering:**
+  - Do NOT write uncompressed raw CSVs (`fifty1.csv`, etc.) to `/tmp`, the project root, or disk caches.
+  - Do NOT write intermediate Parquet or Arrow files to disk during extraction, filtering, or transformation.
+  - Do NOT use SQLite, DuckDB, or embedded database files.
+- **Mandatory Memory Staging:**
+  - All network payloads from ScienceBase must be ingested via `io.BytesIO`.
+  - All zip file unpack operations must stream members directly into Polars via `zipfile.ZipFile.open()`.
+  - All vector exports (GeoPackage, GeoJSON, Parquet) must serialize to `io.BytesIO` buffers.
+
+---
+
+## 3. Tool-Lock & Dependency Boundaries
+
+### 3.1 Banned Libraries & Runtimes
+- **Pandas Restriction:** `import pandas` is strictly prohibited across all data ingestion, transformations, aggregations, filtering, and zero-filling logic. It is permitted solely inside `src/bbs_pipeline/export/vector.py` as an internal conversion requirement for GeoPandas vector serialization.
+- **Banned Spatial Tools:** `arcpy`, `qgis`, `fiona`, `gdal` (standalone C-bindings), `osgeo`.
+- **Banned Data Engines:** `dask`, `duckdb`, `pyspark`, `sqlite3`, `modin`.
+- **Banned Visual Tools in Pipeline:** `matplotlib`, `seaborn`, `plotly` inside data processing modules (plotting is isolated to GUI).
+
+### 3.2 Banned Design Patterns & Syntaxes
+- **Zero Schema Inference:** Using `infer_schema_length > 0` or omitting `infer_schema_length=0` during CSV reads is strictly forbidden.
+- **Premature Numeric Casting:** Converting ID columns (`CountryNum`, `StateNum`, `Route`, `AOU`, `RouteDataID`, `RPID`, `Year`) to integer types is forbidden.
+- **Silent Exception Swallowing:** Naked `try...except:` or `except Exception: pass` blocks are strictly forbidden. All caught exceptions must re-raise or log full tracebacks to `stderr`.
+- **Global Mutable State:** Module-level mutable variables or singletons for storing survey data are prohibited.
+- **UI Antipattens:** Do NOT use horizontal pills (`st.pills`) for high-cardinality collections; use `st.multiselect` with composite keys (`f"{RouteKey} - {RouteName}"`).
+
+---
+
+## 4. Zero-Filling & Mathematical Invariants
+
+- **Zero-Filling Scope:**
+  - `0` may only be imputed for taxonomic species counts (`Stop1`..`Stop50`).
+  - Imputation is valid ONLY for species with documented historical breeding records on the specific route.
+  - Imputation is valid ONLY for surveyed stops $1 \dots \text{TotalStops}$.
+  - Stops beyond survey completion ($k > \text{TotalStops}$) MUST remain `NULL`.
+  - Imputing `0` for weather, wind, temperature, sky, or noise is strictly prohibited.
+
+---
+
+## 5. Linear Referencing & Spatial Geometry Invariants
+
+- **Monotonicity Requirement:** Interpolated stop distances along a route must be strictly non-decreasing.
+- **Standardized Measure:** Stop distances are fixed at $(i - 1) \times 0.5\text{ miles}$, terminating at $24.5\text{ miles}$ for Stop 50.
+- **Coordinate Precision:** Intermediate spatial calculations must execute in conformal equidistant projected coordinates (`EPSG:5070`); export coordinates must be standardized to `EPSG:4326`.

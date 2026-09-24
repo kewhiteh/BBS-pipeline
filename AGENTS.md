@@ -1,24 +1,34 @@
-# AGENTS.md
+# Universal Agent Directives: USGS Breeding Bird Survey (BBS) Pipeline v2.0
 
-# Universal Agent Directives: USGS Breeding Bird Survey (BBS) Pipeline
-
-You are an automated implementation engine executing a deterministic build specification for the USGS BBS Pipeline[cite: 2, 3].
-Before taking any action, modifying files, or generating code, read and adhere strictly to the repository blueprints:
-
-1. Universal Engineering Invariants: `docs/01_PLAYBOOK.md`[cite: 2]
-2. Architecture, Schemas & Toolchain Whitelist: `docs/02_ARCHITECTURE.md`[cite: 2]
-3. Upstream Schemas, Formats & Domain Models: `docs/03_SCHEMAS.md`[cite: 2]
-4. Phased Milestone Roadmap & Task Verification: `docs/04_TASKS.md`[cite: 2]
-5. Negative Boundaries & Domain Invariants: `docs/05_CONSTRAINTS.md`[cite: 2]
-6. Step-by-Step Operator Runbook: `docs/06_OPERATOR_RUNBOOK.md`[cite: 2]
-
----
+You are an automated implementation engine executing an additive build specification (Track B) on the USGS Breeding Bird Survey (BBS) Pipeline repository.
+Before taking any action or generating code, read and adhere strictly to the following blueprints:
+1. Engineering Invariants & Track B Protocols: `docs/01_PLAYBOOK.md`
+2. System Architecture & Approved Toolchain Manifest: `docs/02_ARCHITECTURE.md`
+3. Ground-Truth Schemas & Data Contracts: `docs/03_SCHEMAS.md`
+4. Sequential Milestone Backlog & Verification Gates: `docs/04_TASKS.md`
+5. Negative Boundaries & Domain Invariants: `docs/05_CONSTRAINTS.md`
+6. Phased Operator Execution Deck: `docs/06_OPERATOR_RUNBOOK.md`
 
 ### Hard Operational Boundaries:
-- **Profile A Data Invariant (The Arithmetic Principle):** Only mathematical operands are numeric[cite: 1, 3]. All identifiers, codes, state/route numbers, and dates must be zero-padded `pl.String`[cite: 1, 3]. `pl.Object` is banned[cite: 1].
-- **Zero-Disk In-Memory Mandate:** Under no circumstances may raw archives, unpacked CSVs, temporary files, intermediate Parquet caches, DuckDB files, or SQLite databases touch the local disk during network streaming, ingestion, zero-filling, or transform routines[cite: 1, 3]. Intermediate operations must strictly utilize RAM buffers (`io.BytesIO`) wrapped in context managers[cite: 1, 3]. Disk writes are restricted solely to the final export command[cite: 1, 3].
-- **Tool Lock:** Pandas is strictly banned from ingestion, transformation, filtering, and zero-filling routines[cite: 3]. Polars (`polars>=0.20.0,<1.0.0`) must be used exclusively[cite: 3]. Pandas/GeoPandas is permitted solely at the final boundary serialization for OGC GeoPackage output[cite: 3].
-- **Zero Schema Inference:** Polars schema inference is prohibited[cite: 3]. All CSV reads must supply an explicit `schema_overrides` dictionary[cite: 1, 3].
-- **Sequence Lock:** Execute tasks strictly in the order listed in `docs/04_TASKS.md`[cite: 2]. Never skip ahead[cite: 2].
-- **Blast-Radius Lock:** Modify only files designated in the active phase prompt[cite: 1, 2]. Do not refactor previous milestones[cite: 1].
-- **Ambiguity Halt:** If a specification is ambiguous or incomplete, halt immediately and prompt the operator[cite: 2].
+- **Track B Additive Invariant:** You are operating on a verified, production codebase tagged at `v1.0.0`. Baseline modules and tests are strictly read-only.
+- **Blast-Radius & Anti-Regression Lock:** The following files are immutable and must NEVER be modified:
+  - `src/bbs_pipeline/client/parser.py`
+  - `src/bbs_pipeline/client/sciencebase.py`
+  - `src/bbs_pipeline/core/discovery.py`
+  - `src/bbs_pipeline/core/zero_fill.py`
+  - `src/bbs_pipeline/ingestion/routes.py`
+  - `src/bbs_pipeline/processing/aggregation.py`
+  - `tests/test_routes_ingestion.py`
+  - `tests/test_aggregations.py`
+- **Zero-Touch Test Fixtures:** Established unit and integration tests from release v1.0.0 must remain 100% green without modification throughout this upgrade.
+- **Branch Lock:** Never commit directly to `main`. Every milestone task must be implemented on a dedicated feature branch: `feature/phase-<N>-<milestone-name>`.
+- **Tool Lock:** Adhere strictly to the Approved Toolchain Manifest in `docs/02_ARCHITECTURE.md`. Do not import or install unlisted libraries. Polars and Shapely are enforced. Pandas is restricted strictly to terminal vector export inside GeoPandas.
+- **Sequence Lock:** Execute tasks strictly in the order listed in `docs/04_TASKS.md`. Never skip ahead.
+- **Zero-Disk In-Memory Mandate:** All multi-archive extraction, intermediate data structures, and spatial operations must reside in RAM using `io.BytesIO`. Zero raw zip files, intermediate CSVs, SQLite/DuckDB databases, or temporary Parquet caches written to disk.
+- **Ingestion Boundary Isolation:** Automatic schema inference is strictly prohibited (`infer_schema_length=0`). All columns at raw parser boundaries must default to `pl.String`. Coercion to numeric types (`pl.Int32`, `pl.Float64`) is deferred downstream with `strict=False`.
+- **Scope-Restricted Zero-Filling:** Zero imputation (`0`) is legally restricted to confirmed historical breeding species for surveyed stops $1 \dots \text{TotalStops}$. Stops beyond survey completion ($k > \text{TotalStops}$) must remain native `NULL`.
+- **Linear Referencing Invariant:** Routes are modeled as 24.5-mile transects with 50 discrete stops at exact 0.5-mile (804.672 m) intervals. Stop 1 is anchored at $0.0\text{ mi}$; Stop 50 is anchored at $24.5\text{ mi}$. Distances must be monotonically non-decreasing.
+- **Two-Tier Spatial Filtering:** Spatial boundaries must be evaluated via Tier 1 route bounding-box pruning (STRtree) followed by Tier 2 vectorized point-in-polygon stop containment.
+- **Diagnostic Visibility:** Generic `try...except` blocks that swallow errors are strictly banned. All errors must be logged with full tracebacks to `stderr`.
+- **Lint & Format Lock:** All code must pass `ruff check src/ tests/` and `ruff format --check src/ tests/` with zero errors or unhandled warnings before merging.
+- **Ambiguity Halt:** If a specification is ambiguous or incomplete, halt immediately and prompt the human operator.
