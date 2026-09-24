@@ -64,7 +64,11 @@ from bbs_pipeline.export.serializer import (
     SUPPORTED_FORMATS,
     SUPPORTED_SHAPES,
     serialize_dataset,
+    shape_dataset,
 )
+from bbs_pipeline.processing.linear_referencing import interpolate_stops_along_route
+from bbs_pipeline.spatial.export import export_vector_layers
+from bbs_pipeline.spatial.filtering import filter_stops_by_boundary
 
 logger = logging.getLogger(__name__)
 
@@ -261,6 +265,32 @@ def build_parser() -> argparse.ArgumentParser:
         nargs="+",
         dest="routes",
         help="Route identifier(s) or composite route key(s) (e.g. 840_02_001 or 001).",
+    )
+    spatial_grp.add_argument(
+        "--spatial-filter",
+        "--spatial-boundary",
+        type=Path,
+        default=None,
+        dest="spatial_filter",
+        help="Path to GeoJSON/polygon spatial boundary file for area-of-interest filtering.",
+    )
+    spatial_grp.add_argument(
+        "--filter-mode",
+        "--spatial-filter-mode",
+        choices=[
+            "STRICT_CONTAINMENT",
+            "ANY_STOP_INTERSECT",
+            "SPATIAL_STOP_MASK",
+            "strict_containment",
+            "any_stop_intersect",
+            "spatial_stop_mask",
+            "strict_all_stops",
+            "any_stop",
+            "mask_outside_stops",
+        ],
+        default="STRICT_CONTAINMENT",
+        dest="filter_mode",
+        help="Spatial boundary filtering mode (STRICT_CONTAINMENT, ANY_STOP_INTERSECT, SPATIAL_STOP_MASK).",
     )
 
     # 2. Taxonomic Group
@@ -500,6 +530,21 @@ def build_parser() -> argparse.ArgumentParser:
         help="Path to data/guilds.json trait registry.",
     )
 
+    op_grp.add_argument(
+        "--include-stops",
+        action="store_true",
+        default=False,
+        dest="include_stops",
+        help="Enable 50-stop level observation ingestion and processing with linear referencing.",
+    )
+    op_grp.add_argument(
+        "--stop-geometry",
+        choices=["none", "start_point", "linear_referenced_50"],
+        default="linear_referenced_50",
+        dest="stop_geometry",
+        help="Geometry generation mode for stops.",
+    )
+
     # 8. Output & Serialization Group
     out_grp = parser.add_argument_group("Serialization & Output Options")
     out_grp.add_argument(
@@ -519,11 +564,37 @@ def build_parser() -> argparse.ArgumentParser:
         help="Output serialization format (parquet, csv, geojson, gpkg). Inferred from --output if omitted.",
     )
     out_grp.add_argument(
+        "--export-format",
+        choices=[
+            "parquet",
+            "gpkg",
+            "fgb",
+            "flatgeobuf",
+            "geojson",
+            "csv",
+            "PARQUET",
+            "GPKG",
+            "FGB",
+            "GEOJSON",
+            "CSV",
+        ],
+        default=None,
+        dest="export_format",
+        help="Vector export format (gpkg, fgb, parquet) delegating to export_vector_layers.",
+    )
+    out_grp.add_argument(
         "--shape",
-        choices=list(SUPPORTED_SHAPES),
         default="wide",
         dest="shape",
-        help="Tabular shape: 'wide' (Stop1..Stop50), 'long' (unpivoted StopNumber, Count), or 'route' (collapsed run summary per Route-Year-Species).",
+        help="Tabular shape: 'wide' (Stop1..Stop50), 'long' (unpivoted StopNumber, Count), or path to route polylines shapefile.",
+    )
+    out_grp.add_argument(
+        "--shapefile",
+        "--route-shape",
+        type=Path,
+        default=None,
+        dest="shapefile",
+        help="Path to route polylines shapefile.",
     )
     out_grp.add_argument(
         "--community-metrics",
@@ -800,6 +871,11 @@ def run_pipeline(
     layer_name: str = "bbs_observations",
     session: requests.Session | None = None,
     community_metrics: bool = False,
+    include_stops: bool = False,
+    spatial_filter: str | Path | None = None,
+    filter_mode: str = "STRICT_CONTAINMENT",
+    export_format: str | None = None,
+    shapefile: str | Path | None = None,
 ) -> bytes | Path:
     """Execute the end-to-end BBS pipeline adhering to all architectural invariants.
 
@@ -957,22 +1033,66 @@ def run_pipeline(
         end_stop=slice_end,
     )
 
-    # Determine output format
-    export_format = format
-    if export_format is None:
+    # Determine vector export format vs tabular format
+    vector_format = export_format
+    if vector_format is not None:
+        v_norm = vector_format.lower()
+        if v_norm in ("flatgeobuf", "fgb"):
+            vector_format = "fgb"
+        elif v_norm in ("geopackage", "gpkg"):
+            vector_format = "gpkg"
+        elif v_norm in ("geoparquet", "parquet"):
+            vector_format = "parquet"
+        else:
+            raise ValueError(f"Unsupported export format extension: {export_format}")
+
+    # Determine tabular output format
+    target_format = format
+    if target_format is None:
         if output_path is not None:
             suffix = Path(output_path).suffix.lstrip(".").lower()
             if suffix in SUPPORTED_FORMATS:
-                export_format = suffix
+                target_format = suffix
+            elif suffix == "fgb":
+                target_format = "fgb"
             else:
-                export_format = "parquet"
+                target_format = "parquet"
         else:
-            export_format = "parquet"
+            target_format = "parquet"
 
-    if export_format not in SUPPORTED_FORMATS:
+    if (
+        vector_format is None
+        and target_format not in SUPPORTED_FORMATS
+        and target_format != "fgb"
+    ):
         raise ValueError(
-            f"Unsupported format: {export_format!r}. Supported: {SUPPORTED_FORMATS}"
+            f"Unsupported format: {target_format!r}. Supported: {SUPPORTED_FORMATS}"
         )
+
+    # Validate spatial filter and filter mode early
+    if filter_mode is not None:
+        norm_mode = filter_mode.upper()
+        if norm_mode not in (
+            "STRICT_ALL_STOPS",
+            "STRICT_CONTAINMENT",
+            "ANY_STOP",
+            "ANY_STOP_INTERSECT",
+            "MASK_OUTSIDE_STOPS",
+            "SPATIAL_STOP_MASK",
+        ):
+            raise ValueError(f"Invalid filter mode: {filter_mode}")
+
+    if spatial_filter is not None and not Path(spatial_filter).exists():
+        raise ValueError(f"Spatial filter file does not exist: {spatial_filter}")
+
+    actual_shapefile: Path | None = None
+    if shapefile is not None:
+        actual_shapefile = Path(shapefile)
+    elif shape is not None and shape not in SUPPORTED_SHAPES:
+        actual_shapefile = Path(shape)
+
+    if actual_shapefile is not None and not actual_shapefile.exists():
+        raise ValueError(f"Shapefile does not exist: {actual_shapefile}")
 
     # Build requests session if needed
     if session is None and raw_dir is None:
@@ -1349,6 +1469,140 @@ def run_pipeline(
     # -----------------------------------------------------------------------
     # Step 7: Spatial Reprojection & Output Serialization
     # -----------------------------------------------------------------------
+    if include_stops or spatial_filter is not None or vector_format is not None:
+        # 1. Ensure routes_df has float coordinates
+        if (
+            "Latitude" in routes_df.columns
+            and routes_df["Latitude"].dtype != pl.Float64
+        ):
+            routes_df = routes_df.with_columns(
+                pl.col("Latitude").cast(pl.Float64, strict=False)
+            )
+        if (
+            "Longitude" in routes_df.columns
+            and routes_df["Longitude"].dtype != pl.Float64
+        ):
+            routes_df = routes_df.with_columns(
+                pl.col("Longitude").cast(pl.Float64, strict=False)
+            )
+
+        # 2. Read route polylines if shapefile is provided
+        route_lines_map: dict[str, Any] = {}
+        if actual_shapefile is not None:
+            import geopandas as gpd
+
+            gdf_routes = gpd.read_file(actual_shapefile)
+            for _, r_geom_row in gdf_routes.iterrows():
+                rk = None
+                if "RouteKey" in r_geom_row and r_geom_row["RouteKey"] is not None:
+                    rk = str(r_geom_row["RouteKey"])
+                elif "Route" in r_geom_row and r_geom_row["Route"] is not None:
+                    rk = str(r_geom_row["Route"])
+                if rk and r_geom_row.geometry is not None:
+                    route_lines_map[rk] = r_geom_row.geometry
+
+        # 3. Interpolate 50 stops for each route
+        route_stops_list = []
+        for r_row in routes_df.iter_rows(named=True):
+            r_key = r_row["RouteKey"]
+            lat = r_row["Latitude"]
+            lon = r_row["Longitude"]
+            if lat is None or lon is None:
+                continue
+            line = route_lines_map.get(str(r_key))
+            # Graceful handling of missing polylines when --include-stops is passed without --shape
+            geom_df = interpolate_stops_along_route(line, float(lat), float(lon))
+            geom_df = geom_df.with_columns(pl.lit(str(r_key)).alias("RouteKey"))
+            route_stops_list.append(geom_df)
+
+        if route_stops_list:
+            route_stops_geom = pl.concat(route_stops_list)
+        else:
+            route_stops_geom = pl.DataFrame(
+                schema={
+                    "RouteKey": pl.String,
+                    "StopNumber": pl.Int32,
+                    "StopLatitude": pl.Float64,
+                    "StopLongitude": pl.Float64,
+                    "StopDistanceMiles": pl.Float64,
+                    "GeometrySource": pl.String,
+                }
+            )
+
+        # 4. Unpivot final_obs_df to long shape and join with stop geometries
+        obs_long_df = shape_dataset(final_obs_df, shape="long")
+        stops_df = obs_long_df.join(
+            route_stops_geom,
+            on=["RouteKey", "StopNumber"],
+            how="inner",
+        )
+        if "Count" in stops_df.columns and stops_df["Count"].dtype != pl.Int32:
+            stops_df = stops_df.with_columns(
+                pl.col("Count").cast(pl.Int32, strict=False)
+            )
+
+        # 5. Apply spatial filtering if requested
+        if spatial_filter is not None:
+            import geopandas as gpd
+
+            poly_gdf = gpd.read_file(spatial_filter)
+            query_polygon = (
+                poly_gdf.union_all()
+                if hasattr(poly_gdf, "union_all")
+                else poly_gdf.unary_union
+            )
+
+            norm_mode = filter_mode.upper()
+            if norm_mode in ("STRICT_ALL_STOPS", "STRICT_CONTAINMENT"):
+                norm_mode = "STRICT_CONTAINMENT"
+            elif norm_mode in ("ANY_STOP", "ANY_STOP_INTERSECT"):
+                norm_mode = "ANY_STOP_INTERSECT"
+            elif norm_mode in ("MASK_OUTSIDE_STOPS", "SPATIAL_STOP_MASK"):
+                norm_mode = "SPATIAL_STOP_MASK"
+
+            filtered_lf = filter_stops_by_boundary(
+                stops_df.lazy(),
+                polygon=query_polygon,
+                mode=norm_mode,
+            )
+            stops_df = filtered_lf.collect()
+            if stops_df.is_empty():
+                raise ValueError(
+                    "Zero observation records resulted after spatial filtering."
+                )
+
+            retained_routes = stops_df["RouteKey"].unique().to_list()
+            routes_df = routes_df.filter(pl.col("RouteKey").is_in(retained_routes))
+
+        # 6. Proper delegation to export_vector_layers when vector_format is specified
+        if vector_format is not None:
+            buf = export_vector_layers(routes_df, stops_df, format_name=vector_format)
+            if output_path is not None:
+                out_p = Path(output_path)
+                out_p.parent.mkdir(parents=True, exist_ok=True)
+                out_p.write_bytes(buf.getvalue())
+                return out_p
+            return buf.getvalue()
+
+        # 7. Serialize stops dataset when export_format is omitted
+        provenance_extra = {
+            "spatial_crs": str(crs),
+            "target_species_count": len(target_species),
+            "filtered_route_count": len(routes_df),
+        }
+        return serialize_dataset(
+            data=stops_df,
+            format=target_format or "parquet",
+            output_path=output_path,
+            shape="wide",  # already in long stops format; wide bypasses shape_dataset
+            routes_df=routes_df,
+            target_crs=crs,
+            metadata=provenance_extra,
+            layer_name=layer_name,
+            community_metrics=community_metrics,
+        )
+
+    # Baseline v1.0 Step 7: Spatial Reprojection & Output Serialization
     provenance_extra: dict[str, Any] = {
         "spatial_crs": str(crs),
         "target_species_count": len(target_species),
@@ -1357,7 +1611,7 @@ def run_pipeline(
 
     result = serialize_dataset(
         data=final_obs_df,
-        format=export_format,
+        format=target_format or "parquet",
         output_path=output_path,
         shape=shape,
         routes_df=routes_df,
@@ -1380,13 +1634,28 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser = build_parser()
     args = parser.parse_args(argv)
 
+    if args.spatial_filter is not None:
+        p = Path(args.spatial_filter)
+        if not p.exists():
+            parser.error(f"Spatial filter file does not exist: {p}")
+
+    if args.shape is not None and args.shape not in SUPPORTED_SHAPES:
+        p = Path(args.shape)
+        if not p.exists():
+            parser.error(f"Shapefile does not exist: {p}")
+
+    if getattr(args, "shapefile", None) is not None:
+        p = Path(args.shapefile)
+        if not p.exists():
+            parser.error(f"Shapefile does not exist: {p}")
+
     logging.basicConfig(
         level=logging.INFO,
         format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
     )
 
     # Resolve export format: CLI flag -> interactive prompt -> default parquet
-    selected_format = args.format
+    selected_format = args.export_format or args.format
     if selected_format is None and args.output is None:
         if sys.stdin.isatty():
             print("\nSelect export format:")
@@ -1402,6 +1671,12 @@ def main(argv: Sequence[str] | None = None) -> int:
     elif selected_format is None and args.output is not None:
         suffix = Path(args.output).suffix.lstrip(".").lower()
         selected_format = suffix if suffix in SUPPORTED_FORMATS else "parquet"
+
+    if selected_format is not None:
+        sf_lower = selected_format.lower()
+        if sf_lower == "flatgeobuf":
+            sf_lower = "fgb"
+        selected_format = sf_lower
 
     # Auto-derive output destination in data/processed if omitted
     output_dest = args.output
@@ -1457,6 +1732,11 @@ def main(argv: Sequence[str] | None = None) -> int:
             crs=args.crs,
             layer_name=args.layer_name,
             community_metrics=args.community_metrics,
+            include_stops=args.include_stops,
+            spatial_filter=args.spatial_filter,
+            filter_mode=args.filter_mode,
+            export_format=args.export_format,
+            shapefile=getattr(args, "shapefile", None),
         )
         if isinstance(res, Path):
             print(f"[SUCCESS] Export serialized to: {res.resolve()}")
