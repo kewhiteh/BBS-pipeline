@@ -2,10 +2,7 @@
 
 from __future__ import annotations
 
-import math
-
 import pytest
-from pyproj import Geod
 from shapely.geometry import LineString
 
 from bbs_pipeline.processing.linear_referencing import interpolate_stops_along_route
@@ -85,7 +82,7 @@ class TestLinearReferencing:
             crs="EPSG:4269",
         )
         assert len(df) == 50
-        assert df["GeometrySource"][0] == "origin_linear_fallback"
+        assert df["GeometrySource"][0] == "origin_fallback"
         assert df["StopNumber"][0] == 1
         assert df["StopDistanceMiles"][49] == 24.5
 
@@ -94,17 +91,11 @@ class TestLinearReferencing:
         assert stop1["StopLatitude"] == 40.0
         assert stop1["StopLongitude"] == -100.0
 
-        # Verify geodesic distance between Stop 1 and Stop 50
-        geod = Geod(ellps="WGS84")
-        stop50 = df.row(49, named=True)
-        _, _, dist = geod.inv(
-            stop1["StopLongitude"],
-            stop1["StopLatitude"],
-            stop50["StopLongitude"],
-            stop50["StopLatitude"],
-        )
-        expected_dist = 24.5 * 1609.344
-        assert math.isclose(dist, expected_dist, rel_tol=1e-3)
+        # Verify Stops 2-50 have null coordinates
+        for i in range(1, 50):
+            stop_row = df.row(i, named=True)
+            assert stop_row["StopLatitude"] is None
+            assert stop_row["StopLongitude"] is None
 
 
 class TestNegativeAssertions:

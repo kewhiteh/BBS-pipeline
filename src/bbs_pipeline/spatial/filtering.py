@@ -105,17 +105,25 @@ def filter_stops_by_boundary(
     stops_df = stops_df.filter(pl.col("RouteKey").is_in(list(candidate_route_keys)))
 
     # Tier 2: Stop-Level Fine Filter (Vectorized point-in-polygon containment)
-    points = shapely.points(
-        stops_df["StopLongitude"].to_numpy(), stops_df["StopLatitude"].to_numpy()
-    )
+    lon = stops_df["StopLongitude"].to_numpy()
+    lat = stops_df["StopLatitude"].to_numpy()
+    valid_mask = ~(np.isnan(lon) | np.isnan(lat))
+
+    points = shapely.points(lon, lat)
 
     intersects = shapely.intersects(polygon, points)
 
-    stops_df = stops_df.with_columns(pl.Series("intersects", intersects))
+    stops_df = stops_df.with_columns(
+        pl.Series("intersects", intersects), pl.Series("valid_coord", valid_mask)
+    )
 
     # Route-level logic
     route_stats = stops_df.group_by("RouteKey").agg(
-        pl.col("intersects").all().alias("all_intersect"),
+        # all_intersect: all stops with valid coords intersect, and at least one intersects
+        (
+            (pl.col("intersects") | ~pl.col("valid_coord")).all()
+            & pl.col("intersects").any()
+        ).alias("all_intersect"),
         pl.col("intersects").any().alias("any_intersect"),
     )
 
@@ -135,6 +143,8 @@ def filter_stops_by_boundary(
         )
 
     # Clean up intermediate columns
-    filtered = filtered.drop(["intersects", "all_intersect", "any_intersect"])
+    filtered = filtered.drop(
+        ["intersects", "valid_coord", "all_intersect", "any_intersect"]
+    )
 
     return filtered.lazy()

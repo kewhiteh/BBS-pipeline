@@ -10,7 +10,7 @@ import logging
 import math
 
 import polars as pl
-from pyproj import Geod, Transformer
+from pyproj import Transformer
 from pyproj.exceptions import CRSError, ProjError
 from shapely.geometry import LineString
 from shapely.ops import transform
@@ -137,18 +137,16 @@ def interpolate_stops_along_route(
             )
     else:
         # Fallback mechanism
-        logger.info("Using origin_linear_fallback for missing route geometry.")
-        geod = Geod(ellps="WGS84")
+        logger.info(
+            "Using origin_fallback for missing route geometry. Only Stop 1 will have coordinates."
+        )
         for i in range(1, _TOTAL_STOPS + 1):
             dist_miles = (i - 1) * _STOP_INTERVAL_MILES
-            dist_meters = dist_miles * _METERS_PER_MILE
 
-            if dist_meters == 0:
+            if i == 1:
                 lon, lat = origin_lon, origin_lat
             else:
-                lon, lat, _ = geod.fwd(
-                    origin_lon, origin_lat, _FALLBACK_BEARING, dist_meters
-                )
+                lon, lat = None, None
 
             stops_data.append(
                 {
@@ -156,7 +154,7 @@ def interpolate_stops_along_route(
                     "StopLatitude": lat,
                     "StopLongitude": lon,
                     "StopDistanceMiles": dist_miles,
-                    "GeometrySource": "origin_linear_fallback",
+                    "GeometrySource": "origin_fallback",
                 }
             )
 

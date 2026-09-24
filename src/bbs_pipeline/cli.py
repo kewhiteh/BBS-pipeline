@@ -230,9 +230,17 @@ def normalize_state_input(state_in: str) -> str:
 def build_parser() -> argparse.ArgumentParser:
     """Construct the command-line argument parser for the USGS BBS Pipeline."""
     parser = argparse.ArgumentParser(
-        prog="extract_bbs",
+        prog="bbs-pipeline",
         description="USGS Breeding Bird Survey (BBS) High-Performance Extraction, Zero-Filling & Spatial Serialization",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+    )
+    import bbs_pipeline
+
+    parser.add_argument(
+        "-V",
+        "--version",
+        action="version",
+        version=f"%(prog)s {bbs_pipeline.__version__}",
     )
 
     # 1. Spatial Group

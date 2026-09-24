@@ -123,6 +123,8 @@ def render_pills_or_multiselect(
 
 
 def main() -> None:
+    import bbs_pipeline
+
     st.set_page_config(
         page_title="USGS BBS Pipeline Dashboard",
         page_icon="🦅",
@@ -130,7 +132,9 @@ def main() -> None:
         initial_sidebar_state="expanded",
     )
 
-    st.title("🦅 USGS Breeding Bird Survey (BBS) Pipeline")
+    st.title(
+        f"🦅 USGS Breeding Bird Survey (BBS) Pipeline (v{bbs_pipeline.__version__})"
+    )
     st.markdown(
         "High-performance in-memory extraction, taxonomic set-union resolution, "
         "discrete zero-filling, and spatial serialization dashboard."
@@ -138,6 +142,7 @@ def main() -> None:
 
     # Sidebar: Operational Settings
     with st.sidebar:
+        st.caption(f"Pipeline Version: `{bbs_pipeline.__version__}`")
         st.header("⚙️ Operational Settings")
         raw_data_dir = st.text_input(
             "Local Raw Data Directory (Optional)",

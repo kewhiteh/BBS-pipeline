@@ -1,10 +1,10 @@
 [build-system]
-requires = ["setuptools>=61.0", "wheel"]
+requires = ["setuptools>=61.0", "wheel", "setuptools_scm>=8.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "bbs-pipeline"
-version = "0.1.0"
+dynamic = ["version"]
 description = "USGS Breeding Bird Survey (BBS) High-Performance Extraction, Cleaning, Zero-Filling, and Spatial Export Pipeline"
 readme = "README.md"
 license = { text = "MIT" }

@@ -189,7 +189,7 @@ class TestCliAdditiveFeatures:
 
         # Verify graceful fallback geometry without --shape
         sources = tbl["GeometrySource"].to_pylist()
-        assert all(s == "origin_linear_fallback" for s in sources)
+        assert all(s == "origin_fallback" for s in sources)
 
     def test_graceful_handling_with_shapefile(
         self, mock_sciencebase_endpoints, sample_route_shapefile: Path, tmp_path: Path

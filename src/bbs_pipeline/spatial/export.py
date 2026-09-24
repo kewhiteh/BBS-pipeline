@@ -20,13 +20,8 @@ def _to_geodataframe(df: pl.DataFrame, layer_type: str) -> gpd.GeoDataFrame:
                 "Required coordinate columns missing or malformed in stops_df."
             )
 
-        # Check for malformed data
-        if pdf["StopLatitude"].isna().any() or pdf["StopLongitude"].isna().any():
-            raise ValueError(
-                "Required coordinate columns missing or malformed in stops_df."
-            )
-
-        geometry = shapely.points(pdf["StopLongitude"], pdf["StopLatitude"])
+        # Null coordinates are allowed for stops > 1 when route polyline is missing
+        geometry = gpd.points_from_xy(pdf["StopLongitude"], pdf["StopLatitude"])
     elif layer_type == "routes":
         if "Latitude" not in pdf.columns or "Longitude" not in pdf.columns:
             raise ValueError(
@@ -103,7 +98,9 @@ def export_vector_layers(
 
     elif format_name.lower() == "fgb":
         # FlatGeobuf does not support multiple layers. We export stops.
-        pyogrio.write_dataframe(stops_gdf, buf, driver="FlatGeobuf")
+        pyogrio.write_dataframe(
+            stops_gdf, buf, driver="FlatGeobuf", layer_options={"SPATIAL_INDEX": "NO"}
+        )
         buf.seek(0)
         return buf
 

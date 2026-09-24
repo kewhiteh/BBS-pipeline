@@ -37,7 +37,6 @@ def malformed_stops_df():
         {
             "RouteKey": ["R1"],
             "StopNumber": [1],
-            "StopLatitude": [None],
             "StopLongitude": [-87.01],
             "Count": [5],
         }
