@@ -13,15 +13,15 @@ Implements Tasks 6.2 and 6.3 (docs/04_TASKS.md):
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
 import io
 import json
 import logging
 import os
-from pathlib import Path
 import sqlite3
 import subprocess
-from typing import Any, Dict, List, Optional, Union
+from datetime import datetime, timezone
+from pathlib import Path
+from typing import Any
 
 import geopandas as gpd
 import polars as pl
@@ -107,7 +107,8 @@ def shape_dataset(
     if norm_shape == "route":
         # Route summary shape: drop granular stop/band counts and retain run-level aggregates
         stop_band_cols = [
-            c for c in df.columns
+            c
+            for c in df.columns
             if (c.startswith("Stop") and c[4:].isdigit())
             or c in ("Count10", "Count20", "Count30", "Count40", "Count50")
         ]
@@ -134,7 +135,11 @@ def shape_dataset(
             return collapsed.select(ordered_cols).sort(sort_cols)
         return collapsed.select(ordered_cols)
 
-    ten_stop_cols = [c for c in ("Count10", "Count20", "Count30", "Count40", "Count50") if c in df.columns]
+    ten_stop_cols = [
+        c
+        for c in ("Count10", "Count20", "Count30", "Count40", "Count50")
+        if c in df.columns
+    ]
     is_ten_stop = len(ten_stop_cols) > 0
 
     if is_ten_stop:
@@ -154,11 +159,7 @@ def shape_dataset(
                 value_name="Count",
             )
     else:
-        stop_cols = [
-            c
-            for c in df.columns
-            if c.startswith("Stop") and c[4:].isdigit()
-        ]
+        stop_cols = [c for c in df.columns if c.startswith("Stop") and c[4:].isdigit()]
         stop_cols.sort(key=lambda c: int(c[4:]))
 
         if not stop_cols:
@@ -192,10 +193,7 @@ def shape_dataset(
     # Defensive cast of Count if unpivoted from raw string stops
     if "Count" in melted.columns and melted["Count"].dtype in (pl.String, pl.Utf8):
         melted = melted.with_columns(
-            pl.col("Count")
-            .str.strip_chars()
-            .cast(pl.Int32, strict=False)
-            .fill_null(0)
+            pl.col("Count").str.strip_chars().cast(pl.Int32, strict=False).fill_null(0)
         )
 
     # Establish clean logical column ordering
@@ -218,7 +216,12 @@ def shape_dataset(
     # Sort deterministically
     sort_cols = [
         c
-        for c in [route_key_col, year_col, aou_col, "StopBand" if is_ten_stop else "StopNumber"]
+        for c in [
+            route_key_col,
+            year_col,
+            aou_col,
+            "StopBand" if is_ten_stop else "StopNumber",
+        ]
         if c in ordered_cols
     ]
     result = melted.select(ordered_cols)
@@ -234,11 +237,11 @@ def shape_dataset(
 
 
 def get_pipeline_provenance(
-    df: Optional[Union[pl.DataFrame, gpd.GeoDataFrame]] = None,
-    min_year: Optional[Union[int, str]] = None,
-    max_year: Optional[Union[int, str]] = None,
-    extra_metadata: Optional[Dict[str, Any]] = None,
-) -> Dict[str, str]:
+    df: pl.DataFrame | gpd.GeoDataFrame | None = None,
+    min_year: int | str | None = None,
+    max_year: int | str | None = None,
+    extra_metadata: dict[str, Any] | None = None,
+) -> dict[str, str]:
     """Extract pipeline execution provenance metadata.
 
     Captures:
@@ -277,15 +280,15 @@ def get_pipeline_provenance(
         )
         if proc.returncode == 0 and proc.stdout.strip():
             git_hash = proc.stdout.strip()
-    except Exception as exc:
+    except (subprocess.SubprocessError, OSError) as exc:
         logger.debug("Could not query git rev-parse: %s", exc)
 
     if git_hash == "unknown":
         git_hash = os.environ.get("BBS_PIPELINE_GIT_HASH", "unknown")
 
     # 2. Year bounds discovery
-    discovered_min: Optional[str] = str(min_year) if min_year is not None else None
-    discovered_max: Optional[str] = str(max_year) if max_year is not None else None
+    discovered_min: str | None = str(min_year) if min_year is not None else None
+    discovered_max: str | None = str(max_year) if max_year is not None else None
 
     if (discovered_min is None or discovered_max is None) and df is not None:
         try:
@@ -307,10 +310,16 @@ def get_pipeline_provenance(
                         discovered_min = str(valid_years.min())
                     if discovered_max is None:
                         discovered_max = str(valid_years.max())
-        except Exception as exc:
+        except (
+            pl.exceptions.PolarsError,
+            TypeError,
+            ValueError,
+            KeyError,
+            AttributeError,
+        ) as exc:
             logger.debug("Failed to discover year bounds: %s", exc)
 
-    provenance: Dict[str, str] = {
+    provenance: dict[str, str] = {
         "pipeline_git_hash": git_hash,
         "dataset_min_year": discovered_min if discovered_min is not None else "unknown",
         "dataset_max_year": discovered_max if discovered_max is not None else "unknown",
@@ -331,9 +340,9 @@ def get_pipeline_provenance(
 
 
 def export_to_parquet(
-    df: Union[pl.DataFrame, gpd.GeoDataFrame],
-    output_path: Optional[Union[str, Path]] = None,
-    metadata: Optional[Dict[str, str]] = None,
+    df: pl.DataFrame | gpd.GeoDataFrame,
+    output_path: str | Path | None = None,
+    metadata: dict[str, str] | None = None,
 ) -> bytes:
     """Export tabular dataset to Apache Parquet with embedded schema metadata.
 
@@ -390,9 +399,9 @@ def export_to_parquet(
 
 
 def export_to_csv(
-    df: Union[pl.DataFrame, gpd.GeoDataFrame],
-    output_path: Optional[Union[str, Path]] = None,
-    metadata: Optional[Dict[str, str]] = None,
+    df: pl.DataFrame | gpd.GeoDataFrame,
+    output_path: str | Path | None = None,
+    metadata: dict[str, str] | None = None,
 ) -> bytes:
     """Export tabular dataset to CSV with prepended metadata comment header.
 
@@ -446,8 +455,8 @@ def export_to_csv(
 
 def export_to_geojson(
     gdf: gpd.GeoDataFrame,
-    output_path: Optional[Union[str, Path]] = None,
-    metadata: Optional[Dict[str, str]] = None,
+    output_path: str | Path | None = None,
+    metadata: dict[str, str] | None = None,
 ) -> bytes:
     """Export spatial dataset to RFC 7946 GeoJSON with top-level metadata object.
 
@@ -494,8 +503,8 @@ def export_to_geojson(
 
 def export_to_gpkg(
     gdf: gpd.GeoDataFrame,
-    output_path: Optional[Union[str, Path]] = None,
-    metadata: Optional[Dict[str, str]] = None,
+    output_path: str | Path | None = None,
+    metadata: dict[str, str] | None = None,
     layer_name: str = "bbs_observations",
 ) -> bytes:
     """Export spatial dataset to OGC GeoPackage (.gpkg) with metadata table.
@@ -567,7 +576,11 @@ def append_community_metrics(df: pl.DataFrame) -> pl.DataFrame:
 
     Metrics are computed per (RouteKey, Year, RPID) grouping over species with SpeciesTotal > 0.
     """
-    if "SpeciesTotal" not in df.columns or "RouteKey" not in df.columns or "Year" not in df.columns:
+    if (
+        "SpeciesTotal" not in df.columns
+        or "RouteKey" not in df.columns
+        or "Year" not in df.columns
+    ):
         return df
 
     group_keys = ["RouteKey", "Year"]
@@ -576,18 +589,23 @@ def append_community_metrics(df: pl.DataFrame) -> pl.DataFrame:
 
     # Filter to detected species for richness and diversity index calculations
     st_numeric = (
-        pl.col("SpeciesTotal").str.strip_chars().cast(pl.Int32, strict=False).fill_null(0)
+        pl.col("SpeciesTotal")
+        .str.strip_chars()
+        .cast(pl.Int32, strict=False)
+        .fill_null(0)
         if df["SpeciesTotal"].dtype in (pl.String, pl.Utf8)
         else pl.col("SpeciesTotal").cast(pl.Int32, strict=False).fill_null(0)
     )
     detected = df.filter(st_numeric > 0)
     if detected.is_empty():
-        return df.with_columns([
-            pl.lit(0, dtype=pl.Int32).alias("CommunityRichness"),
-            pl.lit(0, dtype=pl.Int32).alias("CommunityTotalIndividuals"),
-            pl.lit(0.0, dtype=pl.Float64).alias("ShannonDiversity"),
-            pl.lit(0.0, dtype=pl.Float64).alias("ShannonEvenness"),
-        ])
+        return df.with_columns(
+            [
+                pl.lit(0, dtype=pl.Int32).alias("CommunityRichness"),
+                pl.lit(0, dtype=pl.Int32).alias("CommunityTotalIndividuals"),
+                pl.lit(0.0, dtype=pl.Float64).alias("ShannonDiversity"),
+                pl.lit(0.0, dtype=pl.Float64).alias("ShannonEvenness"),
+            ]
+        )
 
     run_totals = detected.group_by(group_keys).agg(
         st_numeric.sum().alias("CommunityTotalIndividuals"),
@@ -597,11 +615,12 @@ def append_community_metrics(df: pl.DataFrame) -> pl.DataFrame:
     metrics_df = (
         detected.join(run_totals, on=group_keys, how="inner")
         .with_columns(
-            (st_numeric.cast(pl.Float64) / pl.col("CommunityTotalIndividuals").cast(pl.Float64)).alias("_p_i")
+            (
+                st_numeric.cast(pl.Float64)
+                / pl.col("CommunityTotalIndividuals").cast(pl.Float64)
+            ).alias("_p_i")
         )
-        .with_columns(
-            (-pl.col("_p_i") * pl.col("_p_i").log()).alias("_h_term")
-        )
+        .with_columns((-pl.col("_p_i") * pl.col("_p_i").log()).alias("_h_term"))
         .group_by(group_keys)
         .agg(
             pl.first("CommunityTotalIndividuals"),
@@ -616,28 +635,27 @@ def append_community_metrics(df: pl.DataFrame) -> pl.DataFrame:
         )
     )
 
-    return (
-        df.join(metrics_df, on=group_keys, how="left", coalesce=True)
-        .with_columns([
+    return df.join(metrics_df, on=group_keys, how="left", coalesce=True).with_columns(
+        [
             pl.col("CommunityRichness").fill_null(0).cast(pl.Int32),
             pl.col("CommunityTotalIndividuals").fill_null(0).cast(pl.Int32),
             pl.col("ShannonDiversity").fill_null(0.0).cast(pl.Float64),
             pl.col("ShannonEvenness").fill_null(0.0).cast(pl.Float64),
-        ])
+        ]
     )
 
 
 def serialize_dataset(
-    data: Union[pl.DataFrame, gpd.GeoDataFrame],
+    data: pl.DataFrame | gpd.GeoDataFrame,
     format: str,
-    output_path: Optional[Union[str, Path]] = None,
+    output_path: str | Path | None = None,
     shape: str = "wide",
-    routes_df: Optional[pl.DataFrame] = None,
-    target_crs: Union[str, int, pyproj.CRS] = DEFAULT_TARGET_CRS,
-    metadata: Optional[Dict[str, Any]] = None,
+    routes_df: pl.DataFrame | None = None,
+    target_crs: str | int | pyproj.CRS = DEFAULT_TARGET_CRS,
+    metadata: dict[str, Any] | None = None,
     layer_name: str = "bbs_observations",
     community_metrics: bool = False,
-) -> Union[bytes, Path]:
+) -> bytes | Path:
     """Serialize BBS dataset with shaping, spatial anchoring, and provenance.
 
     Parameters
@@ -707,7 +725,10 @@ def serialize_dataset(
                     routes_df=routes_df,
                     target_crs=target_crs,
                 )
-            elif "Latitude" in working_data.columns and "Longitude" in working_data.columns:
+            elif (
+                "Latitude" in working_data.columns
+                and "Longitude" in working_data.columns
+            ):
                 spatial_gdf = anchor_routes_spatial(
                     df=working_data,
                     routes_df=working_data,

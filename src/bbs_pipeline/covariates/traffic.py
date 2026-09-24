@@ -17,7 +17,6 @@ Zero-Disk Mandate: Operates entirely in-memory on pre-parsed Polars DataFrames.
 from __future__ import annotations
 
 import logging
-from typing import Sequence
 
 import polars as pl
 
@@ -34,10 +33,7 @@ def _defensive_int_expr(df: pl.DataFrame, col_name: str) -> pl.Expr:
     """Defensively parse a column into pl.Int32, tolerating whitespace and nulls."""
     if df.schema.get(col_name) in (pl.String, pl.Utf8):
         return (
-            pl.col(col_name)
-            .str.strip_chars()
-            .cast(pl.Int32, strict=False)
-            .fill_null(0)
+            pl.col(col_name).str.strip_chars().cast(pl.Int32, strict=False).fill_null(0)
         )
     return pl.col(col_name).cast(pl.Int32, strict=False).fill_null(0)
 
@@ -84,13 +80,10 @@ def compute_traffic_covariates(
     """
     if not isinstance(vehicle_df, pl.DataFrame):
         raise TypeError(
-            f"vehicle_df must be a polars.DataFrame, "
-            f"got {type(vehicle_df).__name__}"
+            f"vehicle_df must be a polars.DataFrame, got {type(vehicle_df).__name__}"
         )
     if total_stops_col not in vehicle_df.columns:
-        raise ValueError(
-            f"Column '{total_stops_col}' not found in vehicle_df."
-        )
+        raise ValueError(f"Column '{total_stops_col}' not found in vehicle_df.")
 
     present_car_cols = [c for c in _ALL_CAR_COLS if c in vehicle_df.columns]
     if not present_car_cols:
@@ -108,9 +101,7 @@ def compute_traffic_covariates(
     # Defensive TotalStops integer expression to support string or integer dtypes
     if vehicle_df.schema[total_stops_col] in (pl.String, pl.Utf8):
         total_stops_expr = (
-            pl.col(total_stops_col)
-            .str.strip_chars()
-            .cast(pl.Int32, strict=False)
+            pl.col(total_stops_col).str.strip_chars().cast(pl.Int32, strict=False)
         )
     else:
         total_stops_expr = pl.col(total_stops_col).cast(pl.Int32, strict=False)
@@ -132,25 +123,21 @@ def compute_traffic_covariates(
         )
 
     # Sum guarded car columns row-wise
-    car_total_expr = pl.sum_horizontal(guarded_car_exprs).cast(pl.Int32).alias("CarTotal")
+    car_total_expr = (
+        pl.sum_horizontal(guarded_car_exprs).cast(pl.Int32).alias("CarTotal")
+    )
 
     # Defensive division for CarsPerStop:
     # Handles division defensively (TotalStops > 0 check) and casts to pl.Float64
     cars_per_stop_expr = (
         pl.when(total_stops_expr > 0)
-        .then(
-            pl.col("CarTotal").cast(pl.Float64)
-            / total_stops_expr.cast(pl.Float64)
-        )
+        .then(pl.col("CarTotal").cast(pl.Float64) / total_stops_expr.cast(pl.Float64))
         .otherwise(pl.lit(None, dtype=pl.Float64))
         .cast(pl.Float64)
         .alias("CarsPerStop")
     )
 
-    result = (
-        vehicle_df.with_columns(car_total_expr)
-        .with_columns(cars_per_stop_expr)
-    )
+    result = vehicle_df.with_columns(car_total_expr).with_columns(cars_per_stop_expr)
 
     logger.debug(
         "compute_traffic_covariates: %d rows, CarTotal range [%s, %s].",
@@ -195,13 +182,10 @@ def compute_noise_covariates(
     """
     if not isinstance(vehicle_df, pl.DataFrame):
         raise TypeError(
-            f"vehicle_df must be a polars.DataFrame, "
-            f"got {type(vehicle_df).__name__}"
+            f"vehicle_df must be a polars.DataFrame, got {type(vehicle_df).__name__}"
         )
     if total_stops_col not in vehicle_df.columns:
-        raise ValueError(
-            f"Column '{total_stops_col}' not found in vehicle_df."
-        )
+        raise ValueError(f"Column '{total_stops_col}' not found in vehicle_df.")
 
     present_noise_cols = [c for c in _ALL_NOISE_COLS if c in vehicle_df.columns]
     if not present_noise_cols:
@@ -217,9 +201,7 @@ def compute_noise_covariates(
 
     if vehicle_df.schema[total_stops_col] in (pl.String, pl.Utf8):
         total_stops_expr = (
-            pl.col(total_stops_col)
-            .str.strip_chars()
-            .cast(pl.Int32, strict=False)
+            pl.col(total_stops_col).str.strip_chars().cast(pl.Int32, strict=False)
         )
     else:
         total_stops_expr = pl.col(total_stops_col).cast(pl.Int32, strict=False)

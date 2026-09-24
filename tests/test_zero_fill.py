@@ -113,9 +113,15 @@ class TestGetConfirmedRouteTaxa:
     def test_scans_history_and_finds_positive_counts(self) -> None:
         """Route taxa must only include species with at least 1 historical detection."""
         rows = [
-            _make_obs_row("840_02_001", "1975", "07610", stop_counts={1: 3}),  # Robin: seen
-            _make_obs_row("840_02_001", "1980", "04770", stop_counts={2: 0}, species_total=0),  # Jay: count=0
-            _make_obs_row("840_02_001", "2010", "04950", stop_counts={5: 2}),  # Cowbird: seen
+            _make_obs_row(
+                "840_02_001", "1975", "07610", stop_counts={1: 3}
+            ),  # Robin: seen
+            _make_obs_row(
+                "840_02_001", "1980", "04770", stop_counts={2: 0}, species_total=0
+            ),  # Jay: count=0
+            _make_obs_row(
+                "840_02_001", "2010", "04950", stop_counts={5: 2}
+            ),  # Cowbird: seen
         ]
         history = pl.DataFrame(rows, schema=_OBS_SCHEMA)
         result = get_confirmed_route_taxa(history)
@@ -140,9 +146,15 @@ class TestGetConfirmedRouteTaxa:
     def test_min_and_max_year_bounds(self) -> None:
         """Records before min_year or after max_year are ignored."""
         rows = [
-            _make_obs_row("840_02_001", "1960", "07610", stop_counts={1: 1}),  # Before BBS
-            _make_obs_row("840_02_001", "1970", "04770", stop_counts={1: 1}),  # In range
-            _make_obs_row("840_02_001", "2025", "04950", stop_counts={1: 1}),  # After max_year
+            _make_obs_row(
+                "840_02_001", "1960", "07610", stop_counts={1: 1}
+            ),  # Before BBS
+            _make_obs_row(
+                "840_02_001", "1970", "04770", stop_counts={1: 1}
+            ),  # In range
+            _make_obs_row(
+                "840_02_001", "2025", "04950", stop_counts={1: 1}
+            ),  # After max_year
         ]
         history = pl.DataFrame(rows, schema=_OBS_SCHEMA)
         result = get_confirmed_route_taxa(history, min_year=1966, max_year=2020)
@@ -429,8 +441,12 @@ class TestImputeZeroObservations:
         assert result["SpeciesTotal"][0] == 0
         for i in range(1, 49):
             assert result[f"Stop{i}"][0] == 0, f"Stop{i} should be 0"
-        assert result["Stop49"][0] is None, "Stop49 must strictly be NULL for 48-stop route"
-        assert result["Stop50"][0] is None, "Stop50 must strictly be NULL for 48-stop route"
+        assert result["Stop49"][0] is None, (
+            "Stop49 must strictly be NULL for 48-stop route"
+        )
+        assert result["Stop50"][0] is None, (
+            "Stop50 must strictly be NULL for 48-stop route"
+        )
 
     def test_45_stop_route_nullifies_stops_46_to_50(self) -> None:
         """For TotalStops=45: Stop1..Stop45 are 0, Stop46..Stop50 are strictly NULL."""
@@ -574,7 +590,9 @@ class TestImputeZeroObservations:
         assert result["CarTotal"][0] is None, "CarTotal must remain NULL, not 0"
 
         # Observer covariates must remain null or true values (NEVER coerced to 0)
-        assert result["ObserverTenure"][0] is None, "ObserverTenure must remain NULL, not 0"
+        assert result["ObserverTenure"][0] is None, (
+            "ObserverTenure must remain NULL, not 0"
+        )
         assert result["FirstYearRun"][0] is None, "FirstYearRun must remain NULL, not 0"
         assert result["RouteTenure"][0] == 5
         assert result["IsFirstYearObserver"][0] == 0
@@ -758,10 +776,14 @@ class TestZeroFillPipelineIntegration:
         r2_aous = result.filter(pl.col("RouteKey") == "840_02_002")["AOU"].to_list()
 
         assert "07610" in r1_aous
-        assert "04770" not in r1_aous, "Blue Jay leaked into Route 001 where it was never seen!"
+        assert "04770" not in r1_aous, (
+            "Blue Jay leaked into Route 001 where it was never seen!"
+        )
 
         assert "04770" in r2_aous
-        assert "07610" not in r2_aous, "Robin leaked into Route 002 where it was never seen!"
+        assert "07610" not in r2_aous, (
+            "Robin leaked into Route 002 where it was never seen!"
+        )
 
     def test_discrete_stop_effort_with_mixed_routes(self) -> None:
         """Route with 48 stops nullifies 49-50 while 50-stop route retains 0s."""
@@ -937,4 +959,3 @@ class TestZeroFillPipelineIntegration:
         assert r2019["CarTotal"][0] is None  # NEGATIVE
         assert r2019["ObserverTenure"][0] is None  # NEGATIVE
         assert r2019["FirstYearRun"][0] is None  # NEGATIVE
-

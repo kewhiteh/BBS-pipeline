@@ -13,10 +13,11 @@ from __future__ import annotations
 import argparse
 import io
 import logging
-from pathlib import Path
 import sys
-from typing import Any, Dict, FrozenSet, List, Optional, Sequence, Union
 import zipfile
+from collections.abc import Sequence
+from pathlib import Path
+from typing import Any
 
 import polars as pl
 import requests
@@ -24,7 +25,6 @@ import requests
 from bbs_pipeline.client.parser import (
     FIFTY_STOP_SCHEMA,
     ROUTES_SCHEMA,
-    SPECIES_LIST_SCHEMA,
     TEN_STOP_SCHEMA,
     VEHICLE_SCHEMA,
     WEATHER_SCHEMA,
@@ -71,43 +71,138 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 # State abbreviation & name lookup table to BBS 2-digit zero-padded StateNum
 # ---------------------------------------------------------------------------
-STATE_ABBR_TO_NUM: Dict[str, str] = {
+STATE_ABBR_TO_NUM: dict[str, str] = {
     # US States & Territories (USGS BBS Official StateNums)
-    "AL": "02", "AK": "03", "AZ": "07", "AR": "06", "CA": "14", "CO": "17",
-    "CT": "18", "DE": "21", "FL": "25", "GA": "27", "ID": "33", "IL": "34",
-    "IN": "35", "IA": "36", "KS": "38", "KY": "39", "LA": "42", "ME": "44",
-    "MD": "46", "MA": "45", "MI": "49", "MN": "50", "MS": "52", "MO": "51",
-    "MT": "53", "NE": "54", "NV": "57", "NH": "58", "NJ": "59", "NM": "60",
-    "NY": "61", "NC": "63", "ND": "64", "OH": "66", "OK": "67", "OR": "69",
-    "PA": "72", "RI": "77", "SC": "80", "SD": "81", "TN": "82", "TX": "83",
-    "UT": "85", "VT": "87", "VA": "88", "WA": "89", "WV": "90", "WI": "91",
+    "AL": "02",
+    "AK": "03",
+    "AZ": "07",
+    "AR": "06",
+    "CA": "14",
+    "CO": "17",
+    "CT": "18",
+    "DE": "21",
+    "FL": "25",
+    "GA": "27",
+    "ID": "33",
+    "IL": "34",
+    "IN": "35",
+    "IA": "36",
+    "KS": "38",
+    "KY": "39",
+    "LA": "42",
+    "ME": "44",
+    "MD": "46",
+    "MA": "45",
+    "MI": "49",
+    "MN": "50",
+    "MS": "52",
+    "MO": "51",
+    "MT": "53",
+    "NE": "54",
+    "NV": "57",
+    "NH": "58",
+    "NJ": "59",
+    "NM": "60",
+    "NY": "61",
+    "NC": "63",
+    "ND": "64",
+    "OH": "66",
+    "OK": "67",
+    "OR": "69",
+    "PA": "72",
+    "RI": "77",
+    "SC": "80",
+    "SD": "81",
+    "TN": "82",
+    "TX": "83",
+    "UT": "85",
+    "VT": "87",
+    "VA": "88",
+    "WA": "89",
+    "WV": "90",
+    "WI": "91",
     "WY": "92",
     # Canadian Provinces & Territories (USGS BBS)
-    "AB": "04", "BC": "11", "MB": "47", "NB": "56", "NL": "62", "NT": "65",
-    "NS": "68", "NU": "65", "ON": "68", "PE": "76", "QC": "78", "SK": "79",
+    "AB": "04",
+    "BC": "11",
+    "MB": "47",
+    "NB": "56",
+    "NL": "62",
+    "NT": "65",
+    "NS": "68",
+    "NU": "65",
+    "ON": "68",
+    "PE": "76",
+    "QC": "78",
+    "SK": "79",
     "YT": "93",
 }
 
-STATE_NAME_TO_NUM: Dict[str, str] = {
+STATE_NAME_TO_NUM: dict[str, str] = {
     # US States & Territories (USGS BBS Official StateNums)
-    "ALABAMA": "02", "ALASKA": "03", "ARIZONA": "07", "ARKANSAS": "06",
-    "CALIFORNIA": "14", "COLORADO": "17", "CONNECTICUT": "18", "DELAWARE": "21",
-    "FLORIDA": "25", "GEORGIA": "27", "IDAHO": "33", "ILLINOIS": "34",
-    "INDIANA": "35", "IOWA": "36", "KANSAS": "38", "KENTUCKY": "39",
-    "LOUISIANA": "42", "MAINE": "44", "MARYLAND": "46", "MASSACHUSETTS": "45",
-    "MICHIGAN": "49", "MINNESOTA": "50", "MISSISSIPPI": "52", "MISSOURI": "51",
-    "MONTANA": "53", "NEBRASKA": "54", "NEVADA": "57", "NEW HAMPSHIRE": "58",
-    "NEW JERSEY": "59", "NEW MEXICO": "60", "NEW YORK": "61", "NORTH CAROLINA": "63",
-    "NORTH DAKOTA": "64", "OHIO": "66", "OKLAHOMA": "67", "OREGON": "69",
-    "PENNSYLVANIA": "72", "RHODE ISLAND": "77", "SOUTH CAROLINA": "80",
-    "SOUTH DAKOTA": "81", "TENNESSEE": "82", "TEXAS": "83", "UTAH": "85",
-    "VERMONT": "87", "VIRGINIA": "88", "WASHINGTON": "89", "WEST VIRGINIA": "90",
-    "WISCONSIN": "91", "WYOMING": "92",
+    "ALABAMA": "02",
+    "ALASKA": "03",
+    "ARIZONA": "07",
+    "ARKANSAS": "06",
+    "CALIFORNIA": "14",
+    "COLORADO": "17",
+    "CONNECTICUT": "18",
+    "DELAWARE": "21",
+    "FLORIDA": "25",
+    "GEORGIA": "27",
+    "IDAHO": "33",
+    "ILLINOIS": "34",
+    "INDIANA": "35",
+    "IOWA": "36",
+    "KANSAS": "38",
+    "KENTUCKY": "39",
+    "LOUISIANA": "42",
+    "MAINE": "44",
+    "MARYLAND": "46",
+    "MASSACHUSETTS": "45",
+    "MICHIGAN": "49",
+    "MINNESOTA": "50",
+    "MISSISSIPPI": "52",
+    "MISSOURI": "51",
+    "MONTANA": "53",
+    "NEBRASKA": "54",
+    "NEVADA": "57",
+    "NEW HAMPSHIRE": "58",
+    "NEW JERSEY": "59",
+    "NEW MEXICO": "60",
+    "NEW YORK": "61",
+    "NORTH CAROLINA": "63",
+    "NORTH DAKOTA": "64",
+    "OHIO": "66",
+    "OKLAHOMA": "67",
+    "OREGON": "69",
+    "PENNSYLVANIA": "72",
+    "RHODE ISLAND": "77",
+    "SOUTH CAROLINA": "80",
+    "SOUTH DAKOTA": "81",
+    "TENNESSEE": "82",
+    "TEXAS": "83",
+    "UTAH": "85",
+    "VERMONT": "87",
+    "VIRGINIA": "88",
+    "WASHINGTON": "89",
+    "WEST VIRGINIA": "90",
+    "WISCONSIN": "91",
+    "WYOMING": "92",
     # Canadian Provinces & Territories (USGS BBS)
-    "ALBERTA": "04", "BRITISH COLUMBIA": "11", "MANITOBA": "47", "NEW BRUNSWICK": "56",
-    "NEWFOUNDLAND": "62", "NORTHWEST TERRITORIES": "65", "NOVA SCOTIA": "68",
-    "NUNAVUT": "65", "ONTARIO": "68", "PRINCE EDWARD ISLAND": "76", "QUEBEC": "78",
-    "SASKATCHEWAN": "79", "YUKON": "93",
+    "ALBERTA": "04",
+    "BRITISH COLUMBIA": "11",
+    "MANITOBA": "47",
+    "NEW BRUNSWICK": "56",
+    "NEWFOUNDLAND": "62",
+    "NORTHWEST TERRITORIES": "65",
+    "NOVA SCOTIA": "68",
+    "NUNAVUT": "65",
+    "ONTARIO": "68",
+    "PRINCE EDWARD ISLAND": "76",
+    "QUEBEC": "78",
+    "SASKATCHEWAN": "79",
+    "YUKON": "93",
 }
 
 
@@ -460,9 +555,9 @@ def build_parser() -> argparse.ArgumentParser:
 
 def _find_and_read_file(
     filename: str,
-    raw_dir: Optional[Path] = None,
+    raw_dir: Path | None = None,
     item_id: str = DEFAULT_ITEM_ID,
-    session: Optional[requests.Session] = None,
+    session: requests.Session | None = None,
 ) -> io.BytesIO:
     """Locate a file in raw_dir or stream it directly into an io.BytesIO RAM buffer.
 
@@ -485,12 +580,14 @@ def _find_and_read_file(
                 return io.BytesIO(p.read_bytes())
         # Try finding as nested zip or pattern
         for cand in candidates:
-            matches = [p for p in raw_dir.glob(f"*{cand}*") if ":Zone.Identifier" not in p.name]
+            matches = [
+                p for p in raw_dir.glob(f"*{cand}*") if ":Zone.Identifier" not in p.name
+            ]
             if matches:
                 return io.BytesIO(matches[0].read_bytes())
 
     # Fall back to ScienceBase streaming into io.BytesIO RAM buffer across candidates
-    last_exc: Optional[Exception] = None
+    last_exc: Exception | None = None
     for cand in candidates:
         try:
             return fetch_file_by_name(cand, item_id=item_id, session=session)
@@ -500,13 +597,15 @@ def _find_and_read_file(
 
     if last_exc:
         raise last_exc
-    raise FileNotFoundError(f"Could not locate {filename} locally or in ScienceBase item {item_id}.")
+    raise FileNotFoundError(
+        f"Could not locate {filename} locally or in ScienceBase item {item_id}."
+    )
 
 
 def _load_csv_from_zip_or_raw(
     buf: io.BytesIO,
     csv_name: str,
-    schema: Dict[str, Any],
+    schema: dict[str, Any],
 ) -> pl.DataFrame:
     """Read a CSV from an in-memory ZIP or raw CSV buffer using explicit schema overrides."""
     buf.seek(0)
@@ -515,12 +614,16 @@ def _load_csv_from_zip_or_raw(
 
     if header.startswith(b"PK"):  # ZIP file
         with zipfile.ZipFile(buf) as zf:
-            matching = [n for n in zf.namelist() if n.lower().endswith(csv_name.lower())]
+            matching = [
+                n for n in zf.namelist() if n.lower().endswith(csv_name.lower())
+            ]
             if not matching:
                 # If exact csv_name not matched, take any CSV in zip
                 matching = [n for n in zf.namelist() if n.lower().endswith(".csv")]
             if not matching:
-                raise KeyError(f"Could not find '{csv_name}' in zip archive members: {zf.namelist()}")
+                raise KeyError(
+                    f"Could not find '{csv_name}' in zip archive members: {zf.namelist()}"
+                )
             csv_bytes = zf.read(matching[0])
             df = pl.read_csv(
                 io.BytesIO(csv_bytes),
@@ -545,8 +648,8 @@ def _load_csv_from_zip_or_raw(
 
 def _load_observation_data(
     buf: io.BytesIO,
-    target_routes: Optional[Sequence[str]] = None,
-    target_states: Optional[Sequence[str]] = None,
+    target_routes: Sequence[str] | None = None,
+    target_states: Sequence[str] | None = None,
     resolution: str = "50stop",
 ) -> pl.DataFrame:
     """Load observation records from 50-StopData.zip (or CSV) entirely in RAM."""
@@ -554,7 +657,7 @@ def _load_observation_data(
     header = buf.read(4)
     buf.seek(0)
 
-    frames: List[pl.DataFrame] = []
+    frames: list[pl.DataFrame] = []
     active_schema = TEN_STOP_SCHEMA if resolution == "10stop" else FIFTY_STOP_SCHEMA
 
     if header.startswith(b"PK"):  # ZIP file
@@ -565,7 +668,9 @@ def _load_observation_data(
                 for inner_zip_name in inner_zips:
                     inner_bytes = zf.read(inner_zip_name)
                     with zipfile.ZipFile(io.BytesIO(inner_bytes)) as inner_zf:
-                        csv_members = [n for n in inner_zf.namelist() if n.lower().endswith(".csv")]
+                        csv_members = [
+                            n for n in inner_zf.namelist() if n.lower().endswith(".csv")
+                        ]
                         for member in csv_members:
                             raw_bytes = inner_zf.read(member)
                             df = pl.read_csv(
@@ -579,7 +684,11 @@ def _load_observation_data(
                             df = df.rename({c: c.strip() for c in df.columns})
                             if df.is_empty():
                                 continue
-                            if "RouteKey" not in df.columns and {"CountryNum", "StateNum", "Route"}.issubset(df.columns):
+                            if "RouteKey" not in df.columns and {
+                                "CountryNum",
+                                "StateNum",
+                                "Route",
+                            }.issubset(df.columns):
                                 df = add_route_key(df)
                             if target_states and "StateNum" in df.columns:
                                 df = df.filter(pl.col("StateNum").is_in(target_states))
@@ -605,7 +714,11 @@ def _load_observation_data(
                     df = df.rename({c: c.strip() for c in df.columns})
                     if df.is_empty():
                         continue
-                    if "RouteKey" not in df.columns and {"CountryNum", "StateNum", "Route"}.issubset(df.columns):
+                    if "RouteKey" not in df.columns and {
+                        "CountryNum",
+                        "StateNum",
+                        "Route",
+                    }.issubset(df.columns):
                         df = add_route_key(df)
                     if target_states and "StateNum" in df.columns:
                         df = df.filter(pl.col("StateNum").is_in(target_states))
@@ -623,7 +736,11 @@ def _load_observation_data(
             truncate_ragged_lines=True,
         )
         df = df.rename({c: c.strip() for c in df.columns})
-        if "RouteKey" not in df.columns and {"CountryNum", "StateNum", "Route"}.issubset(df.columns):
+        if "RouteKey" not in df.columns and {
+            "CountryNum",
+            "StateNum",
+            "Route",
+        }.issubset(df.columns):
             df = add_route_key(df)
         if target_states and "StateNum" in df.columns:
             df = df.filter(pl.col("StateNum").is_in(target_states))
@@ -643,47 +760,47 @@ def _load_observation_data(
 
 
 def run_pipeline(
-    states: Optional[Sequence[str]] = None,
-    bcrs: Optional[Sequence[str]] = None,
-    strata: Optional[Sequence[str]] = None,
-    routes: Optional[Sequence[str]] = None,
-    species: Optional[Sequence[str]] = None,
-    guilds: Optional[Sequence[str]] = None,
-    breeding_habitats: Optional[Sequence[str]] = None,
-    foraging_guilds: Optional[Sequence[str]] = None,
-    families: Optional[Sequence[str]] = None,
-    orders: Optional[Sequence[str]] = None,
+    states: Sequence[str] | None = None,
+    bcrs: Sequence[str] | None = None,
+    strata: Sequence[str] | None = None,
+    routes: Sequence[str] | None = None,
+    species: Sequence[str] | None = None,
+    guilds: Sequence[str] | None = None,
+    breeding_habitats: Sequence[str] | None = None,
+    foraging_guilds: Sequence[str] | None = None,
+    families: Sequence[str] | None = None,
+    orders: Sequence[str] | None = None,
     all_species: bool = False,
-    start_year: Optional[int] = None,
-    end_year: Optional[int] = None,
-    day_range: Optional[Sequence[int]] = None,
-    months: Optional[Sequence[str]] = None,
-    min_completeness_pct: Optional[float] = None,
-    min_stops: Optional[int] = None,
+    start_year: int | None = None,
+    end_year: int | None = None,
+    day_range: Sequence[int] | None = None,
+    months: Sequence[str] | None = None,
+    min_completeness_pct: float | None = None,
+    min_stops: int | None = None,
     enforce_quality: bool = False,
-    stop_range: Optional[Sequence[int]] = None,
-    start_stop: Optional[int] = None,
-    end_stop: Optional[int] = None,
+    stop_range: Sequence[int] | None = None,
+    start_stop: int | None = None,
+    end_stop: int | None = None,
     include_covariates: bool = True,
-    min_obs_tenure: Optional[int] = None,
-    max_obs_tenure: Optional[int] = None,
+    min_obs_tenure: int | None = None,
+    max_obs_tenure: int | None = None,
     exclude_first_year: bool = False,
-    observer_cohorts: Optional[Sequence[str]] = None,
-    max_cars_per_stop: Optional[float] = None,
-    max_car_total: Optional[int] = None,
+    observer_cohorts: Sequence[str] | None = None,
+    max_cars_per_stop: float | None = None,
+    max_car_total: int | None = None,
     zero_fill: bool = True,
     resolution: str = "50stop",
     item_id: str = DEFAULT_ITEM_ID,
-    raw_data_dir: Optional[Union[str, Path]] = None,
-    guilds_path: Optional[Union[str, Path]] = None,
-    output_path: Optional[Union[str, Path]] = None,
-    format: Optional[str] = None,
+    raw_data_dir: str | Path | None = None,
+    guilds_path: str | Path | None = None,
+    output_path: str | Path | None = None,
+    format: str | None = None,
     shape: str = "wide",
-    crs: Union[str, int] = DEFAULT_TARGET_CRS,
+    crs: str | int = DEFAULT_TARGET_CRS,
     layer_name: str = "bbs_observations",
-    session: Optional[requests.Session] = None,
+    session: requests.Session | None = None,
     community_metrics: bool = False,
-) -> Union[bytes, Path]:
+) -> bytes | Path:
     """Execute the end-to-end BBS pipeline adhering to all architectural invariants.
 
     Parameters
@@ -782,28 +899,33 @@ def run_pipeline(
             guilds_path = default_gp
         else:
             # Look relative to package or current working dir
-            candidate = Path(__file__).resolve().parent.parent.parent / "data" / "guilds.json"
+            candidate = (
+                Path(__file__).resolve().parent.parent.parent / "data" / "guilds.json"
+            )
             guilds_path = candidate if candidate.exists() else default_gp
     else:
         guilds_path = Path(guilds_path)
 
     # Validate temporal bounds
-    if start_year is not None and end_year is not None:
-        if start_year > end_year:
-            raise ValueError(f"start_year ({start_year}) must be <= end_year ({end_year}).")
+    if start_year is not None and end_year is not None and start_year > end_year:
+        raise ValueError(f"start_year ({start_year}) must be <= end_year ({end_year}).")
 
     # Validate slicing bounds
-    slice_start: Optional[int] = None
-    slice_end: Optional[int] = None
+    slice_start: int | None = None
+    slice_end: int | None = None
     if stop_range:
         if len(stop_range) != 2:
-            raise ValueError(f"stop_range must contain exactly 2 integers, got {stop_range}")
+            raise ValueError(
+                f"stop_range must contain exactly 2 integers, got {stop_range}"
+            )
         slice_start, slice_end = int(stop_range[0]), int(stop_range[1])
     else:
         if start_stop is not None and end_stop is not None:
             slice_start, slice_end = int(start_stop), int(end_stop)
         elif start_stop is not None or end_stop is not None:
-            raise ValueError("Both start_stop and end_stop must be specified for sub-route slicing.")
+            raise ValueError(
+                "Both start_stop and end_stop must be specified for sub-route slicing."
+            )
 
     if slice_start is not None and slice_end is not None:
         if not (1 <= slice_start <= 50):
@@ -811,14 +933,15 @@ def run_pipeline(
         if not (1 <= slice_end <= 50):
             raise ValueError(f"end_stop must be between 1 and 50, got {slice_end}")
         if slice_start > slice_end:
-            raise ValueError(f"start_stop ({slice_start}) must be <= end_stop ({slice_end}).")
+            raise ValueError(
+                f"start_stop ({slice_start}) must be <= end_stop ({slice_end})."
+            )
 
     # Validate continuity percentage
-    if min_completeness_pct is not None:
-        if not (0 < min_completeness_pct <= 100):
-            raise ValueError(
-                f"min_completeness_pct must be in (0, 100], got {min_completeness_pct}"
-            )
+    if min_completeness_pct is not None and not (0 < min_completeness_pct <= 100):
+        raise ValueError(
+            f"min_completeness_pct must be in (0, 100], got {min_completeness_pct}"
+        )
 
     # -----------------------------------------------------------------------
     # 10-Stop vs 50-Stop Temporal Resolution Guard
@@ -847,7 +970,9 @@ def run_pipeline(
             export_format = "parquet"
 
     if export_format not in SUPPORTED_FORMATS:
-        raise ValueError(f"Unsupported format: {export_format!r}. Supported: {SUPPORTED_FORMATS}")
+        raise ValueError(
+            f"Unsupported format: {export_format!r}. Supported: {SUPPORTED_FORMATS}"
+        )
 
     # Build requests session if needed
     if session is None and raw_dir is None:
@@ -856,13 +981,15 @@ def run_pipeline(
     # -----------------------------------------------------------------------
     # Step 1: Ingest & Filter Route Directory (routes.csv)
     # -----------------------------------------------------------------------
-    routes_buf = _find_and_read_file("routes.csv", raw_dir=raw_dir, item_id=item_id, session=session)
+    routes_buf = _find_and_read_file(
+        "routes.csv", raw_dir=raw_dir, item_id=item_id, session=session
+    )
     routes_df = _load_csv_from_zip_or_raw(routes_buf, "routes.csv", ROUTES_SCHEMA)
     if "RouteKey" not in routes_df.columns:
         routes_df = add_route_key(routes_df)
 
     # Apply spatial filters to routes_df
-    target_state_nums: Optional[List[str]] = None
+    target_state_nums: list[str] | None = None
     if states:
         target_state_nums = [normalize_state_input(s) for s in states]
         routes_df = routes_df.filter(pl.col("StateNum").is_in(target_state_nums))
@@ -870,13 +997,15 @@ def run_pipeline(
     if bcrs:
         bcr_set = {str(b).strip() for b in bcrs}
         routes_df = routes_df.filter(
-            pl.col("BCR").str.strip_chars().is_in(bcr_set) | pl.col("BCR").is_in(bcr_set)
+            pl.col("BCR").str.strip_chars().is_in(bcr_set)
+            | pl.col("BCR").is_in(bcr_set)
         )
 
     if strata:
         strata_set = {str(st).strip() for st in strata}
         routes_df = routes_df.filter(
-            pl.col("Stratum").str.strip_chars().is_in(strata_set) | pl.col("Stratum").is_in(strata_set)
+            pl.col("Stratum").str.strip_chars().is_in(strata_set)
+            | pl.col("Stratum").is_in(strata_set)
         )
 
     if routes:
@@ -893,7 +1022,9 @@ def run_pipeline(
     # -----------------------------------------------------------------------
     # Step 2: Ingest & Filter Survey History (weather.csv)
     # -----------------------------------------------------------------------
-    weather_buf = _find_and_read_file("weather.csv", raw_dir=raw_dir, item_id=item_id, session=session)
+    weather_buf = _find_and_read_file(
+        "weather.csv", raw_dir=raw_dir, item_id=item_id, session=session
+    )
     weather_df = _load_csv_from_zip_or_raw(weather_buf, "weather.csv", WEATHER_SCHEMA)
     if "RouteKey" not in weather_df.columns:
         weather_df = add_route_key(weather_df)
@@ -924,9 +1055,13 @@ def run_pipeline(
         if "RunType" in weather_df.columns:
             weather_df = weather_df.filter(pl.col("RunType").str.strip_chars() == "1")
         if "QualityCurrentID" in weather_df.columns:
-            weather_df = weather_df.filter(pl.col("QualityCurrentID").str.strip_chars() == "1")
+            weather_df = weather_df.filter(
+                pl.col("QualityCurrentID").str.strip_chars() == "1"
+            )
         if weather_df.is_empty():
-            raise ValueError("No survey runs satisfied the RunType=1 and QualityCurrentID=1 criteria.")
+            raise ValueError(
+                "No survey runs satisfied the RunType=1 and QualityCurrentID=1 criteria."
+            )
 
     # Phenological filtering: months & day-range
     if months:
@@ -936,7 +1071,8 @@ def run_pipeline(
     if day_range:
         d_start, d_end = int(day_range[0]), int(day_range[1])
         weather_df = weather_df.filter(
-            (pl.col("Day").cast(pl.Int32) >= d_start) & (pl.col("Day").cast(pl.Int32) <= d_end)
+            (pl.col("Day").cast(pl.Int32) >= d_start)
+            & (pl.col("Day").cast(pl.Int32) <= d_end)
         )
 
     # Proportional route continuity filtering
@@ -956,7 +1092,9 @@ def run_pipeline(
 
     # Ensure TotalStops column is present for stop effort guards
     if "TotalStops" not in weather_df.columns:
-        weather_df = weather_df.with_columns(pl.lit(50, dtype=pl.Int32).alias("TotalStops"))
+        weather_df = weather_df.with_columns(
+            pl.lit(50, dtype=pl.Int32).alias("TotalStops")
+        )
 
     # Discrete stop effort guard
     if min_stops is not None:
@@ -987,17 +1125,27 @@ def run_pipeline(
         # failure here is fatal: raising prevents filter_traffic from silently
         # no-op'ing because the covariate columns are absent from weather_df.
         try:
-            veh_buf = _find_and_read_file("VehicleData.csv", raw_dir=raw_dir, item_id=item_id, session=session)
-            veh_df = _load_csv_from_zip_or_raw(veh_buf, "VehicleData.csv", VEHICLE_SCHEMA)
+            veh_buf = _find_and_read_file(
+                "VehicleData.csv", raw_dir=raw_dir, item_id=item_id, session=session
+            )
+            veh_df = _load_csv_from_zip_or_raw(
+                veh_buf, "VehicleData.csv", VEHICLE_SCHEMA
+            )
             if "TotalStops" not in veh_df.columns:
-                veh_df = veh_df.with_columns(pl.lit(50, dtype=pl.Int32).alias("TotalStops"))
+                veh_df = veh_df.with_columns(
+                    pl.lit(50, dtype=pl.Int32).alias("TotalStops")
+                )
             veh_df = compute_traffic_covariates(veh_df)
 
             # Left join traffic covariates into weather runs BEFORE any filter_traffic call.
             traffic_cols = ["RouteDataID", "CarTotal", "CarsPerStop"]
             if "RouteDataID" in weather_df.columns and "RouteDataID" in veh_df.columns:
-                veh_sub = veh_df.select([c for c in traffic_cols if c in veh_df.columns])
-                weather_df = weather_df.join(veh_sub, on="RouteDataID", how="left", coalesce=True)
+                veh_sub = veh_df.select(
+                    [c for c in traffic_cols if c in veh_df.columns]
+                )
+                weather_df = weather_df.join(
+                    veh_sub, on="RouteDataID", how="left", coalesce=True
+                )
         except Exception as exc:
             if has_traffic_filter:
                 # Traffic columns are required for the requested filter — do not silently skip.
@@ -1006,7 +1154,9 @@ def run_pipeline(
                     f"--max-car-total was requested. Cannot apply filter without "
                     f"CarsPerStop / CarTotal columns. Underlying error: {exc}"
                 ) from exc
-            logger.warning("Could not compute traffic covariates (covariates only): %s", exc)
+            logger.warning(
+                "Could not compute traffic covariates (covariates only): %s", exc
+            )
 
     if has_tenure_filter:
         weather_df = filter_observer_tenure(
@@ -1028,7 +1178,6 @@ def run_pipeline(
         if weather_df.is_empty():
             raise ValueError("No survey runs satisfied the vehicle traffic criteria.")
 
-
     if has_tenure_filter or has_traffic_filter:
         valid_route_keys = frozenset(weather_df["RouteKey"].to_list())
         routes_df = routes_df.filter(pl.col("RouteKey").is_in(list(valid_route_keys)))
@@ -1036,16 +1185,20 @@ def run_pipeline(
     # -----------------------------------------------------------------------
     # Step 4: Taxonomic Set-Union Resolution
     # -----------------------------------------------------------------------
-    species_buf = _find_and_read_file("SpeciesList.csv", raw_dir=raw_dir, item_id=item_id, session=session)
+    species_buf = _find_and_read_file(
+        "SpeciesList.csv", raw_dir=raw_dir, item_id=item_id, session=session
+    )
     species_df = parse_species_list(species_buf)
 
     guilds_dict = load_guilds_json(guilds_path)
 
-    migrant_buf = _find_and_read_file("MigrantNonBreeder.zip", raw_dir=raw_dir, item_id=item_id, session=session)
+    migrant_buf = _find_and_read_file(
+        "MigrantNonBreeder.zip", raw_dir=raw_dir, item_id=item_id, session=session
+    )
     migrant_aous = parse_migrant_nonbreeder(migrant_buf)
 
     # Resolve common names to AOU codes
-    custom_aous: List[str] = []
+    custom_aous: list[str] = []
     if species:
         for sp in species:
             clean_sp = str(sp).strip()
@@ -1055,7 +1208,8 @@ def run_pipeline(
                 # Match common name case-insensitively
                 matches = (
                     species_df.filter(
-                        pl.col("English_Common_Name").str.to_lowercase() == clean_sp.lower()
+                        pl.col("English_Common_Name").str.to_lowercase()
+                        == clean_sp.lower()
                     )
                     .select("AOU")
                     .to_series()
@@ -1067,7 +1221,9 @@ def run_pipeline(
                     # Try partial match
                     matches_partial = (
                         species_df.filter(
-                            pl.col("English_Common_Name").str.to_lowercase().str.contains(clean_sp.lower())
+                            pl.col("English_Common_Name")
+                            .str.to_lowercase()
+                            .str.contains(clean_sp.lower())
                         )
                         .select("AOU")
                         .to_series()
@@ -1076,19 +1232,39 @@ def run_pipeline(
                     custom_aous.extend(matches_partial)
 
     # Consolidate guild trait inputs
-    combined_bh: List[str] = []
-    combined_fg: List[str] = []
+    combined_bh: list[str] = []
+    combined_fg: list[str] = []
     if breeding_habitats:
         combined_bh.extend(breeding_habitats)
     if foraging_guilds:
         combined_fg.extend(foraging_guilds)
     if guilds:
         # Check against known traits
-        known_bh = {"wetland", "forest_interior", "early_successional", "grassland", "urban", "coastal", "arid", "generalist"}
+        known_bh = {
+            "wetland",
+            "forest_interior",
+            "early_successional",
+            "grassland",
+            "urban",
+            "coastal",
+            "arid",
+            "generalist",
+        }
         known_fg = {
-            "aerial_insectivore", "foliage_gleaner", "bark_gleaner", "ground_gleaner",
-            "granivore", "frugivore", "nectarivore", "carnivore", "piscivore",
-            "surface_dabbler", "diver", "shoreline_prober", "scavenger", "omnivore"
+            "aerial_insectivore",
+            "foliage_gleaner",
+            "bark_gleaner",
+            "ground_gleaner",
+            "granivore",
+            "frugivore",
+            "nectarivore",
+            "carnivore",
+            "piscivore",
+            "surface_dabbler",
+            "diver",
+            "shoreline_prober",
+            "scavenger",
+            "omnivore",
         }
         for g in guilds:
             clean_g = g.strip().lower()
@@ -1102,12 +1278,7 @@ def run_pipeline(
                 combined_fg.append(clean_g)
 
     has_taxa_filter = bool(
-        species
-        or guilds
-        or breeding_habitats
-        or foraging_guilds
-        or families
-        or orders
+        species or guilds or breeding_habitats or foraging_guilds or families or orders
     )
     effective_all_species = all_species or not has_taxa_filter
 
@@ -1130,7 +1301,9 @@ def run_pipeline(
     # Step 5: Ingest Observations & Cartesian Zero-Filling
     # -----------------------------------------------------------------------
     obs_filename = "States.zip" if resolution == "10stop" else "50-StopData.zip"
-    obs_buf = _find_and_read_file(obs_filename, raw_dir=raw_dir, item_id=item_id, session=session)
+    obs_buf = _find_and_read_file(
+        obs_filename, raw_dir=raw_dir, item_id=item_id, session=session
+    )
     raw_obs_df = _load_observation_data(
         obs_buf,
         target_routes=list(valid_route_keys),
@@ -1158,7 +1331,9 @@ def run_pipeline(
             final_obs_df = nullify_stops_beyond_total(final_obs_df)
 
     if final_obs_df.is_empty():
-        raise ValueError("Zero observation records resulted after filtering and zero-filling.")
+        raise ValueError(
+            "Zero observation records resulted after filtering and zero-filling."
+        )
 
     # -----------------------------------------------------------------------
     # Step 6: Sub-Route Stop Range Slicing
@@ -1174,7 +1349,7 @@ def run_pipeline(
     # -----------------------------------------------------------------------
     # Step 7: Spatial Reprojection & Output Serialization
     # -----------------------------------------------------------------------
-    provenance_extra: Dict[str, Any] = {
+    provenance_extra: dict[str, Any] = {
         "spatial_crs": str(crs),
         "target_species_count": len(target_species),
         "filtered_route_count": len(valid_route_keys),
@@ -1200,7 +1375,7 @@ def run_pipeline(
 # ---------------------------------------------------------------------------
 
 
-def main(argv: Optional[Sequence[str]] = None) -> int:
+def main(argv: Sequence[str] | None = None) -> int:
     """Execute the CLI interface using sys.argv or explicit arguments."""
     parser = build_parser()
     args = parser.parse_args(argv)
@@ -1236,7 +1411,10 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         y_end = args.end_year or "present"
         out_dir = Path("data/processed")
         out_dir.mkdir(parents=True, exist_ok=True)
-        output_dest = out_dir / f"bbs_extract_{args.resolution}_{state_tag}_{y_start}_{y_end}.{selected_format}"
+        output_dest = (
+            out_dir
+            / f"bbs_extract_{args.resolution}_{state_tag}_{y_start}_{y_end}.{selected_format}"
+        )
 
     try:
         res = run_pipeline(
@@ -1283,10 +1461,12 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         if isinstance(res, Path):
             print(f"[SUCCESS] Export serialized to: {res.resolve()}")
         else:
-            print(f"[SUCCESS] In-memory pipeline finished ({len(res)} bytes generated).")
+            print(
+                f"[SUCCESS] In-memory pipeline finished ({len(res)} bytes generated)."
+            )
         return 0
     except Exception as exc:
-        logger.error("Pipeline failure: %s", exc, exc_info=True)
+        logger.exception("Pipeline failure")
         sys.stderr.write(f"Error: {exc}\n")
         return 1
 

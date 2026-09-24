@@ -19,7 +19,6 @@ import io
 import json
 import zipfile
 from pathlib import Path
-from typing import FrozenSet
 
 import polars as pl
 import pytest
@@ -32,7 +31,6 @@ from bbs_pipeline.core.taxonomy import (
     parse_species_list,
     resolve_target_species,
 )
-
 
 # ---------------------------------------------------------------------------
 # Helpers — synthetic in-memory data builders
@@ -247,7 +245,7 @@ def _base_guilds(tmp_path: Path) -> dict[str, dict[str, str]]:
     return load_guilds_json(_make_guilds_json_file(tmp_path))
 
 
-def _base_migrant_aous() -> FrozenSet[str]:
+def _base_migrant_aous() -> frozenset[str]:
     return parse_migrant_nonbreeder(_make_migrant_buf())
 
 
@@ -258,9 +256,7 @@ class TestResolveTargetSpecies:
         guilds = _base_guilds(tmp_path)
         migrants = _base_migrant_aous()
 
-        result = resolve_target_species(
-            df, guilds, migrants, orders=["Anseriformes"]
-        )
+        result = resolve_target_species(df, guilds, migrants, orders=["Anseriformes"])
         assert "01770" in result
         # Passeriformes species must not be included
         assert "06100" not in result
@@ -271,9 +267,7 @@ class TestResolveTargetSpecies:
         guilds = _base_guilds(tmp_path)
         migrants = _base_migrant_aous()
 
-        result = resolve_target_species(
-            df, guilds, migrants, families=["Turdidae"]
-        )
+        result = resolve_target_species(df, guilds, migrants, families=["Turdidae"])
         assert "06100" in result
         assert "01770" not in result
 
@@ -306,9 +300,7 @@ class TestResolveTargetSpecies:
         guilds = _base_guilds(tmp_path)
         migrants = _base_migrant_aous()
 
-        result = resolve_target_species(
-            df, guilds, migrants, custom_aous=["04740"]
-        )
+        result = resolve_target_species(df, guilds, migrants, custom_aous=["04740"])
         assert "04740" in result
 
     def test_migrant_exclusion_applied(self, tmp_path: Path):
@@ -322,9 +314,7 @@ class TestResolveTargetSpecies:
         assert _MIGRANT_AOU in migrants
 
         # Even when included via Passeriformes order, must be excluded
-        result = resolve_target_species(
-            df, guilds, migrants, orders=["Passeriformes"]
-        )
+        result = resolve_target_species(df, guilds, migrants, orders=["Passeriformes"])
         assert _MIGRANT_AOU not in result, (
             "Migrant species 06890 must be excluded from S_target."
         )
@@ -401,9 +391,7 @@ class TestResolveTargetSpecies:
     def test_raises_value_error_on_empty_dataframe(self, tmp_path: Path):  # NEGATIVE
         empty_df = pl.DataFrame(schema=SPECIES_LIST_SCHEMA)
         with pytest.raises(ValueError, match="empty"):
-            resolve_target_species(
-                empty_df, {}, frozenset(), all_species=True
-            )
+            resolve_target_species(empty_df, {}, frozenset(), all_species=True)
 
 
 # ---------------------------------------------------------------------------
@@ -438,11 +426,13 @@ class TestFilterSpeciesDf:
 
 def test_resolve_target_species_custom_aou_bypasses_migrant_exclusion():
     # Setup minimal species DataFrame
-    df = pl.DataFrame({
-        "AOU": ["07550", "01234"],
-        "Order": ["Passeriformes", "Passeriformes"],
-        "Family": ["Turdidae", "Other"],
-    })
+    df = pl.DataFrame(
+        {
+            "AOU": ["07550", "01234"],
+            "Order": ["Passeriformes", "Passeriformes"],
+            "Family": ["Turdidae", "Other"],
+        }
+    )
     guilds = {}
     migrant_aous = frozenset({"07550"})  # Wood Thrush flagged as migrant
 
@@ -455,4 +445,3 @@ def test_resolve_target_species_custom_aou_bypasses_migrant_exclusion():
         all_species=False,
     )
     assert result == frozenset({"07550"})
-

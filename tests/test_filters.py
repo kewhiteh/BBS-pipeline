@@ -39,7 +39,6 @@ from bbs_pipeline.core.filters import (
     slice_stop_range,
 )
 
-
 # ---------------------------------------------------------------------------
 # Helpers / fixtures
 # ---------------------------------------------------------------------------
@@ -309,14 +308,8 @@ class TestFilterByContinuity:
         Route 003: 0 eligible runs  (only 2020 which is excluded)
         Eligible years: {2016,2017,2018,2019,2021} → |Y|=5
         """
-        routes = (
-            ["001"] * 5 + ["002"] * 2 + ["003"] * 1
-        )
-        years = (
-            ["2016", "2017", "2018", "2019", "2021"]
-            + ["2016", "2017"]
-            + ["2020"]
-        )
+        routes = ["001"] * 5 + ["002"] * 2 + ["003"] * 1
+        years = ["2016", "2017", "2018", "2019", "2021"] + ["2016", "2017"] + ["2020"]
         df = _make_obs_df(routes, years)
         return add_route_key(df)
 
@@ -333,7 +326,7 @@ class TestFilterByContinuity:
         df = self._make_multi_route_df()
         eligible = frozenset({2016, 2017, 2018, 2019, 2021})
         result = filter_by_continuity(df, eligible, 40.0)
-        keys = sorted(set(k.split("_")[2] for k in result["RouteKey"].unique().to_list()))
+        keys = sorted({k.split("_")[2] for k in result["RouteKey"].unique().to_list()})
         assert "001" in keys
         assert "002" in keys
 
@@ -620,7 +613,7 @@ class TestIntegrationDiscoveryToFilters:
         assert len(eligible) == 6
 
         routes = (
-            ["001"] * 6   # Route A — all 6 eligible years
+            ["001"] * 6  # Route A — all 6 eligible years
             + ["002"] * 3  # Route B — 3 of 6 (2016, 2017, 2018)
             + ["003"] * 2  # Route C — 2 of 6 (2016, 2017)
         )
@@ -635,7 +628,7 @@ class TestIntegrationDiscoveryToFilters:
         # 50 % threshold → required = ceil(6 × 50/100) = 3
         filtered = filter_by_continuity(obs, eligible, 50.0)
         route_nums = sorted(
-            set(k.split("_")[2] for k in filtered["RouteKey"].unique().to_list())
+            {k.split("_")[2] for k in filtered["RouteKey"].unique().to_list()}
         )
         assert "001" in route_nums
         assert "002" in route_nums
@@ -759,7 +752,9 @@ class TestFilterObserverTenure:
         with pytest.raises(TypeError, match="polars.DataFrame"):
             filter_observer_tenure([{"RouteTenure": 2}], min_tenure=1)  # type: ignore[arg-type]
 
-    def test_raises_value_error_on_invalid_bounds(self, sample_df: pl.DataFrame):  # NEGATIVE
+    def test_raises_value_error_on_invalid_bounds(
+        self, sample_df: pl.DataFrame
+    ):  # NEGATIVE
         with pytest.raises(ValueError, match="min_tenure"):
             filter_observer_tenure(sample_df, min_tenure=-1)
 
@@ -774,11 +769,15 @@ class TestFilterObserverTenure:
         with pytest.raises(ValueError, match="Column 'RouteTenure' not found"):
             filter_observer_tenure(df, min_tenure=2)
 
-    def test_raises_value_error_on_invalid_cohort(self, sample_df: pl.DataFrame):  # NEGATIVE
+    def test_raises_value_error_on_invalid_cohort(
+        self, sample_df: pl.DataFrame
+    ):  # NEGATIVE
         with pytest.raises(ValueError, match="Invalid cohort 'Expert'"):
             filter_observer_tenure(sample_df, cohorts=["Expert"])
 
-    def test_raises_value_error_on_empty_cohorts(self, sample_df: pl.DataFrame):  # NEGATIVE
+    def test_raises_value_error_on_empty_cohorts(
+        self, sample_df: pl.DataFrame
+    ):  # NEGATIVE
         with pytest.raises(ValueError, match="cohorts must be a non-empty sequence"):
             filter_observer_tenure(sample_df, cohorts=[])
 
@@ -802,7 +801,9 @@ class TestFilterTraffic:
             schema=schema,
         )
 
-    def test_unbounded_preserves_all_records_including_nulls(self, sample_traffic_df: pl.DataFrame):
+    def test_unbounded_preserves_all_records_including_nulls(
+        self, sample_traffic_df: pl.DataFrame
+    ):
         res = filter_traffic(sample_traffic_df)
         assert len(res) == len(sample_traffic_df)
         assert res["CarsPerStop"].null_count() == 1
@@ -822,14 +823,20 @@ class TestFilterTraffic:
         assert len(res) == 1
         assert res["RouteDataID"].to_list() == ["RD1"]
 
-    def test_traffic_filter_does_not_drop_unbounded_nulls(self, sample_traffic_df: pl.DataFrame):
+    def test_traffic_filter_does_not_drop_unbounded_nulls(
+        self, sample_traffic_df: pl.DataFrame
+    ):
         df = pl.DataFrame(
             {
                 "RouteDataID": ["RD1", "RD2"],
                 "CarTotal": [50, 50],
                 "CarsPerStop": [1.0, None],
             },
-            schema={"RouteDataID": pl.String, "CarTotal": pl.Int32, "CarsPerStop": pl.Float64},
+            schema={
+                "RouteDataID": pl.String,
+                "CarTotal": pl.Int32,
+                "CarsPerStop": pl.Float64,
+            },
         )
         res = filter_traffic(df, max_car_total=100)
         assert len(res) == 2
@@ -838,21 +845,27 @@ class TestFilterTraffic:
         with pytest.raises(TypeError, match="polars.DataFrame"):
             filter_traffic([{"CarTotal": 10}], max_car_total=20)  # type: ignore[arg-type]
 
-    def test_raises_value_error_on_negative_bounds(self, sample_traffic_df: pl.DataFrame):  # NEGATIVE
+    def test_raises_value_error_on_negative_bounds(
+        self, sample_traffic_df: pl.DataFrame
+    ):  # NEGATIVE
         with pytest.raises(ValueError, match="max_cars_per_stop"):
             filter_traffic(sample_traffic_df, max_cars_per_stop=-1.0)
 
         with pytest.raises(ValueError, match="max_car_total"):
             filter_traffic(sample_traffic_df, max_car_total=-10)
 
-    def test_missing_column_logs_warning_and_returns_df_unchanged(self):  # NEGATIVE → graceful skip
+    def test_missing_column_logs_warning_and_returns_df_unchanged(
+        self,
+    ):  # NEGATIVE → graceful skip
         """Defensive guard: missing traffic columns emit a warning and skip the threshold.
 
         When CarsPerStop or CarTotal is not present (e.g. vehicle join hasn't
         happened yet), filter_traffic must log a warning and return the DataFrame
         unchanged rather than raising an unhandled ColumnNotFoundError.
         """
-        df = pl.DataFrame({"RouteDataID": ["RD1", "RD2"]}, schema={"RouteDataID": pl.String})
+        df = pl.DataFrame(
+            {"RouteDataID": ["RD1", "RD2"]}, schema={"RouteDataID": pl.String}
+        )
 
         # CarsPerStop column absent — should warn and skip, returning df unchanged
         res_cars_per_stop = filter_traffic(df, max_cars_per_stop=5.0)
@@ -900,7 +913,10 @@ class TestFiftyStopTemporalGuard:
 
     def test_entirely_pre1997_range_raises_value_error(self):  # NEGATIVE
         """# NEGATIVE: start and end both < 1997 must raise ValueError."""
-        with pytest.raises(ValueError, match="50-stop individual-stop records are only available from 1997"):
+        with pytest.raises(
+            ValueError,
+            match="50-stop individual-stop records are only available from 1997",
+        ):
             enforce_fifty_stop_temporal_guard(
                 start_year=1966, end_year=1996, resolution="50stop"
             )
@@ -918,9 +934,9 @@ class TestFiftyStopTemporalGuard:
         start, end = enforce_fifty_stop_temporal_guard(
             start_year=1985,
             end_year=2010,
-            resolution="10stop",    # overridden by stop range
+            resolution="10stop",  # overridden by stop range
             start_stop=1,
-            end_stop=25,            # > 10 → 50-stop required
+            end_stop=25,  # > 10 → 50-stop required
         )
         assert start == FIFTY_STOP_MIN_YEAR, (
             "stop range ending > stop 10 must trigger 50-stop temporal enforcement."
@@ -946,5 +962,3 @@ class TestFiftyStopTemporalGuard:
         )
         assert start == FIFTY_STOP_MIN_YEAR
         assert end is None
-
-

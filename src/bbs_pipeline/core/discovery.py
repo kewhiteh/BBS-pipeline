@@ -16,7 +16,6 @@ Domain Invariants enforced here:
 from __future__ import annotations
 
 import logging
-from typing import FrozenSet
 
 import polars as pl
 
@@ -63,10 +62,7 @@ def get_max_observed_year(weather_df: pl.DataFrame) -> int:
     if weather_df.is_empty():
         raise ValueError("weather_df is empty; cannot determine max_observed_year.")
 
-    max_year: int = (
-        weather_df.select(pl.col("Year").cast(pl.Int32).max())
-        .item()
-    )
+    max_year: int = weather_df.select(pl.col("Year").cast(pl.Int32).max()).item()
 
     if max_year is None:
         raise ValueError(
@@ -81,7 +77,7 @@ def get_eligible_years(
     start_year: int,
     end_year: int,
     max_observed_year: int,
-) -> FrozenSet[int]:
+) -> frozenset[int]:
     """Compute the eligible survey year set with COVID-19 hiatus exclusion.
 
     Implements the formula::
@@ -119,15 +115,11 @@ def get_eligible_years(
             raise ValueError(f"{name} must be a positive integer, got {val!r}.")
 
     if start_year > end_year:
-        raise ValueError(
-            f"start_year ({start_year}) must be ≤ end_year ({end_year})."
-        )
+        raise ValueError(f"start_year ({start_year}) must be ≤ end_year ({end_year}).")
 
     effective_ceiling = min(end_year, max_observed_year)
-    eligible: FrozenSet[int] = frozenset(
-        y
-        for y in range(start_year, effective_ceiling + 1)
-        if y != COVID_HIATUS_YEAR
+    eligible: frozenset[int] = frozenset(
+        y for y in range(start_year, effective_ceiling + 1) if y != COVID_HIATUS_YEAR
     )
 
     logger.debug(

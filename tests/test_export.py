@@ -10,11 +10,12 @@ Verification gates (Phase 6, docs/04_TASKS.md §Task 6.4):
 
 from __future__ import annotations
 
-from datetime import datetime
 import io
 import json
-from pathlib import Path
 import sqlite3
+from datetime import datetime
+from pathlib import Path
+
 import geopandas as gpd
 import polars as pl
 import pyarrow.parquet as pq
@@ -33,12 +34,10 @@ from bbs_pipeline.export.serializer import (
     shape_dataset,
 )
 from bbs_pipeline.export.spatial import (
-    CRS_PRESETS,
     anchor_routes_spatial,
     reproject_geodataframe,
     resolve_crs,
 )
-
 
 # ---------------------------------------------------------------------------
 # Synthetic Test Fixtures (Strict Schemas, Zero Inference)
@@ -242,7 +241,9 @@ class TestSpatialAnchoring:
             pl.col("Latitude").cast(pl.String),
             pl.col("Longitude").cast(pl.String),
         )
-        gdf = anchor_routes_spatial(df=sample_observations_df, routes_df=routes_str_coords)
+        gdf = anchor_routes_spatial(
+            df=sample_observations_df, routes_df=routes_str_coords
+        )
         assert round(gdf.geometry.iloc[0].x, 3) == -87.616
         assert round(gdf.geometry.iloc[0].y, 3) == 34.867
 
@@ -345,7 +346,10 @@ class TestProvenanceMetadata:
     ) -> None:
         prov = get_pipeline_provenance(sample_observations_df)
         assert "pipeline_git_hash" in prov
-        assert len(prov["pipeline_git_hash"]) >= 7 or prov["pipeline_git_hash"] == "unknown"
+        assert (
+            len(prov["pipeline_git_hash"]) >= 7
+            or prov["pipeline_git_hash"] == "unknown"
+        )
         assert prov["dataset_min_year"] == "2015"
         assert prov["dataset_max_year"] == "2018"
         assert "extraction_timestamp" in prov
@@ -385,7 +389,9 @@ class TestFormatSerialization:
         # Read back table and verify schema metadata
         buf = io.BytesIO(data)
         tbl = pq.read_table(buf)
-        read_meta = {k.decode("utf-8"): v.decode("utf-8") for k, v in tbl.schema.metadata.items()}
+        read_meta = {
+            k.decode("utf-8"): v.decode("utf-8") for k, v in tbl.schema.metadata.items()
+        }
         assert read_meta["pipeline_git_hash"] == "test1234"
         assert read_meta["dataset_min_year"] == "2015"
 

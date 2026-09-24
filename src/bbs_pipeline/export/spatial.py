@@ -13,7 +13,6 @@ Implements Task 6.1 (docs/04_TASKS.md) and spatial constraints (docs/05_CONSTRAI
 from __future__ import annotations
 
 import logging
-from typing import Any, Dict, Optional, Union
 
 import geopandas as gpd
 import polars as pl
@@ -25,7 +24,7 @@ from bbs_pipeline.core.filters import add_route_key
 logger = logging.getLogger(__name__)
 
 #: Named CRS aliases and geographic coordinate system presets.
-CRS_PRESETS: Dict[str, str] = {
+CRS_PRESETS: dict[str, str] = {
     "nc_state_plane": "EPSG:32119",
     "nc_sp": "EPSG:32119",
     "conus_albers": "EPSG:5070",
@@ -42,7 +41,7 @@ DEFAULT_SOURCE_CRS: str = "EPSG:4269"
 DEFAULT_TARGET_CRS: str = "EPSG:4326"
 
 
-def resolve_crs(crs: Union[str, int, pyproj.CRS]) -> pyproj.CRS:
+def resolve_crs(crs: str | int | pyproj.CRS) -> pyproj.CRS:
     """Resolve and validate a CRS identifier or named alias into a pyproj.CRS.
 
     Supports:
@@ -79,7 +78,7 @@ def resolve_crs(crs: Union[str, int, pyproj.CRS]) -> pyproj.CRS:
     if isinstance(crs, str):
         normalized = crs.strip().lower()
         if normalized in CRS_PRESETS:
-            crs_input: Union[str, int] = CRS_PRESETS[normalized]
+            crs_input: str | int = CRS_PRESETS[normalized]
         else:
             crs_input = crs
     else:
@@ -98,8 +97,8 @@ def resolve_crs(crs: Union[str, int, pyproj.CRS]) -> pyproj.CRS:
 def anchor_routes_spatial(
     df: pl.DataFrame,
     routes_df: pl.DataFrame,
-    target_crs: Union[str, int, pyproj.CRS] = DEFAULT_TARGET_CRS,
-    source_crs: Union[str, int, pyproj.CRS] = DEFAULT_SOURCE_CRS,
+    target_crs: str | int | pyproj.CRS = DEFAULT_TARGET_CRS,
+    source_crs: str | int | pyproj.CRS = DEFAULT_SOURCE_CRS,
     route_key_col: str = "RouteKey",
     drop_null_coordinates: bool = False,
 ) -> gpd.GeoDataFrame:
@@ -190,14 +189,13 @@ def anchor_routes_spatial(
 
     # Extract distinct route coordinate dictionary to ensure strict 1:1 origin anchoring
     # and avoid Cartesian duplication if routes_df contains duplicates
-    route_coords = (
-        working_routes.select([
+    route_coords = working_routes.select(
+        [
             pl.col(route_key_col),
             pl.col("Latitude").cast(pl.Float64, strict=False),
             pl.col("Longitude").cast(pl.Float64, strict=False),
-        ])
-        .unique(subset=[route_key_col], keep="first")
-    )
+        ]
+    ).unique(subset=[route_key_col], keep="first")
 
     # Drop existing Latitude/Longitude if already in working_df to avoid duplicate suffix collision
     cols_to_select = [
@@ -240,7 +238,7 @@ def anchor_routes_spatial(
 
 def reproject_geodataframe(
     gdf: gpd.GeoDataFrame,
-    target_crs: Union[str, int, pyproj.CRS],
+    target_crs: str | int | pyproj.CRS,
 ) -> gpd.GeoDataFrame:
     """Reproject an existing GeoDataFrame to a target CRS.
 

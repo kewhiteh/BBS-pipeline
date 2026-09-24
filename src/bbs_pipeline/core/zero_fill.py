@@ -33,7 +33,7 @@ Domain Invariants enforced here:
 from __future__ import annotations
 
 import logging
-from typing import FrozenSet, Optional, Sequence, Union
+from collections.abc import Sequence
 
 import polars as pl
 
@@ -64,12 +64,10 @@ _EXPLICIT_COUNT_COLS: tuple[str, ...] = (
 
 def get_confirmed_route_taxa(
     history_df: pl.DataFrame,
-    target_species: Optional[
-        Union[FrozenSet[str], Sequence[str], set[str], pl.Series]
-    ] = None,
+    target_species: frozenset[str] | Sequence[str] | set[str] | pl.Series | None = None,
     min_year: int = 1966,
-    max_year: Optional[int] = None,
-    route_key: Optional[str] = None,
+    max_year: int | None = None,
+    route_key: str | None = None,
     route_key_col: str = "RouteKey",
     year_col: str = "Year",
     aou_col: str = "AOU",
@@ -134,9 +132,7 @@ def get_confirmed_route_taxa(
     if min_year <= 0:
         raise ValueError(f"min_year must be positive, got {min_year!r}.")
     if max_year is not None and min_year > max_year:
-        raise ValueError(
-            f"min_year ({min_year}) must be ≤ max_year ({max_year})."
-        )
+        raise ValueError(f"min_year ({min_year}) must be ≤ max_year ({max_year}).")
 
     # Ensure composite RouteKey exists
     df = history_df
@@ -224,14 +220,12 @@ def get_confirmed_route_taxa(
 
 def extract_valid_survey_years(
     survey_runs_df: pl.DataFrame,
-    route_key: Optional[str] = None,
-    eligible_years: Optional[
-        Union[FrozenSet[int], Sequence[int], set[int]]
-    ] = None,
+    route_key: str | None = None,
+    eligible_years: frozenset[int] | Sequence[int] | set[int] | None = None,
     route_key_col: str = "RouteKey",
     year_col: str = "Year",
     total_stops_col: str = "TotalStops",
-    default_total_stops: Optional[int] = None,
+    default_total_stops: int | None = None,
 ) -> pl.DataFrame:
     """Extract valid survey run years Y_r for route r.
 
@@ -342,7 +336,7 @@ def extract_valid_survey_years(
 def build_cartesian_grid(
     survey_runs_df: pl.DataFrame,
     confirmed_taxa_df: pl.DataFrame,
-    route_key: Optional[str] = None,
+    route_key: str | None = None,
     route_key_col: str = "RouteKey",
     aou_col: str = "AOU",
 ) -> pl.DataFrame:
@@ -430,7 +424,7 @@ def impute_zero_observations(
     grid_df: pl.DataFrame,
     observations_df: pl.DataFrame,
     total_stops_col: str = "TotalStops",
-    default_total_stops: Optional[int] = None,
+    default_total_stops: int | None = None,
     route_key_col: str = "RouteKey",
     year_col: str = "Year",
     aou_col: str = "AOU",
@@ -485,7 +479,10 @@ def impute_zero_observations(
     # Empty grid handling
     if grid_df.is_empty():
         schema = dict(grid_df.schema)
-        is_ten_stop = any(c in observations_df.columns for c in ("Count10", "Count20", "Count30", "Count40", "Count50"))
+        is_ten_stop = any(
+            c in observations_df.columns
+            for c in ("Count10", "Count20", "Count30", "Count40", "Count50")
+        )
         if not is_ten_stop:
             for i in range(1, 51):
                 schema[f"Stop{i}"] = pl.Int32
@@ -525,9 +522,7 @@ def impute_zero_observations(
         if all(c in obs.columns for c in route_parts):
             obs = add_route_key(obs)
         else:
-            raise ValueError(
-                f"Column '{route_key_col}' not found in observations_df."
-            )
+            raise ValueError(f"Column '{route_key_col}' not found in observations_df.")
 
     if year_col not in obs.columns:
         raise ValueError(f"Column '{year_col}' not found in observations_df.")
@@ -566,7 +561,10 @@ def impute_zero_observations(
     # Left-join grid with observations
     joined = grid.join(obs_subset, on=join_keys, how="left", coalesce=True)
 
-    is_ten_stop = any(c in observations_df.columns for c in ("Count10", "Count20", "Count30", "Count40", "Count50"))
+    is_ten_stop = any(
+        c in observations_df.columns
+        for c in ("Count10", "Count20", "Count30", "Count40", "Count50")
+    )
     if not is_ten_stop:
         stop_exprs = []
         for i in range(1, 51):
@@ -580,7 +578,9 @@ def impute_zero_observations(
                         .fill_null(0)
                     )
                 else:
-                    val_expr = pl.col(col_name).cast(pl.Int32, strict=False).fill_null(0)
+                    val_expr = (
+                        pl.col(col_name).cast(pl.Int32, strict=False).fill_null(0)
+                    )
             else:
                 val_expr = pl.lit(0, dtype=pl.Int32)
 
@@ -606,7 +606,10 @@ def impute_zero_observations(
     count_mutation_exprs: list[pl.Expr] = []
 
     def _defensive_imputed_int(col_name: str) -> pl.Expr:
-        if col_name in imputed.columns and imputed[col_name].dtype in (pl.String, pl.Utf8):
+        if col_name in imputed.columns and imputed[col_name].dtype in (
+            pl.String,
+            pl.Utf8,
+        ):
             return (
                 pl.col(col_name)
                 .str.strip_chars()
@@ -624,26 +627,38 @@ def impute_zero_observations(
             pl.when(pl.col("SpeciesTotal").is_not_null())
             .then(st_val)
             .otherwise(
-                pl.sum_horizontal([_defensive_imputed_int(f"Stop{i}") for i in range(1, 51) if f"Stop{i}" in imputed.columns])
+                pl.sum_horizontal(
+                    [
+                        _defensive_imputed_int(f"Stop{i}")
+                        for i in range(1, 51)
+                        if f"Stop{i}" in imputed.columns
+                    ]
+                )
                 if present_stop_cols
-                else (_defensive_imputed_int("Count") if "Count" in imputed.columns else pl.lit(0, dtype=pl.Int32))
+                else (
+                    _defensive_imputed_int("Count")
+                    if "Count" in imputed.columns
+                    else pl.lit(0, dtype=pl.Int32)
+                )
             )
             .alias("SpeciesTotal")
         )
     else:
         if present_stop_cols or any(c in joined.columns for c in _ALL_STOP_COLS):
             stops_to_sum = [c for c in _ALL_STOP_COLS if c in imputed.columns]
-            species_total_expr = (
-                pl.sum_horizontal([_defensive_imputed_int(c) for c in stops_to_sum])
-                .alias("SpeciesTotal")
-            )
+            species_total_expr = pl.sum_horizontal(
+                [_defensive_imputed_int(c) for c in stops_to_sum]
+            ).alias("SpeciesTotal")
         elif "Count" in joined.columns:
             species_total_expr = _defensive_imputed_int("Count").alias("SpeciesTotal")
         else:
-            species_total_expr = (
-                pl.sum_horizontal([_defensive_imputed_int(f"Stop{i}") for i in range(1, 51) if f"Stop{i}" in imputed.columns])
-                .alias("SpeciesTotal")
-            )
+            species_total_expr = pl.sum_horizontal(
+                [
+                    _defensive_imputed_int(f"Stop{i}")
+                    for i in range(1, 51)
+                    if f"Stop{i}" in imputed.columns
+                ]
+            ).alias("SpeciesTotal")
     count_mutation_exprs.append(species_total_expr)
 
     # 2. Count:
@@ -667,7 +682,13 @@ def impute_zero_observations(
         )
 
     # 4. 10-stop summary count columns (Count10..Count50):
-    band_limits = {"Count10": 10, "Count20": 20, "Count30": 30, "Count40": 40, "Count50": 50}
+    band_limits = {
+        "Count10": 10,
+        "Count20": 20,
+        "Count30": 30,
+        "Count40": 40,
+        "Count50": 50,
+    }
     total_stops_guard = (
         pl.col(total_stops_col).str.strip_chars().cast(pl.Int32, strict=False)
         if imputed[total_stops_col].dtype in (pl.String, pl.Utf8)
@@ -675,11 +696,17 @@ def impute_zero_observations(
     )
     for c, limit in band_limits.items():
         if c in imputed.columns or is_ten_stop:
-            c_val = _defensive_imputed_int(c) if c in imputed.columns else pl.lit(0, dtype=pl.Int32)
+            c_val = (
+                _defensive_imputed_int(c)
+                if c in imputed.columns
+                else pl.lit(0, dtype=pl.Int32)
+            )
             count_mutation_exprs.append(
                 pl.when(total_stops_guard < limit)
                 .then(pl.lit(None, dtype=pl.Int32))
-                .when(pl.col(c).is_not_null() if c in imputed.columns else pl.lit(False))
+                .when(
+                    pl.col(c).is_not_null() if c in imputed.columns else pl.lit(False)
+                )
                 .then(c_val)
                 .otherwise(pl.lit(0, dtype=pl.Int32))
                 .alias(c)
@@ -699,18 +726,14 @@ def impute_zero_observations(
 def zero_fill_route_observations(
     history_df: pl.DataFrame,
     survey_runs_df: pl.DataFrame,
-    observations_df: Optional[pl.DataFrame] = None,
-    target_species: Optional[
-        Union[FrozenSet[str], Sequence[str], set[str], pl.Series]
-    ] = None,
-    eligible_years: Optional[
-        Union[FrozenSet[int], Sequence[int], set[int]]
-    ] = None,
-    route_key: Optional[str] = None,
+    observations_df: pl.DataFrame | None = None,
+    target_species: frozenset[str] | Sequence[str] | set[str] | pl.Series | None = None,
+    eligible_years: frozenset[int] | Sequence[int] | set[int] | None = None,
+    route_key: str | None = None,
     total_stops_col: str = "TotalStops",
-    default_total_stops: Optional[int] = None,
+    default_total_stops: int | None = None,
     min_year: int = 1966,
-    max_year: Optional[int] = None,
+    max_year: int | None = None,
 ) -> pl.DataFrame:
     """Execute the full 4-step Cartesian zero-filling pipeline.
 

@@ -12,9 +12,8 @@ from __future__ import annotations
 
 import io
 import json
-from pathlib import Path
-from typing import Dict
 import zipfile
+from pathlib import Path
 
 import polars as pl
 import pyarrow.parquet as pq
@@ -22,7 +21,6 @@ import pytest
 import requests_mock as requests_mock_module
 
 from bbs_pipeline.cli import (
-    STATE_ABBR_TO_NUM,
     _find_and_read_file,
     build_parser,
     main,
@@ -30,8 +28,6 @@ from bbs_pipeline.cli import (
     run_pipeline,
 )
 from bbs_pipeline.client.sciencebase import DEFAULT_ITEM_ID
-from bbs_pipeline.export.serializer import PIPELINE_VERSION
-
 
 # ---------------------------------------------------------------------------
 # Synthetic In-Memory Mock Data Generators
@@ -98,7 +94,7 @@ def _mock_fifty_stop_csv() -> str:
     )
 
 
-def _make_in_memory_zip(files: Dict[str, str]) -> bytes:
+def _make_in_memory_zip(files: dict[str, str]) -> bytes:
     buf = io.BytesIO()
     with zipfile.ZipFile(buf, mode="w", compression=zipfile.ZIP_DEFLATED) as zf:
         for name, content in files.items():
@@ -115,10 +111,22 @@ def mock_sciencebase_endpoints():
         "files": [
             {"name": "routes.csv", "url": "https://sciencebase.gov/routes.csv"},
             {"name": "weather.csv", "url": "https://sciencebase.gov/weather.csv"},
-            {"name": "VehicleData.csv", "url": "https://sciencebase.gov/VehicleData.csv"},
-            {"name": "SpeciesList.csv", "url": "https://sciencebase.gov/SpeciesList.csv"},
-            {"name": "MigrantNonBreeder.zip", "url": "https://sciencebase.gov/MigrantNonBreeder.zip"},
-            {"name": "50-StopData.zip", "url": "https://sciencebase.gov/50-StopData.zip"},
+            {
+                "name": "VehicleData.csv",
+                "url": "https://sciencebase.gov/VehicleData.csv",
+            },
+            {
+                "name": "SpeciesList.csv",
+                "url": "https://sciencebase.gov/SpeciesList.csv",
+            },
+            {
+                "name": "MigrantNonBreeder.zip",
+                "url": "https://sciencebase.gov/MigrantNonBreeder.zip",
+            },
+            {
+                "name": "50-StopData.zip",
+                "url": "https://sciencebase.gov/50-StopData.zip",
+            },
         ],
     }
 
@@ -135,7 +143,9 @@ def mock_sciencebase_endpoints():
         m.get("https://sciencebase.gov/weather.csv", text=_mock_weather_csv())
         m.get("https://sciencebase.gov/VehicleData.csv", text=_mock_vehicle_csv())
         m.get("https://sciencebase.gov/SpeciesList.csv", text=_mock_species_list_csv())
-        m.get("https://sciencebase.gov/MigrantNonBreeder.zip", content=migrant_zip_bytes)
+        m.get(
+            "https://sciencebase.gov/MigrantNonBreeder.zip", content=migrant_zip_bytes
+        )
         m.get("https://sciencebase.gov/50-StopData.zip", content=fifty_zip_bytes)
         yield m
 
@@ -165,12 +175,23 @@ class TestCliArgumentParser:
 
     def test_spatial_arguments(self) -> None:
         parser = build_parser()
-        args = parser.parse_args([
-            "-s", "NC", "VA", "SC",
-            "--bcr", "28", "27",
-            "--stratum", "04", "11",
-            "--routes", "840_02_001", "840_02_002",
-        ])
+        args = parser.parse_args(
+            [
+                "-s",
+                "NC",
+                "VA",
+                "SC",
+                "--bcr",
+                "28",
+                "27",
+                "--stratum",
+                "04",
+                "11",
+                "--routes",
+                "840_02_001",
+                "840_02_002",
+            ]
+        )
         assert args.states == ["NC", "VA", "SC"]
         assert args.bcrs == ["28", "27"]
         assert args.strata == ["04", "11"]
@@ -178,12 +199,20 @@ class TestCliArgumentParser:
 
     def test_taxonomic_arguments(self) -> None:
         parser = build_parser()
-        args = parser.parse_args([
-            "--species", "07610", "American Robin",
-            "--order", "Passeriformes",
-            "--family", "Turdidae",
-            "--guild", "wetland", "aerial_insectivore",
-        ])
+        args = parser.parse_args(
+            [
+                "--species",
+                "07610",
+                "American Robin",
+                "--order",
+                "Passeriformes",
+                "--family",
+                "Turdidae",
+                "--guild",
+                "wetland",
+                "aerial_insectivore",
+            ]
+        )
         assert args.species == ["07610", "American Robin"]
         assert args.orders == ["Passeriformes"]
         assert args.families == ["Turdidae"]
@@ -191,15 +220,27 @@ class TestCliArgumentParser:
 
     def test_temporal_and_slicing_arguments(self) -> None:
         parser = build_parser()
-        args = parser.parse_args([
-            "--start-year", "2000",
-            "--end-year", "2022",
-            "--day-range", "1", "15",
-            "--months", "5", "6",
-            "--min-completeness-pct", "75.0",
-            "--min-stops", "48",
-            "--stop-range", "1", "25",
-        ])
+        args = parser.parse_args(
+            [
+                "--start-year",
+                "2000",
+                "--end-year",
+                "2022",
+                "--day-range",
+                "1",
+                "15",
+                "--months",
+                "5",
+                "6",
+                "--min-completeness-pct",
+                "75.0",
+                "--min-stops",
+                "48",
+                "--stop-range",
+                "1",
+                "25",
+            ]
+        )
         assert args.start_year == 2000
         assert args.end_year == 2022
         assert args.day_range == [1, 15]
@@ -210,14 +251,22 @@ class TestCliArgumentParser:
 
     def test_covariate_arguments(self) -> None:
         parser = build_parser()
-        args = parser.parse_args([
-            "--min-obs-tenure", "2",
-            "--max-obs-tenure", "10",
-            "--exclude-first-year",
-            "--observer-cohorts", "Intermediate", "Veteran",
-            "--max-cars-per-stop", "4.5",
-            "--max-car-total", "200",
-        ])
+        args = parser.parse_args(
+            [
+                "--min-obs-tenure",
+                "2",
+                "--max-obs-tenure",
+                "10",
+                "--exclude-first-year",
+                "--observer-cohorts",
+                "Intermediate",
+                "Veteran",
+                "--max-cars-per-stop",
+                "4.5",
+                "--max-car-total",
+                "200",
+            ]
+        )
         assert args.min_obs_tenure == 2
         assert args.max_obs_tenure == 10
         assert args.exclude_first_year is True
@@ -227,13 +276,20 @@ class TestCliArgumentParser:
 
     def test_output_and_format_arguments(self) -> None:
         parser = build_parser()
-        args = parser.parse_args([
-            "-o", "output.gpkg",
-            "-f", "gpkg",
-            "--shape", "long",
-            "--crs", "nc_state_plane",
-            "--layer-name", "my_birds",
-        ])
+        args = parser.parse_args(
+            [
+                "-o",
+                "output.gpkg",
+                "-f",
+                "gpkg",
+                "--shape",
+                "long",
+                "--crs",
+                "nc_state_plane",
+                "--layer-name",
+                "my_birds",
+            ]
+        )
         assert args.output == Path("output.gpkg")
         assert args.format == "gpkg"
         assert args.shape == "long"
@@ -250,7 +306,9 @@ class TestCliArgumentParser:
     def test_find_and_read_file_ignores_zone_identifier(self, tmp_path: Path) -> None:
         """Verify that _find_and_read_file ignores Windows NTFS Zone.Identifier streams."""
         real_file = tmp_path / "routes.csv"
-        real_file.write_text("CountryNum,StateNum,Route\n840,02,001\n", encoding="utf-8")
+        real_file.write_text(
+            "CountryNum,StateNum,Route\n840,02,001\n", encoding="utf-8"
+        )
         zone_file = tmp_path / "routes.csv:Zone.Identifier"
         zone_file.write_text("[ZoneTransfer]\nZoneId=3\n", encoding="utf-8")
 
@@ -288,7 +346,9 @@ class TestPipelineMockedIntegration:
         assert "SpeciesTotal" in tbl.column_names
         assert "Stop1" in tbl.column_names
 
-    def test_end_to_end_in_memory_csv_with_provenance(self, mock_sciencebase_endpoints) -> None:
+    def test_end_to_end_in_memory_csv_with_provenance(
+        self, mock_sciencebase_endpoints
+    ) -> None:
         """Verify CSV export includes provenance metadata comment headers."""
         data = run_pipeline(
             states=["02"],
@@ -336,7 +396,9 @@ class TestPipelineMockedIntegration:
         assert "geometry" in parsed["features"][0]
         assert parsed["features"][0]["geometry"]["type"] == "Point"
 
-    def test_end_to_end_long_shape_and_subroute_slicing(self, mock_sciencebase_endpoints) -> None:
+    def test_end_to_end_long_shape_and_subroute_slicing(
+        self, mock_sciencebase_endpoints
+    ) -> None:
         """Verify long tabular shape unpivoting and sub-route slicing with SegmentCount."""
         data = run_pipeline(
             states=["AL"],
@@ -354,7 +416,9 @@ class TestPipelineMockedIntegration:
         assert "Count" in col_names
         assert "SegmentCount" in col_names
 
-    def test_end_to_end_species_resolution_by_common_name(self, mock_sciencebase_endpoints) -> None:
+    def test_end_to_end_species_resolution_by_common_name(
+        self, mock_sciencebase_endpoints
+    ) -> None:
         """Verify common name resolution translates to AOU and filters correctly."""
         data = run_pipeline(
             species=["American Robin"],
@@ -366,7 +430,9 @@ class TestPipelineMockedIntegration:
         text = data.decode("utf-8")
         assert "07610" in text
 
-    def test_end_to_end_disk_write_output(self, mock_sciencebase_endpoints, tmp_path: Path) -> None:
+    def test_end_to_end_disk_write_output(
+        self, mock_sciencebase_endpoints, tmp_path: Path
+    ) -> None:
         """Verify physical file write at terminal boundary when --output is provided."""
         out_file = tmp_path / "bbs_extract.parquet"
         res = run_pipeline(
@@ -381,7 +447,9 @@ class TestPipelineMockedIntegration:
         assert out_file.exists()
         assert out_file.stat().st_size > 0
 
-    def test_pipeline_active_observer_tenure_filtering(self, mock_sciencebase_endpoints) -> None:
+    def test_pipeline_active_observer_tenure_filtering(
+        self, mock_sciencebase_endpoints
+    ) -> None:
         """Verify active observer tenure filtering prunes first-year survey runs."""
         # min_obs_tenure=2 filters out first-year runs (RD001 in 2018, RD003 in 2019)
         # leaving only 2019 for Route 001 (RD002)
@@ -402,7 +470,9 @@ class TestPipelineMockedIntegration:
         assert (df["Year"] == "2019").all()
         assert (df["Route"] == "001").all()
 
-    def test_pipeline_active_traffic_filtering(self, mock_sciencebase_endpoints) -> None:
+    def test_pipeline_active_traffic_filtering(
+        self, mock_sciencebase_endpoints
+    ) -> None:
         """Verify active traffic filtering accepts compliant runs and rejects over-limit runs."""
         # mock vehicle data has 2 cars per stop (total=100)
         data = run_pipeline(
@@ -419,7 +489,9 @@ class TestPipelineMockedIntegration:
         assert len(data) > 0
 
         # Filtering with max_cars_per_stop=1.0 should prune all runs and raise ValueError (# NEGATIVE)
-        with pytest.raises(ValueError, match="No survey runs satisfied the vehicle traffic criteria"):
+        with pytest.raises(
+            ValueError, match="No survey runs satisfied the vehicle traffic criteria"
+        ):
             run_pipeline(
                 states=["AL"],
                 species=["07610"],
@@ -433,13 +505,20 @@ class TestPipelineMockedIntegration:
 
     def test_cli_main_entrypoint_success(self, mock_sciencebase_endpoints) -> None:
         """Verify main() function parses sys.argv and returns exit code 0."""
-        exit_code = main([
-            "-s", "AL",
-            "--species", "07610",
-            "--start-year", "2018",
-            "--end-year", "2019",
-            "-f", "csv",
-        ])
+        exit_code = main(
+            [
+                "-s",
+                "AL",
+                "--species",
+                "07610",
+                "--start-year",
+                "2018",
+                "--end-year",
+                "2019",
+                "-f",
+                "csv",
+            ]
+        )
         assert exit_code == 0
 
 
@@ -468,7 +547,9 @@ class TestNegativeFailureAssertions:
 
     def test_negative_invalid_continuity_pct_raises_value_error(self) -> None:
         """# NEGATIVE: min_completeness_pct > 100 must raise ValueError."""
-        with pytest.raises(ValueError, match="min_completeness_pct must be in \\(0, 100\\]"):
+        with pytest.raises(
+            ValueError, match="min_completeness_pct must be in \\(0, 100\\]"
+        ):
             run_pipeline(min_completeness_pct=150.0)
 
     def test_negative_unsupported_format_raises_value_error(self) -> None:
@@ -476,17 +557,23 @@ class TestNegativeFailureAssertions:
         with pytest.raises(ValueError, match="Unsupported format"):
             run_pipeline(format="excel")
 
-    def test_negative_no_routes_matched_raises_value_error(self, mock_sciencebase_endpoints) -> None:
+    def test_negative_no_routes_matched_raises_value_error(
+        self, mock_sciencebase_endpoints
+    ) -> None:
         """# NEGATIVE: nonexistent state filter must raise ValueError with clear message."""
         with pytest.raises(ValueError, match="No routes matched"):
             run_pipeline(states=["NONEXISTENT_STATE_ZZ"])
 
     def test_negative_main_entrypoint_returns_exit_code_1_on_error(self) -> None:
         """# NEGATIVE: CLI main() must catch domain errors and return exit code 1."""
-        exit_code = main([
-            "--start-year", "2025",
-            "--end-year", "2010",  # Invalid year order
-        ])
+        exit_code = main(
+            [
+                "--start-year",
+                "2025",
+                "--end-year",
+                "2010",  # Invalid year order
+            ]
+        )
         assert exit_code == 1
 
 
@@ -511,7 +598,9 @@ class TestZeroDiskVerification:
             format="parquet",
         )
         files_after = set(tmp_path.rglob("*"))
-        assert files_before == files_after, f"Unexpected disk files created: {files_after - files_before}"
+        assert files_before == files_after, (
+            f"Unexpected disk files created: {files_after - files_before}"
+        )
 
 
 # ---------------------------------------------------------------------------
@@ -546,8 +635,8 @@ class TestCovariateOrderAndTemporalGuard:
             start_year=2018,
             end_year=2019,
             include_covariates=True,
-            min_obs_tenure=1,           # observer tenure filter enabled (compute must run first)
-            max_cars_per_stop=3.0,      # traffic filter enabled (join must run first)
+            min_obs_tenure=1,  # observer tenure filter enabled (compute must run first)
+            max_cars_per_stop=3.0,  # traffic filter enabled (join must run first)
             output_path=None,
             format="parquet",
             shape="wide",
@@ -557,7 +646,9 @@ class TestCovariateOrderAndTemporalGuard:
         tbl = pq.read_table(io.BytesIO(data))
         col_names = tbl.column_names
         # Covariate columns must be present in output
-        assert "RouteTenure" in col_names, "RouteTenure covariate must be computed before filtering."
+        assert "RouteTenure" in col_names, (
+            "RouteTenure covariate must be computed before filtering."
+        )
         assert "CarTotal" in col_names or "CarsPerStop" in col_names, (
             "Traffic covariates must be joined and present before filter_traffic runs."
         )
@@ -571,7 +662,9 @@ class TestCovariateOrderAndTemporalGuard:
         This test also verifies the join and computation order is correct (no ColumnNotFoundError).
         """
         # NEGATIVE: threshold below 2.0 cars/stop must eliminate all runs
-        with pytest.raises(ValueError, match="No survey runs satisfied the vehicle traffic criteria"):
+        with pytest.raises(
+            ValueError, match="No survey runs satisfied the vehicle traffic criteria"
+        ):
             run_pipeline(
                 states=["AL"],
                 species=["07610"],
@@ -600,13 +693,15 @@ class TestCovariateOrderAndTemporalGuard:
         data = run_pipeline(
             states=["AL"],
             species=["07610"],
-            start_year=1990,    # Pre-1997 — guard must clamp this
+            start_year=1990,  # Pre-1997 — guard must clamp this
             end_year=2019,
             output_path=None,
             format="parquet",
             shape="wide",
         )
-        assert isinstance(data, bytes), "Pipeline should succeed after clamping start_year to 1997."
+        assert isinstance(data, bytes), (
+            "Pipeline should succeed after clamping start_year to 1997."
+        )
         assert len(data) > 0
 
     def test_fifty_stop_entirely_pre1997_raises_value_error(self) -> None:
@@ -615,10 +710,12 @@ class TestCovariateOrderAndTemporalGuard:
         No 50-stop individual-stop records exist before 1997; the guard must
         raise a ValueError with an informative message.
         """
-        with pytest.raises(ValueError, match="50-stop individual-stop records are only available from 1997"):
+        with pytest.raises(
+            ValueError,
+            match="50-stop individual-stop records are only available from 1997",
+        ):
             run_pipeline(
                 start_year=1966,
-                end_year=1996,   # Entirely pre-1997 — no 50-stop data
+                end_year=1996,  # Entirely pre-1997 — no 50-stop data
                 all_species=True,
             )
-

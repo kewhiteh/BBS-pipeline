@@ -9,7 +9,6 @@ from __future__ import annotations
 import io
 import logging
 import time
-from typing import Optional
 
 import requests
 from requests.adapters import HTTPAdapter
@@ -130,7 +129,7 @@ def _stream_url_to_buffer(
         If the server returns a non-2xx response after all retry attempts are
         exhausted.
     """
-    last_exc: Optional[Exception] = None
+    last_exc: Exception | None = None
     for attempt in range(max_application_retries + 1):
         if attempt > 0:
             sleep_seconds = backoff_factor * (2 ** (attempt - 1))
@@ -167,14 +166,18 @@ def _stream_url_to_buffer(
             return buffer
         except requests.HTTPError:
             raise
-        except Exception as exc:
+        except requests.RequestException as exc:
             last_exc = exc
-            logger.warning("Request error on attempt %d for %s: %s", attempt + 1, url, exc)
+            logger.warning(
+                "Request error on attempt %d for %s: %s", attempt + 1, url, exc
+            )
 
     # All retries exhausted – re-raise the last captured exception.
     if last_exc is not None:
         raise last_exc
-    raise requests.HTTPError(f"All {max_application_retries + 1} attempts failed for {url}")
+    raise requests.HTTPError(
+        f"All {max_application_retries + 1} attempts failed for {url}"
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -184,7 +187,7 @@ def _stream_url_to_buffer(
 
 def fetch_item_metadata(
     item_id: str = DEFAULT_ITEM_ID,
-    session: Optional[requests.Session] = None,
+    session: requests.Session | None = None,
     timeout: int = 30,
 ) -> dict:
     """Retrieve ScienceBase item metadata JSON for *item_id*.
@@ -221,7 +224,7 @@ def fetch_item_metadata(
 def fetch_file_by_name(
     filename: str,
     item_id: str = DEFAULT_ITEM_ID,
-    session: Optional[requests.Session] = None,
+    session: requests.Session | None = None,
     timeout: int = 120,
     chunk_size: int = _CHUNK_SIZE,
 ) -> io.BytesIO:
@@ -273,12 +276,14 @@ def fetch_file_by_name(
 
     download_url: str = match["url"]
     logger.info("Downloading %r (%s)", filename, download_url)
-    return _stream_url_to_buffer(download_url, session, chunk_size=chunk_size, timeout=timeout)
+    return _stream_url_to_buffer(
+        download_url, session, chunk_size=chunk_size, timeout=timeout
+    )
 
 
 def fetch_file_by_url(
     url: str,
-    session: Optional[requests.Session] = None,
+    session: requests.Session | None = None,
     timeout: int = 120,
     chunk_size: int = _CHUNK_SIZE,
     max_application_retries: int = _MAX_RETRIES,

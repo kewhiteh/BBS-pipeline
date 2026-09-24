@@ -26,7 +26,7 @@ from __future__ import annotations
 
 import logging
 import math
-from typing import FrozenSet, Optional, Sequence
+from collections.abc import Sequence
 
 import polars as pl
 
@@ -46,12 +46,12 @@ FIFTY_STOP_MIN_YEAR: int = 1997
 
 
 def enforce_fifty_stop_temporal_guard(
-    start_year: Optional[int],
-    end_year: Optional[int],
+    start_year: int | None,
+    end_year: int | None,
     resolution: str = "50stop",
-    start_stop: Optional[int] = None,
-    end_stop: Optional[int] = None,
-) -> tuple[Optional[int], Optional[int]]:
+    start_stop: int | None = None,
+    end_stop: int | None = None,
+) -> tuple[int | None, int | None]:
     """Enforce temporal boundaries for 50-stop vs 10-stop data resolution.
 
     BBS 50-stop individual-stop records are only available from 1997 onwards.
@@ -97,10 +97,9 @@ def enforce_fifty_stop_temporal_guard(
     """
     # Determine effective resolution: explicit 50stop mode OR stop slicing > 10
     is_fifty_stop = resolution == "50stop"
-    if start_stop is not None and end_stop is not None:
-        # A stop range touching stops 11-50 requires 50-stop individual records.
-        if end_stop > 10:
-            is_fifty_stop = True
+    # A stop range touching stops 11-50 requires 50-stop individual records.
+    if start_stop is not None and end_stop is not None and end_stop > 10:
+        is_fifty_stop = True
 
     if not is_fifty_stop:
         return start_year, end_year
@@ -167,9 +166,7 @@ def add_route_key(df: pl.DataFrame) -> pl.DataFrame:
         If any required source column is absent.
     """
     if not isinstance(df, pl.DataFrame):
-        raise TypeError(
-            f"df must be a polars.DataFrame, got {type(df).__name__}"
-        )
+        raise TypeError(f"df must be a polars.DataFrame, got {type(df).__name__}")
 
     required = ("CountryNum", "StateNum", "Route")
     missing = [c for c in required if c not in df.columns]
@@ -196,7 +193,7 @@ def add_route_key(df: pl.DataFrame) -> pl.DataFrame:
 
 def filter_by_continuity(
     df: pl.DataFrame,
-    eligible_years: FrozenSet[int],
+    eligible_years: frozenset[int],
     min_completeness_pct: float,
 ) -> pl.DataFrame:
     """Exclude routes that do not meet the proportional survey continuity threshold.
@@ -239,9 +236,7 @@ def filter_by_continuity(
         ``min_completeness_pct`` is outside ``(0, 100]``.
     """
     if not isinstance(df, pl.DataFrame):
-        raise TypeError(
-            f"df must be a polars.DataFrame, got {type(df).__name__}"
-        )
+        raise TypeError(f"df must be a polars.DataFrame, got {type(df).__name__}")
 
     for col in ("RouteKey", "Year"):
         if col not in df.columns:
@@ -275,9 +270,8 @@ def filter_by_continuity(
         .agg(pl.len().alias("valid_runs"))
     )
 
-    qualifying_keys = (
-        valid_runs.filter(pl.col("valid_runs") >= required_runs)
-        .select("RouteKey")
+    qualifying_keys = valid_runs.filter(pl.col("valid_runs") >= required_runs).select(
+        "RouteKey"
     )
 
     return df.join(qualifying_keys, on="RouteKey", how="inner")
@@ -323,17 +317,11 @@ def filter_by_min_stops(
         If ``total_stops_col`` is absent or ``min_stops`` is not a positive int.
     """
     if not isinstance(df, pl.DataFrame):
-        raise TypeError(
-            f"df must be a polars.DataFrame, got {type(df).__name__}"
-        )
+        raise TypeError(f"df must be a polars.DataFrame, got {type(df).__name__}")
     if total_stops_col not in df.columns:
-        raise ValueError(
-            f"Column '{total_stops_col}' not found in DataFrame."
-        )
+        raise ValueError(f"Column '{total_stops_col}' not found in DataFrame.")
     if not isinstance(min_stops, int) or min_stops <= 0:
-        raise ValueError(
-            f"min_stops must be a positive integer, got {min_stops!r}."
-        )
+        raise ValueError(f"min_stops must be a positive integer, got {min_stops!r}.")
 
     return df.filter(pl.col(total_stops_col) >= min_stops)
 
@@ -374,13 +362,9 @@ def nullify_stops_beyond_total(
         If ``total_stops_col`` is absent.
     """
     if not isinstance(df, pl.DataFrame):
-        raise TypeError(
-            f"df must be a polars.DataFrame, got {type(df).__name__}"
-        )
+        raise TypeError(f"df must be a polars.DataFrame, got {type(df).__name__}")
     if total_stops_col not in df.columns:
-        raise ValueError(
-            f"Column '{total_stops_col}' not found in DataFrame."
-        )
+        raise ValueError(f"Column '{total_stops_col}' not found in DataFrame.")
 
     present_stop_cols = [c for c in _ALL_STOP_COLS if c in df.columns]
     if not present_stop_cols:
@@ -419,7 +403,6 @@ def nullify_stops_beyond_total(
         )
 
     return df.with_columns(nullify_exprs)
-
 
 
 # ---------------------------------------------------------------------------
@@ -467,21 +450,13 @@ def slice_stop_range(
         ``start_stop`` > ``end_stop``, or if no matching stop columns exist.
     """
     if not isinstance(df, pl.DataFrame):
-        raise TypeError(
-            f"df must be a polars.DataFrame, got {type(df).__name__}"
-        )
+        raise TypeError(f"df must be a polars.DataFrame, got {type(df).__name__}")
     if not (1 <= start_stop <= 50):
-        raise ValueError(
-            f"start_stop must be in [1, 50], got {start_stop!r}."
-        )
+        raise ValueError(f"start_stop must be in [1, 50], got {start_stop!r}.")
     if not (1 <= end_stop <= 50):
-        raise ValueError(
-            f"end_stop must be in [1, 50], got {end_stop!r}."
-        )
+        raise ValueError(f"end_stop must be in [1, 50], got {end_stop!r}.")
     if start_stop > end_stop:
-        raise ValueError(
-            f"start_stop ({start_stop}) must be ≤ end_stop ({end_stop})."
-        )
+        raise ValueError(f"start_stop ({start_stop}) must be ≤ end_stop ({end_stop}).")
 
     cols_in_range = [
         f"Stop{i}" for i in range(start_stop, end_stop + 1) if f"Stop{i}" in df.columns
@@ -496,17 +471,13 @@ def slice_stop_range(
     def _stop_numeric(col: str) -> pl.Expr:
         if df[col].dtype in (pl.String, pl.Utf8):
             return (
-                pl.col(col)
-                .str.strip_chars()
-                .cast(pl.Int32, strict=False)
-                .fill_null(0)
+                pl.col(col).str.strip_chars().cast(pl.Int32, strict=False).fill_null(0)
             )
         return pl.col(col).cast(pl.Int32, strict=False).fill_null(0)
 
     return df.with_columns(
         pl.sum_horizontal([_stop_numeric(c) for c in cols_in_range]).alias(segment_col)
     )
-
 
 
 # ---------------------------------------------------------------------------
@@ -516,11 +487,11 @@ def slice_stop_range(
 
 def filter_observer_tenure(
     df: pl.DataFrame,
-    min_tenure: Optional[int] = None,
-    max_tenure: Optional[int] = None,
+    min_tenure: int | None = None,
+    max_tenure: int | None = None,
     tenure_col: str = "RouteTenure",
     exclude_first_year: bool = False,
-    cohorts: Optional[Sequence[str]] = None,
+    cohorts: Sequence[str] | None = None,
 ) -> pl.DataFrame:
     """Filter survey runs by observer tenure thresholds and experience cohorts.
 
@@ -568,24 +539,25 @@ def filter_observer_tenure(
         cohort name is supplied.
     """
     if not isinstance(df, pl.DataFrame):
-        raise TypeError(
-            f"df must be a polars.DataFrame, got {type(df).__name__}"
-        )
+        raise TypeError(f"df must be a polars.DataFrame, got {type(df).__name__}")
 
-    if min_tenure is None and max_tenure is None and not exclude_first_year and cohorts is None:
+    if (
+        min_tenure is None
+        and max_tenure is None
+        and not exclude_first_year
+        and cohorts is None
+    ):
         return df
 
-    if min_tenure is not None:
-        if not isinstance(min_tenure, int) or min_tenure < 0:
-            raise ValueError(
-                f"min_tenure must be a non-negative integer, got {min_tenure!r}."
-            )
+    if min_tenure is not None and (not isinstance(min_tenure, int) or min_tenure < 0):
+        raise ValueError(
+            f"min_tenure must be a non-negative integer, got {min_tenure!r}."
+        )
 
-    if max_tenure is not None:
-        if not isinstance(max_tenure, int) or max_tenure < 0:
-            raise ValueError(
-                f"max_tenure must be a non-negative integer, got {max_tenure!r}."
-            )
+    if max_tenure is not None and (not isinstance(max_tenure, int) or max_tenure < 0):
+        raise ValueError(
+            f"max_tenure must be a non-negative integer, got {max_tenure!r}."
+        )
 
     if min_tenure is not None and max_tenure is not None and min_tenure > max_tenure:
         raise ValueError(
@@ -599,7 +571,7 @@ def filter_observer_tenure(
             raise ValueError("cohorts must be a non-empty sequence when specified.")
         for c in cohorts:
             if not isinstance(c, str):
-                raise ValueError(f"Cohort names must be strings, got {type(c).__name__}")
+                raise TypeError(f"Cohort names must be strings, got {type(c).__name__}")
             c_clean = c.strip().split()[0].capitalize()
             if c_clean not in valid_cohorts:
                 raise ValueError(
@@ -648,9 +620,7 @@ def filter_observer_tenure(
         for cond in conds[1:]:
             combined_cond = combined_cond | cond
 
-        filtered = filtered.filter(
-            pl.col(eff_col).is_not_null() & combined_cond
-        )
+        filtered = filtered.filter(pl.col(eff_col).is_not_null() & combined_cond)
 
     return filtered
 
@@ -690,8 +660,8 @@ def filter_by_observer_cohort(
 
 def filter_traffic(
     df: pl.DataFrame,
-    max_cars_per_stop: Optional[float] = None,
-    max_car_total: Optional[int] = None,
+    max_cars_per_stop: float | None = None,
+    max_car_total: int | None = None,
     cars_per_stop_col: str = "CarsPerStop",
     car_total_col: str = "CarTotal",
 ) -> pl.DataFrame:
@@ -729,9 +699,7 @@ def filter_traffic(
         are missing when thresholds are explicitly specified.
     """
     if not isinstance(df, pl.DataFrame):
-        raise TypeError(
-            f"df must be a polars.DataFrame, got {type(df).__name__}"
-        )
+        raise TypeError(f"df must be a polars.DataFrame, got {type(df).__name__}")
 
     if max_cars_per_stop is None and max_car_total is None:
         return df
@@ -748,7 +716,9 @@ def filter_traffic(
                 "Skipping CarsPerStop threshold filter.",
                 cars_per_stop_col,
             )
-            max_cars_per_stop = None  # disable this threshold for the rest of the function
+            max_cars_per_stop = (
+                None  # disable this threshold for the rest of the function
+            )
 
     if max_car_total is not None:
         if not isinstance(max_car_total, int) or max_car_total < 0:
@@ -768,20 +738,21 @@ def filter_traffic(
     if max_cars_per_stop is not None:
         cars_per_stop_expr = pl.col(cars_per_stop_col)
         if df.schema.get(cars_per_stop_col) in (pl.String, pl.Utf8):
-            cars_per_stop_expr = cars_per_stop_expr.str.strip_chars().cast(pl.Float64, strict=False)
+            cars_per_stop_expr = cars_per_stop_expr.str.strip_chars().cast(
+                pl.Float64, strict=False
+            )
         filtered = filtered.filter(
-            cars_per_stop_expr.is_not_null()
-            & (cars_per_stop_expr <= max_cars_per_stop)
+            cars_per_stop_expr.is_not_null() & (cars_per_stop_expr <= max_cars_per_stop)
         )
 
     if max_car_total is not None:
         car_total_expr = pl.col(car_total_col)
         if df.schema.get(car_total_col) in (pl.String, pl.Utf8):
-            car_total_expr = car_total_expr.str.strip_chars().cast(pl.Int32, strict=False)
+            car_total_expr = car_total_expr.str.strip_chars().cast(
+                pl.Int32, strict=False
+            )
         filtered = filtered.filter(
-            car_total_expr.is_not_null()
-            & (car_total_expr <= max_car_total)
+            car_total_expr.is_not_null() & (car_total_expr <= max_car_total)
         )
 
     return filtered
-

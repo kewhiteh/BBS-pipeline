@@ -10,19 +10,13 @@ Invariants enforced:
 from __future__ import annotations
 
 import io
-import json
-import tempfile
 import zipfile
-from pathlib import Path
-from typing import Dict, Generator
 
 import polars as pl
 import pytest
 import requests
 import requests_mock as requests_mock_module
 
-from bbs_pipeline.client import parser as bbs_parser
-from bbs_pipeline.client import sciencebase as bbs_sb
 from bbs_pipeline.client.parser import (
     FIFTY_SCHEMA,
     FIFTY_STOP_SCHEMA,
@@ -31,30 +25,28 @@ from bbs_pipeline.client.parser import (
     VEHICLE_SCHEMA,
     WEATHER_SCHEMA,
     parse_fifty_stop,
+    parse_nested_zip_csv,
     parse_routes,
     parse_ten_stop,
     parse_ten_stop_nested,
     parse_vehicle,
     parse_weather,
     parse_zip_csv,
-    parse_nested_zip_csv,
 )
 from bbs_pipeline.client.sciencebase import (
     DEFAULT_ITEM_ID,
-    _build_session,
     build_session,
     fetch_file_by_name,
     fetch_file_by_url,
     fetch_item_metadata,
 )
 
-
 # ---------------------------------------------------------------------------
 # In-memory fixture helpers
 # ---------------------------------------------------------------------------
 
 
-def _make_zip(files: Dict[str, str]) -> io.BytesIO:
+def _make_zip(files: dict[str, str]) -> io.BytesIO:
     """Build an in-memory ZIP archive from a mapping of filename → CSV content."""
     buf = io.BytesIO()
     with zipfile.ZipFile(buf, mode="w", compression=zipfile.ZIP_DEFLATED) as zf:
@@ -64,7 +56,7 @@ def _make_zip(files: Dict[str, str]) -> io.BytesIO:
     return buf
 
 
-def _make_nested_zip(inner_name: str, inner_files: Dict[str, str]) -> io.BytesIO:
+def _make_nested_zip(inner_name: str, inner_files: dict[str, str]) -> io.BytesIO:
     """Build a ZIP-inside-ZIP hierarchy in memory (States.zip pattern)."""
     inner_buf = _make_zip(inner_files)
     outer_buf = io.BytesIO()
@@ -129,12 +121,19 @@ def _vehicle_csv() -> str:
     )
 
 
-def _fake_item_metadata(filename: str = "routes.zip", file_url: str = "https://example.com/routes.zip") -> dict:
+def _fake_item_metadata(
+    filename: str = "routes.zip", file_url: str = "https://example.com/routes.zip"
+) -> dict:
     return {
         "id": DEFAULT_ITEM_ID,
         "title": "BBS Data",
         "files": [
-            {"name": filename, "url": file_url, "size": 1024, "contentType": "application/zip"},
+            {
+                "name": filename,
+                "url": file_url,
+                "size": 1024,
+                "contentType": "application/zip",
+            },
         ],
     }
 
@@ -193,7 +192,9 @@ class TestFiftyStopParsing:
         zip_buf = synthetic_zip_builder({"fifty1.csv": _fifty_stop_csv()})
         df = parse_fifty_stop(zip_buf, "fifty1.csv")
         for col in df.columns:
-            assert col in FIFTY_STOP_SCHEMA, f"Column {col!r} missing from FIFTY_STOP_SCHEMA"
+            assert col in FIFTY_STOP_SCHEMA, (
+                f"Column {col!r} missing from FIFTY_STOP_SCHEMA"
+            )
             assert df.schema[col] == FIFTY_STOP_SCHEMA[col], (
                 f"Column {col!r}: expected {FIFTY_STOP_SCHEMA[col]}, got {df.schema[col]}"
             )
@@ -217,19 +218,35 @@ class TestFiftyStopParsing:
     def test_fifty_schema_all_columns_are_string(self):
         """Mandate: Every column in FIFTY_SCHEMA must ingest strictly as pl.String."""
         required = [
-            "RouteDataId", "CountryNum", "StateNum", "Route", "RPID",
-            "Year", "AOU", "Count", *[f"Stop{i}" for i in range(1, 51)],
+            "RouteDataId",
+            "CountryNum",
+            "StateNum",
+            "Route",
+            "RPID",
+            "Year",
+            "AOU",
+            "Count",
+            *[f"Stop{i}" for i in range(1, 51)],
         ]
         for col in required:
             assert col in FIFTY_SCHEMA, f"Column {col!r} missing from FIFTY_SCHEMA"
-            assert FIFTY_SCHEMA[col] == pl.String, f"FIFTY_SCHEMA column {col!r} must be pl.String"
+            assert FIFTY_SCHEMA[col] == pl.String, (
+                f"FIFTY_SCHEMA column {col!r} must be pl.String"
+            )
 
     def test_fifty_schema_zero_numeric_dtypes(self):
         """Audit invariant: zero numeric dtypes in FIFTY_SCHEMA and FIFTY_STOP_SCHEMA."""
         numeric_dtypes = (
-            pl.UInt8, pl.UInt16, pl.UInt32, pl.UInt64,
-            pl.Int8, pl.Int16, pl.Int32, pl.Int64,
-            pl.Float32, pl.Float64,
+            pl.UInt8,
+            pl.UInt16,
+            pl.UInt32,
+            pl.UInt64,
+            pl.Int8,
+            pl.Int16,
+            pl.Int32,
+            pl.Int64,
+            pl.Float32,
+            pl.Float64,
         )
         for col, dtype in FIFTY_SCHEMA.items():
             assert dtype not in numeric_dtypes, (
@@ -237,7 +254,9 @@ class TestFiftyStopParsing:
             )
             assert dtype == pl.String, f"FIFTY_SCHEMA column {col!r} must be pl.String"
 
-    def test_fifty_stop_space_padded_values_parse_without_panic(self, synthetic_zip_builder):
+    def test_fifty_stop_space_padded_values_parse_without_panic(
+        self, synthetic_zip_builder
+    ):
         """Real-world crash regression: space-padded '0      ' in Stop1..Stop50 and Count must not panic."""
         csv_data = (
             "RouteDataId,CountryNum,StateNum,Route,RPID,Year,AOU,Count,"
@@ -254,23 +273,31 @@ class TestFiftyStopParsing:
         assert df["Count"][0] == "0      "
         assert df.schema["Count"] == pl.String
 
-    def test_fifty_stop_defensive_aggregation_with_space_padded_values(self, synthetic_zip_builder):
+    def test_fifty_stop_defensive_aggregation_with_space_padded_values(
+        self, synthetic_zip_builder
+    ):
         """Verify horizontal sums handle dirty space-padded observation strings defensively."""
         csv_data = (
             "RouteDataId,CountryNum,StateNum,Route,RPID,Year,AOU,Count,"
             + ",".join(f"Stop{i}" for i in range(1, 51))
             + "\n"
             "10001,840,02,001,1,2022,04990,5      ,"
-            + "1      ," + ",".join("0      " for _ in range(49))
+            + "1      ,"
+            + ",".join("0      " for _ in range(49))
             + "\n"
         )
         zip_buf = synthetic_zip_builder({"fifty1.csv": csv_data})
         df = parse_fifty_stop(zip_buf, "fifty1.csv")
         total = df.select(
-            pl.sum_horizontal([
-                pl.col(f"Stop{i}").str.strip_chars().cast(pl.Int32, strict=False).fill_null(0)
-                for i in range(1, 51)
-            ]).alias("StopSum")
+            pl.sum_horizontal(
+                [
+                    pl.col(f"Stop{i}")
+                    .str.strip_chars()
+                    .cast(pl.Int32, strict=False)
+                    .fill_null(0)
+                    for i in range(1, 51)
+                ]
+            ).alias("StopSum")
         )
         assert total["StopSum"][0] == 1
 
@@ -294,7 +321,15 @@ class TestTenStopParsing:
         """Count10..Count50, StopTotal, SpeciesTotal must be pl.String per Universal String Ingestion."""
         zip_buf = synthetic_zip_builder({"Alabama.csv": _ten_stop_csv()})
         df = parse_ten_stop(zip_buf, "Alabama.csv")
-        for col in ("Count10", "Count20", "Count30", "Count40", "Count50", "StopTotal", "SpeciesTotal"):
+        for col in (
+            "Count10",
+            "Count20",
+            "Count30",
+            "Count40",
+            "Count50",
+            "StopTotal",
+            "SpeciesTotal",
+        ):
             assert df.schema[col] == pl.String
 
     # Alias for backwards compatibility
@@ -384,7 +419,9 @@ class TestVehicleParsing:
     # Alias for backwards compatibility
     test_vehicle_noise_columns_are_uint8 = test_vehicle_noise_columns_are_string
 
-    def test_vehicle_noise_columns_with_trailing_whitespace(self, synthetic_zip_builder):
+    def test_vehicle_noise_columns_with_trailing_whitespace(
+        self, synthetic_zip_builder
+    ):
         """Verify Noise columns with trailing whitespace parse cleanly without error."""
         car_values = ",".join("1" for _ in range(50))
         noise_values = ",".join("0      " for _ in range(50))
@@ -406,21 +443,34 @@ class TestVehicleParsing:
         zip_buf = synthetic_zip_builder({"VehicleData.csv": _vehicle_csv()})
         df = parse_vehicle(zip_buf)
         for col, expected_dtype in VEHICLE_SCHEMA.items():
-            assert expected_dtype == pl.String, f"VEHICLE_SCHEMA column {col!r} must be pl.String"
-            assert df.schema[col] == pl.String, f"Parsed VehicleData column {col!r} must be pl.String"
+            assert expected_dtype == pl.String, (
+                f"VEHICLE_SCHEMA column {col!r} must be pl.String"
+            )
+            assert df.schema[col] == pl.String, (
+                f"Parsed VehicleData column {col!r} must be pl.String"
+            )
 
     def test_vehicle_schema_zero_numeric_dtypes(self):
         """Section 1 & 9 Ingestion Isolation: Zero numeric dtypes permitted at ingestion."""
         numeric_dtypes = (
-            pl.UInt8, pl.UInt16, pl.UInt32, pl.UInt64,
-            pl.Int8, pl.Int16, pl.Int32, pl.Int64,
-            pl.Float32, pl.Float64,
+            pl.UInt8,
+            pl.UInt16,
+            pl.UInt32,
+            pl.UInt64,
+            pl.Int8,
+            pl.Int16,
+            pl.Int32,
+            pl.Int64,
+            pl.Float32,
+            pl.Float64,
         )
         for col, dtype in VEHICLE_SCHEMA.items():
             assert dtype not in numeric_dtypes, (
                 f"VEHICLE_SCHEMA column {col!r} has forbidden numeric dtype {dtype}"
             )
-            assert dtype == pl.String, f"VEHICLE_SCHEMA column {col!r} must be pl.String"
+            assert dtype == pl.String, (
+                f"VEHICLE_SCHEMA column {col!r} must be pl.String"
+            )
 
 
 class TestNestedZipParsing:
@@ -472,12 +522,19 @@ class TestNegativeAssertions:
         """parse_nested_zip_csv must raise KeyError when inner zip is absent."""
         outer_buf = _make_nested_zip("Alabama.zip", {"Alabama.csv": _ten_stop_csv()})
         with pytest.raises(KeyError):
-            parse_nested_zip_csv(outer_buf, "NonExistentState.zip", "NonExistentState.csv", TEN_STOP_SCHEMA)
+            parse_nested_zip_csv(
+                outer_buf,
+                "NonExistentState.zip",
+                "NonExistentState.csv",
+                TEN_STOP_SCHEMA,
+            )
 
     # Negative assertion 5: fetch_file_by_name raises FileNotFoundError on absent file
     def test_fetch_file_by_name_raises_for_missing_file(self):
         """fetch_file_by_name must raise FileNotFoundError when filename is not in item metadata."""
-        item_meta = _fake_item_metadata(filename="routes.zip", file_url="https://example.com/routes.zip")
+        item_meta = _fake_item_metadata(
+            filename="routes.zip", file_url="https://example.com/routes.zip"
+        )
         with requests_mock_module.Mocker() as m:
             m.get(
                 f"https://www.sciencebase.gov/catalog/item/{DEFAULT_ITEM_ID}?format=json",
@@ -691,7 +748,7 @@ class TestZeroDiskMandate:
 
         with requests_mock_module.Mocker() as m:
             m.get(file_url, content=zip_bytes)
-            buf = fetch_file_by_url(file_url)
+            fetch_file_by_url(file_url)
 
         files_after = set(tmp_path.rglob("*"))
         assert files_before == files_after, (
@@ -742,34 +799,53 @@ class TestSchemaObjectBan:
 
     def test_routes_schema_has_no_object_type(self):
         for col, dtype in ROUTES_SCHEMA.items():
-            assert dtype != pl.Object, f"ROUTES_SCHEMA column {col!r} must not be pl.Object"
+            assert dtype != pl.Object, (
+                f"ROUTES_SCHEMA column {col!r} must not be pl.Object"
+            )
 
     def test_fifty_stop_schema_has_no_object_type(self):
         for col, dtype in FIFTY_STOP_SCHEMA.items():
-            assert dtype != pl.Object, f"FIFTY_STOP_SCHEMA column {col!r} must not be pl.Object"
+            assert dtype != pl.Object, (
+                f"FIFTY_STOP_SCHEMA column {col!r} must not be pl.Object"
+            )
 
     def test_ten_stop_schema_has_no_object_type(self):
         for col, dtype in TEN_STOP_SCHEMA.items():
-            assert dtype != pl.Object, f"TEN_STOP_SCHEMA column {col!r} must not be pl.Object"
+            assert dtype != pl.Object, (
+                f"TEN_STOP_SCHEMA column {col!r} must not be pl.Object"
+            )
 
     def test_weather_schema_has_no_object_type(self):
         for col, dtype in WEATHER_SCHEMA.items():
-            assert dtype != pl.Object, f"WEATHER_SCHEMA column {col!r} must not be pl.Object"
+            assert dtype != pl.Object, (
+                f"WEATHER_SCHEMA column {col!r} must not be pl.Object"
+            )
 
     def test_fifty_schema_has_no_object_type(self):
         for col, dtype in FIFTY_SCHEMA.items():
-            assert dtype != pl.Object, f"FIFTY_SCHEMA column {col!r} must not be pl.Object"
+            assert dtype != pl.Object, (
+                f"FIFTY_SCHEMA column {col!r} must not be pl.Object"
+            )
 
     def test_vehicle_schema_has_no_object_type(self):
         for col, dtype in VEHICLE_SCHEMA.items():
-            assert dtype != pl.Object, f"VEHICLE_SCHEMA column {col!r} must not be pl.Object"
+            assert dtype != pl.Object, (
+                f"VEHICLE_SCHEMA column {col!r} must not be pl.Object"
+            )
 
     def test_all_schemas_in_parser_contain_zero_numeric_types(self):
         """Universal Ingestion Isolation: audit that no schema in parser.py contains numeric types."""
         numeric_dtypes = (
-            pl.UInt8, pl.UInt16, pl.UInt32, pl.UInt64,
-            pl.Int8, pl.Int16, pl.Int32, pl.Int64,
-            pl.Float32, pl.Float64,
+            pl.UInt8,
+            pl.UInt16,
+            pl.UInt32,
+            pl.UInt64,
+            pl.Int8,
+            pl.Int16,
+            pl.Int32,
+            pl.Int64,
+            pl.Float32,
+            pl.Float64,
         )
         for schema_name, schema in (
             ("FIFTY_SCHEMA", FIFTY_SCHEMA),
@@ -783,7 +859,9 @@ class TestSchemaObjectBan:
                 assert dtype not in numeric_dtypes, (
                     f"{schema_name} column {col!r} has forbidden numeric dtype {dtype}"
                 )
-                assert dtype == pl.String, f"{schema_name} column {col!r} must be pl.String"
+                assert dtype == pl.String, (
+                    f"{schema_name} column {col!r} must be pl.String"
+                )
 
 
 # ---------------------------------------------------------------------------

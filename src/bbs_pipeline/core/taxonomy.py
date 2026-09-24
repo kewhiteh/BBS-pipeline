@@ -23,8 +23,8 @@ import io
 import json
 import logging
 import zipfile
+from collections.abc import Sequence
 from pathlib import Path
-from typing import FrozenSet, Optional, Sequence
 
 import polars as pl
 
@@ -90,9 +90,7 @@ def parse_species_list(buf: io.BytesIO) -> pl.DataFrame:
         If the buffer is empty or does not contain an ``AOU`` column.
     """
     if not isinstance(buf, io.BytesIO):
-        raise TypeError(
-            f"buf must be io.BytesIO, got {type(buf).__name__}"
-        )
+        raise TypeError(f"buf must be io.BytesIO, got {type(buf).__name__}")
 
     buf.seek(0)
     raw_bytes = buf.read()
@@ -110,9 +108,7 @@ def parse_species_list(buf: io.BytesIO) -> pl.DataFrame:
         raise ValueError("SpeciesList CSV does not contain an 'AOU' column.")
 
     # Zero-pad AOU to 5 digits (invariant: always pl.String)
-    df = df.with_columns(
-        pl.col("AOU").str.strip_chars().str.zfill(5).alias("AOU")
-    )
+    df = df.with_columns(pl.col("AOU").str.strip_chars().str.zfill(5).alias("AOU"))
 
     logger.debug("SpeciesList parsed: %d species rows.", len(df))
     return df
@@ -159,9 +155,7 @@ def load_guilds_json(guilds_path: Path | str) -> dict[str, dict[str, str]]:
     raw: dict[str, dict[str, str]] = json.loads(text)
 
     # Normalise keys to 5-digit zero-padded strings
-    guilds: dict[str, dict[str, str]] = {
-        _pad_aou(k): v for k, v in raw.items()
-    }
+    guilds: dict[str, dict[str, str]] = {_pad_aou(k): v for k, v in raw.items()}
     logger.debug("guilds.json loaded: %d entries.", len(guilds))
     return guilds
 
@@ -171,7 +165,7 @@ def load_guilds_json(guilds_path: Path | str) -> dict[str, dict[str, str]]:
 # ---------------------------------------------------------------------------
 
 
-def parse_migrant_nonbreeder(buf: io.BytesIO) -> FrozenSet[str]:
+def parse_migrant_nonbreeder(buf: io.BytesIO) -> frozenset[str]:
     """Extract the set of migrant/non-breeder AOU codes from the zip buffer.
 
     Reads ``MigrantNonBreeder/Migrants.csv`` inside the ZIP archive using
@@ -196,9 +190,7 @@ def parse_migrant_nonbreeder(buf: io.BytesIO) -> FrozenSet[str]:
         If the buffer is empty, the ZIP is corrupt, or no AOU column is found.
     """
     if not isinstance(buf, io.BytesIO):
-        raise TypeError(
-            f"buf must be io.BytesIO, got {type(buf).__name__}"
-        )
+        raise TypeError(f"buf must be io.BytesIO, got {type(buf).__name__}")
 
     buf.seek(0)
     raw_bytes = buf.read()
@@ -209,13 +201,12 @@ def parse_migrant_nonbreeder(buf: io.BytesIO) -> FrozenSet[str]:
 
     with zipfile.ZipFile(io.BytesIO(raw_bytes)) as zf:
         csv_entries = [
-            n for n in zf.namelist()
+            n
+            for n in zf.namelist()
             if n.endswith(".csv") and "Migrants" in n and "Summary" not in n
         ]
         if not csv_entries:
-            raise ValueError(
-                "MigrantNonBreeder.zip contains no Migrants CSV file."
-            )
+            raise ValueError("MigrantNonBreeder.zip contains no Migrants CSV file.")
 
         for entry in csv_entries:
             csv_bytes = zf.read(entry)
@@ -229,9 +220,7 @@ def parse_migrant_nonbreeder(buf: io.BytesIO) -> FrozenSet[str]:
             )
             df = df.rename({c: c.strip() for c in df.columns})
             if "AOU" not in df.columns:
-                raise ValueError(
-                    f"Migrants CSV '{entry}' has no AOU column."
-                )
+                raise ValueError(f"Migrants CSV '{entry}' has no AOU column.")
             aous = (
                 df.select(pl.col("AOU").str.strip_chars().str.zfill(5))
                 .to_series()
@@ -240,10 +229,8 @@ def parse_migrant_nonbreeder(buf: io.BytesIO) -> FrozenSet[str]:
             )
             migrant_aous.update(aous)
 
-    result: FrozenSet[str] = frozenset(migrant_aous)
-    logger.debug(
-        "MigrantNonBreeder AOU set size: %d codes.", len(result)
-    )
+    result: frozenset[str] = frozenset(migrant_aous)
+    logger.debug("MigrantNonBreeder AOU set size: %d codes.", len(result))
     return result
 
 
@@ -255,15 +242,15 @@ def parse_migrant_nonbreeder(buf: io.BytesIO) -> FrozenSet[str]:
 def resolve_target_species(
     species_df: pl.DataFrame,
     guilds: dict[str, dict[str, str]],
-    migrant_aous: FrozenSet[str],
+    migrant_aous: frozenset[str],
     *,
-    orders: Optional[Sequence[str]] = None,
-    families: Optional[Sequence[str]] = None,
-    guild_breeding_habitats: Optional[Sequence[str]] = None,
-    guild_foraging_guilds: Optional[Sequence[str]] = None,
-    custom_aous: Optional[Sequence[str]] = None,
+    orders: Sequence[str] | None = None,
+    families: Sequence[str] | None = None,
+    guild_breeding_habitats: Sequence[str] | None = None,
+    guild_foraging_guilds: Sequence[str] | None = None,
+    custom_aous: Sequence[str] | None = None,
     all_species: bool = False,
-) -> FrozenSet[str]:
+) -> frozenset[str]:
     """Evaluate the set-union taxonomic resolver and return the target AOU set.
 
     Implements the formula from §2.7::
@@ -311,17 +298,14 @@ def resolve_target_species(
     """
     if not isinstance(species_df, pl.DataFrame):
         raise TypeError(
-            f"species_df must be a polars.DataFrame, got "
-            f"{type(species_df).__name__}"
+            f"species_df must be a polars.DataFrame, got {type(species_df).__name__}"
         )
     if species_df.is_empty():
         raise ValueError("species_df is empty; cannot resolve species.")
     if "AOU" not in species_df.columns:
         raise ValueError("species_df must contain an 'AOU' column.")
 
-    all_aous: frozenset[str] = frozenset(
-        species_df.select("AOU").to_series().to_list()
-    )
+    all_aous: frozenset[str] = frozenset(species_df.select("AOU").to_series().to_list())
 
     broad_union: set[str] = set()
 
@@ -378,7 +362,7 @@ def resolve_target_species(
         explicit_set.update(padded & all_aous)
 
     # Apply migrant exclusion ONLY to broad taxonomic sets, NOT explicit user selections
-    target: FrozenSet[str] = frozenset((broad_union - migrant_aous) | explicit_set)
+    target: frozenset[str] = frozenset((broad_union - migrant_aous) | explicit_set)
 
     logger.debug(
         "resolve_target_species: broad_union=%d, excluded=%d, explicit=%d, target=%d",
@@ -397,7 +381,7 @@ def resolve_target_species(
 
 def filter_species_df(
     species_df: pl.DataFrame,
-    target_aous: FrozenSet[str],
+    target_aous: frozenset[str],
 ) -> pl.DataFrame:
     """Return the SpeciesList rows whose AOU codes are in *target_aous*.
 
@@ -423,8 +407,7 @@ def filter_species_df(
     """
     if not isinstance(species_df, pl.DataFrame):
         raise TypeError(
-            f"species_df must be a polars.DataFrame, got "
-            f"{type(species_df).__name__}"
+            f"species_df must be a polars.DataFrame, got {type(species_df).__name__}"
         )
     if not target_aous:
         raise ValueError("target_aous must be non-empty.")

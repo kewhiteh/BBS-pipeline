@@ -12,7 +12,6 @@ from __future__ import annotations
 import io
 import logging
 import zipfile
-from typing import Dict
 
 import polars as pl
 
@@ -27,7 +26,7 @@ logger = logging.getLogger(__name__)
 #: tolerate trailing whitespace, padding, and dirty values in raw CSVs. Callers that
 #: need numeric totals must cast defensively:
 #:   pl.col(col).str.strip_chars().cast(pl.Int32, strict=False).fill_null(0)
-FIFTY_STOP_SCHEMA: Dict[str, type] = {
+FIFTY_STOP_SCHEMA: dict[str, type] = {
     "RouteDataId": pl.String,
     "RouteDataID": pl.String,
     "CountryNum": pl.String,
@@ -41,14 +40,14 @@ FIFTY_STOP_SCHEMA: Dict[str, type] = {
 }
 
 #: Canonical alias for fifty-stop observation schemas.
-FIFTY_SCHEMA: Dict[str, type] = FIFTY_STOP_SCHEMA
+FIFTY_SCHEMA: dict[str, type] = FIFTY_STOP_SCHEMA
 
 #: Schema for 10-stop count-band summary files.
 #: Profile A Data Invariant: Count and total columns are ingested as pl.String
 #: to tolerate trailing whitespace and dirty values in raw CSVs. Callers that
 #: need numeric totals must cast defensively:
 #:   pl.col(col).str.strip_chars().cast(pl.Int32, strict=False).fill_null(0)
-TEN_STOP_SCHEMA: Dict[str, type] = {
+TEN_STOP_SCHEMA: dict[str, type] = {
     "RouteDataID": pl.String,
     "CountryNum": pl.String,
     "StateNum": pl.String,
@@ -66,7 +65,7 @@ TEN_STOP_SCHEMA: Dict[str, type] = {
 }
 
 #: Schema for weather and operational history records.
-WEATHER_SCHEMA: Dict[str, type] = {
+WEATHER_SCHEMA: dict[str, type] = {
     "RouteDataID": pl.String,
     "CountryNum": pl.String,
     "StateNum": pl.String,
@@ -96,7 +95,7 @@ WEATHER_SCHEMA: Dict[str, type] = {
 #: tolerate trailing whitespace and dirty values in raw CSVs. Callers that
 #: need numeric totals must cast defensively:
 #:   pl.col(col).str.strip_chars().cast(pl.Int32, strict=False).fill_null(0)
-VEHICLE_SCHEMA: Dict[str, type] = {
+VEHICLE_SCHEMA: dict[str, type] = {
     "RouteDataID": pl.String,
     "CountryNum": pl.String,
     "StateNum": pl.String,
@@ -109,7 +108,7 @@ VEHICLE_SCHEMA: Dict[str, type] = {
 }
 
 #: Schema for route geographic directory.
-ROUTES_SCHEMA: Dict[str, type] = {
+ROUTES_SCHEMA: dict[str, type] = {
     "CountryNum": pl.String,
     "StateNum": pl.String,
     "Route": pl.String,
@@ -124,7 +123,7 @@ ROUTES_SCHEMA: Dict[str, type] = {
 }
 
 #: Schema for taxonomic species list.
-SPECIES_LIST_SCHEMA: Dict[str, type] = {
+SPECIES_LIST_SCHEMA: dict[str, type] = {
     "Seq": pl.String,
     "AOU": pl.String,
     "English_Common_Name": pl.String,
@@ -144,7 +143,7 @@ SPECIES_LIST_SCHEMA: Dict[str, type] = {
 
 def _read_csv_from_bytes(
     data: bytes,
-    schema_overrides: Dict[str, type],
+    schema_overrides: dict[str, type],
     has_header: bool = True,
 ) -> pl.DataFrame:
     """Parse a CSV byte string into a typed Polars DataFrame.
@@ -186,7 +185,7 @@ def _read_csv_from_bytes(
 def parse_zip_csv(
     zip_buffer: io.BytesIO,
     csv_filename: str,
-    schema_overrides: Dict[str, type],
+    schema_overrides: dict[str, type],
 ) -> pl.DataFrame:
     """Extract a single CSV from an in-memory ZIP and parse it into a Polars DataFrame.
 
@@ -221,7 +220,7 @@ def parse_nested_zip_csv(
     outer_zip_buffer: io.BytesIO,
     inner_zip_name: str,
     csv_filename: str,
-    schema_overrides: Dict[str, type],
+    schema_overrides: dict[str, type],
 ) -> pl.DataFrame:
     """Parse a CSV from a ZIP nested inside another ZIP — entirely in RAM.
 

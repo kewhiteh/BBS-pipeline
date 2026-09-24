@@ -24,19 +24,15 @@ Domain Invariants enforced here:
 from __future__ import annotations
 
 import logging
-from typing import Optional
 
 import polars as pl
 
 logger = logging.getLogger(__name__)
 
 from bbs_pipeline.covariates.traffic import (
-    _ALL_CAR_COLS,
-    _ALL_NOISE_COLS,
     compute_noise_covariates,
     compute_traffic_covariates,
 )
-
 
 # ---------------------------------------------------------------------------
 # §2.6 — Longitudinal Observer Covariates
@@ -100,15 +96,13 @@ def compute_observer_covariates(
     """
     if not isinstance(weather_df, pl.DataFrame):
         raise TypeError(
-            f"weather_df must be a polars.DataFrame, "
-            f"got {type(weather_df).__name__}"
+            f"weather_df must be a polars.DataFrame, got {type(weather_df).__name__}"
         )
 
     for col in (route_key_col, obs_col, year_col):
         if col not in weather_df.columns:
             raise ValueError(
-                f"weather_df must contain '{col}' column for covariate "
-                f"computation."
+                f"weather_df must contain '{col}' column for covariate computation."
             )
 
     if weather_df.is_empty():
@@ -123,23 +117,15 @@ def compute_observer_covariates(
     # Work with integer years for ≤ comparisons, keeping string keys intact.
     # We add a helper integer year column for arithmetic only — never used as
     # an identifier (Arithmetic Typing Invariant §1.3).
-    df = weather_df.with_columns(
-        pl.col(year_col).cast(pl.Int32).alias("_year_int")
-    )
+    df = weather_df.with_columns(pl.col(year_col).cast(pl.Int32).alias("_year_int"))
 
     # --- Build lookup tables for counting ---
 
     # All (ObsN, year_int) distinct survey events across the full dataset
-    obs_years = (
-        df.select([obs_col, "_year_int"])
-        .unique()
-    )
+    obs_years = df.select([obs_col, "_year_int"]).unique()
 
     # All (ObsN, RouteKey, year_int) distinct route-level events
-    obs_route_years = (
-        df.select([obs_col, route_key_col, "_year_int"])
-        .unique()
-    )
+    obs_route_years = df.select([obs_col, route_key_col, "_year_int"]).unique()
 
     # We need, per row: count of obs_years rows for same ObsN where
     # that row's year_int' ≤ current row's _year_int.
@@ -150,13 +136,13 @@ def compute_observer_covariates(
 
     # Step 1: CareerSurveysCompleted
     # Rename for the cross-join
-    obs_years_r = obs_years.rename(
-        {obs_col: "_obs_r", "_year_int": "_year_int_r"}
-    )
+    obs_years_r = obs_years.rename({obs_col: "_obs_r", "_year_int": "_year_int_r"})
 
     career_df = (
         df.select([obs_col, "_year_int"])
-        .join(obs_years_r, left_on=obs_col, right_on="_obs_r", how="left", coalesce=True)
+        .join(
+            obs_years_r, left_on=obs_col, right_on="_obs_r", how="left", coalesce=True
+        )
         .filter(pl.col("_year_int_r") <= pl.col("_year_int"))
         .group_by([obs_col, "_year_int"])
         .agg(pl.n_unique("_year_int_r").alias("CareerSurveysCompleted"))
@@ -218,9 +204,7 @@ def compute_observer_covariates(
         .drop("_year_int")
     )
 
-    logger.debug(
-        "compute_observer_covariates: %d rows processed.", len(result)
-    )
+    logger.debug("compute_observer_covariates: %d rows processed.", len(result))
     return result
 
 
@@ -252,4 +236,3 @@ __all__ = [
     "filter_observer_tenure",
     "filter_traffic",
 ]
-

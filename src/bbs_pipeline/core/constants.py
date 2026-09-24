@@ -8,13 +8,11 @@ Contains:
 
 from __future__ import annotations
 
-from typing import Dict, Optional, Tuple
-
 # ---------------------------------------------------------------------------
 # BCR Name Reference Registry (NABCI) - BCR 1 through BCR 39
 # ---------------------------------------------------------------------------
 
-BCR_NAMES: Dict[str, str] = {
+BCR_NAMES: dict[str, str] = {
     "1": "Aleutian/Bering Sea Islands",
     "2": "Western Alaska",
     "3": "Arctic Plains and Mountains",
@@ -60,7 +58,7 @@ BCR_NAMES: Dict[str, str] = {
 # USGS BBS Physiographic Strata Registry (Robbins et al. 1986 / USGS PWRC)
 # ---------------------------------------------------------------------------
 
-STRATA_NAMES: Dict[str, str] = {
+STRATA_NAMES: dict[str, str] = {
     "1": "Subtropical",
     "2": "Floridian",
     "3": "Coastal Flatwoods",
@@ -138,10 +136,10 @@ STRATA_NAMES: Dict[str, str] = {
 # Standard BBS Observer Experience Cohorts
 # ---------------------------------------------------------------------------
 
-OBSERVER_COHORTS: Tuple[str, ...] = ("Novice", "Intermediate", "Veteran")
+OBSERVER_COHORTS: tuple[str, ...] = ("Novice", "Intermediate", "Veteran")
 
 
-def classify_observer_cohort(tenure: Optional[int]) -> Optional[str]:
+def classify_observer_cohort(tenure: int | None) -> str | None:
     """Classify observer route tenure into standard BBS experience cohort.
 
     - Novice: 1 year

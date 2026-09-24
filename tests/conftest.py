@@ -2,7 +2,7 @@
 
 import io
 import zipfile
-from typing import Dict
+
 import pytest
 
 
@@ -10,7 +10,7 @@ import pytest
 def synthetic_zip_builder():
     """Generates an in-memory ZIP archive from a dict of {filename: content_str}."""
 
-    def _build(files: Dict[str, str]) -> io.BytesIO:
+    def _build(files: dict[str, str]) -> io.BytesIO:
         buf = io.BytesIO()
         with zipfile.ZipFile(buf, mode="w", compression=zipfile.ZIP_DEFLATED) as zf:
             for filename, content in files.items():

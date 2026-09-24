@@ -18,7 +18,6 @@ import pytest
 
 from bbs_pipeline.core.covariates import (
     BCR_NAMES,
-    OBSERVER_COHORTS,
     STRATA_NAMES,
     classify_observer_cohort,
     compute_noise_covariates,
@@ -152,8 +151,8 @@ def _make_vehicle_df(rows: list[dict]) -> pl.DataFrame:
         return pl.DataFrame(schema=_VEHICLE_SCHEMA)
     cols: dict[str, list] = {k: [] for k in _VEHICLE_SCHEMA}
     for row in rows:
-        for k in _VEHICLE_SCHEMA:
-            default_val = "0" if _VEHICLE_SCHEMA[k] == pl.String else 0
+        for k, dtype in _VEHICLE_SCHEMA.items():
+            default_val = "0" if dtype == pl.String else 0
             cols[k].append(row.get(k, default_val))
     return pl.DataFrame(cols, schema=_VEHICLE_SCHEMA)
 
@@ -306,9 +305,13 @@ class TestComputeObserverCovariates:
         # 2010: RouteTenure=1 -> Novice
         assert res.filter(pl.col("Year") == "2010")["ObserverCohort"][0] == "Novice"
         # 2011: RouteTenure=2 -> Intermediate
-        assert res.filter(pl.col("Year") == "2011")["ObserverCohort"][0] == "Intermediate"
+        assert (
+            res.filter(pl.col("Year") == "2011")["ObserverCohort"][0] == "Intermediate"
+        )
         # 2014: RouteTenure=5 -> Intermediate
-        assert res.filter(pl.col("Year") == "2014")["ObserverCohort"][0] == "Intermediate"
+        assert (
+            res.filter(pl.col("Year") == "2014")["ObserverCohort"][0] == "Intermediate"
+        )
         # 2015: RouteTenure=6 -> Veteran
         assert res.filter(pl.col("Year") == "2015")["ObserverCohort"][0] == "Veteran"
         # 2016: RouteTenure=7 -> Veteran
@@ -368,8 +371,8 @@ class TestComputeTrafficCovariates:
         result = compute_traffic_covariates(df)
 
         totals = result["CarTotal"].to_list()
-        assert totals[0] == 10   # 3+7
-        assert totals[1] == 4    # 1+1+1+1
+        assert totals[0] == 10  # 3+7
+        assert totals[1] == 4  # 1+1+1+1
 
         per_stop = result["CarsPerStop"].to_list()
         assert per_stop[0] == pytest.approx(5.0)  # 10/2
@@ -484,7 +487,10 @@ class TestComputeTrafficCovariates:
 
     def test_traffic_covariates_import_from_covariates_package(self):
         """Verify compute_traffic_covariates is directly importable from bbs_pipeline.covariates.traffic."""
-        from bbs_pipeline.covariates.traffic import compute_traffic_covariates as traffic_fn
+        from bbs_pipeline.covariates.traffic import (
+            compute_traffic_covariates as traffic_fn,
+        )
+
         assert traffic_fn is compute_traffic_covariates
 
     # NEGATIVE: non-DataFrame raises TypeError
@@ -531,7 +537,9 @@ class TestCovariateFilteringIntegration:
     def test_traffic_covariates_chained_with_traffic_filter(self):
         r1 = _make_vehicle_row(total_stops=50, car_counts=[1] * 50, route_data_id="RD1")
         r2 = _make_vehicle_row(total_stops=50, car_counts=[5] * 50, route_data_id="RD2")
-        r3 = _make_vehicle_row(total_stops=50, car_counts=[10] * 50, route_data_id="RD3")
+        r3 = _make_vehicle_row(
+            total_stops=50, car_counts=[10] * 50, route_data_id="RD3"
+        )
         veh_df = _make_vehicle_df([r1, r2, r3])
         cov_df = compute_traffic_covariates(veh_df)
 
@@ -634,4 +642,3 @@ class TestCovariateFilteringIntegration:
         assert STRATA_NAMES["28"] == "Northern Spruce-Hardwoods"
         assert STRATA_NAMES["29"] == "Closed Boreal Forest"
         assert STRATA_NAMES["99"] == "Tundra"
-
