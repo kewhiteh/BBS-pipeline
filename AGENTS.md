@@ -32,3 +32,7 @@ Before taking any action or generating code, read and adhere strictly to the fol
 - **Diagnostic Visibility:** Generic `try...except` blocks that swallow errors are strictly banned. All errors must be logged with full tracebacks to `stderr`.
 - **Lint & Format Lock:** All code must pass `ruff check src/ tests/` and `ruff format --check src/ tests/` with zero errors or unhandled warnings before merging.
 - **Ambiguity Halt:** If a specification is ambiguous or incomplete, halt immediately and prompt the human operator.
+
+- Milestone Completion Halt: When all checkboxes `[x]` under the active milestone in `README.md` are marked complete, the implementation phase terminates. Yield control to the operator / Gemini Spark for the Item 6.0 Milestone Sealing & Golden Master Regression before any further files are modified.
+
+
