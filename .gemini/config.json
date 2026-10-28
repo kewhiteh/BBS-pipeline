@@ -2,6 +2,85 @@
   "personal_customization_dir": "/home/kewhiteh/.gemini/config",
   "enableTerminalSandbox": false,
   "userSettings": {
-    "useAiCredits": false
+    "useAiCredits": false,
+    "nonWorkspaceFileAccessPolicy": "AGENT_SETTING_POLICY_ASK",
+    "globalPermissionGrants": {
+      "allow": [
+        "read_file(./*)",
+        "command(cat *)",
+        "command(head *)",
+        "command(tail *)",
+        "command(sed -n *)",
+        "command(nl *)",
+        "command(wc *)",
+        "command(ls *)",
+        "command(stat *)",
+        "command(grep *)",
+        "command(rg *)",
+        "command(git status*)",
+        "command(git diff*)",
+        "command(git log*)",
+        "command(git show*)",
+        "command(git branch*)",
+        "command(uv run pytest*)",
+        "command(uv run mypy*)"
+      ],
+      "ask": [
+        "write_file(*)",
+        "read_file(../*)",
+        "command(rm *)",
+        "command(mv *)",
+        "command(cp *)",
+        "command(chmod *)",
+        "command(git add*)",
+        "command(git commit*)",
+        "command(git push*)",
+        "command(git reset*)",
+        "command(git checkout*)"
+      ],
+      "deny": [
+        "command(grep -rn *)",
+        "command(find *)"
+      ]
+    }
+  },
+  "permissions": {
+    "allow": [
+      "read_file(./*)",
+      "command(cat *)",
+      "command(head *)",
+      "command(tail *)",
+      "command(sed -n *)",
+      "command(nl *)",
+      "command(wc *)",
+      "command(ls *)",
+      "command(stat *)",
+      "command(grep *)",
+      "command(rg *)",
+      "command(git status*)",
+      "command(git diff*)",
+      "command(git log*)",
+      "command(git show*)",
+      "command(git branch*)",
+      "command(uv run pytest*)",
+      "command(uv run mypy*)"
+    ],
+    "ask": [
+      "write_file(*)",
+      "read_file(../*)",
+      "command(rm *)",
+      "command(mv *)",
+      "command(cp *)",
+      "command(chmod *)",
+      "command(git add*)",
+      "command(git commit*)",
+      "command(git push*)",
+      "command(git reset*)",
+      "command(git checkout*)"
+    ],
+    "deny": [
+      "command(grep -rn *)",
+      "command(find *)"
+    ]
   }
 }
