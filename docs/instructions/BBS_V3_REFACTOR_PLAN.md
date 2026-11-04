@@ -137,6 +137,11 @@ These corrupt numbers today, so they come before the refactor. Write a failing t
 - **V3:** Load the region-codes file. Accept a state abbreviation, name, or StateNum in `routes.states`. Add a test that `(CountryNum, StateNum)` is unique, and decide from the file whether `route_id` must include `CountryNum`.
 - Add `--offline`, which fails if the cache is missing rather than fetching.
 - Rename `IngressMode.LOCAL_RAW_VIA_INTAKE` (the intake_engine hook was removed in Phase 2).
+- **Done (findings):**
+  - No recent release ships a region-codes file. The StateNum code list is in the release metadata XML (the `StateNum` attribute domain), so codes come from there. Postal abbreviations map to names, never to numbers.
+  - No StateNum repeats across countries in the 2026 release, so `route_id` = `SS_RRR` stays.
+  - A DOI resolves through doi.org (ScienceBase search does not index DOIs). The ingress modes were replaced by `offline`.
+  - Two more bugs fixed: `Migrants.csv`/`MigrantSummary.csv` were merged into breeding counts by column-signature matching, and the 10-stop path used `StopTotal` (stops with a detection) as abundance instead of `SpeciesTotal`.
 - **intake_engine:** Kyle's separate, in-progress package for cleaning messy unknown databases. Once its API is stable, give it an explicit, opt-in integration point in `sources/` (the old hook called `assess`/`execute_pipeline`, which did not exist yet). Until then, the built-in sanitizer is the only path.
 
 ### Phase 4 — Run profile config
