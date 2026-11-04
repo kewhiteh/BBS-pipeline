@@ -28,6 +28,7 @@ dev = [
 ]
 
 [project.scripts]
+bbs = "bbs_pipeline.cli:main"
 bbs-pipeline = "bbs_pipeline.cli:main"
 
 [tool.hatch.build.targets.wheel]
