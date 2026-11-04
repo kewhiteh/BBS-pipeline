@@ -138,25 +138,39 @@ def assign_custom_overlays(
     return result_gdf
 
 
+def route_geodataframe(
+    observations_df: pl.DataFrame,
+    routes_df: pl.DataFrame | pl.LazyFrame | None,
+    overlays: dict[str, Path] | None = None,
+    crs: str = WORKING_CRS,
+) -> gpd.GeoDataFrame:
+    """One start point per route in ``observations_df``, with overlay columns, in ``crs``."""
+    points = route_start_points(observations_df, routes_df)
+    route_ids = observations_df["route_id"].unique(maintain_order=True).to_list()
+    routes = gpd.GeoDataFrame(
+        {"route_id": route_ids}, geometry=[points.get(str(r)) for r in route_ids], crs=WORKING_CRS
+    )
+    if overlays:
+        routes = assign_custom_overlays(routes, overlays)
+    if routes.crs.to_string().upper() != crs.upper():
+        routes = routes.to_crs(crs)
+    return routes
+
+
 def build_spatial_geodataframe(
     observations_df: pl.DataFrame,
     routes_df: pl.DataFrame | pl.LazyFrame | None,
     overlays: dict[str, Path] | None = None,
+    crs: str = WORKING_CRS,
 ) -> gpd.GeoDataFrame:
-    """Attach route start-point geometry (EPSG:4326) and run STRtree overlays."""
-    points = route_start_points(observations_df, routes_df)
-    route_ids = (
-        observations_df["route_id"].to_list()
-        if "route_id" in observations_df.columns
-        else [""] * observations_df.height
-    )
-    geometries = [points.get(str(rid)) for rid in route_ids]
+    """Attach each route's start point (and overlay columns) to every observation row.
 
-    gdf = gpd.GeoDataFrame(observations_df.to_pandas(), geometry=geometries, crs=WORKING_CRS)
-
-    if overlays:
-        gdf = assign_custom_overlays(gdf, overlays)
-
+    Geometry, overlays, and reprojection are computed once per route and joined on
+    route_id, since every row of a route shares its start point.
+    """
+    routes = route_geodataframe(observations_df, routes_df, overlays, crs)
+    geom_col = routes.geometry.name
+    merged = observations_df.to_pandas().merge(routes, on="route_id", how="left", validate="m:1")
+    gdf = gpd.GeoDataFrame(merged, geometry=geom_col, crs=routes.crs)
     # Geometry last, as GeoPackage/GeoJSON readers return it, so every format agrees
-    geom_col = gdf.geometry.name
     return gdf[[c for c in gdf.columns if c != geom_col] + [geom_col]]

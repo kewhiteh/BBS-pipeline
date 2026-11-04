@@ -12,6 +12,7 @@ from shapely.geometry import Point, box
 from bbs_pipeline.spatial import (
     assign_custom_overlays,
     build_spatial_geodataframe,
+    route_geodataframe,
     routes_within_boundary,
 )
 
@@ -87,3 +88,18 @@ def test_missing_overlay_file_raises(tmp_path: Path) -> None:
 
     with pytest.raises(FileNotFoundError, match="watersheds"):
         assign_custom_overlays(gdf, {"watersheds": tmp_path / "missing.gpkg"})
+
+
+def test_geometry_is_built_once_per_route_and_joined_to_every_row() -> None:
+    observations = pl.DataFrame(
+        {"route_id": ["63_001", "63_001", "63_002", "63_001"], "Year": [2020, 2021, 2021, 2022]}
+    )
+
+    routes = route_geodataframe(observations, _routes(lat2=35.99), crs="EPSG:5070")
+    gdf = build_spatial_geodataframe(observations, _routes(lat2=35.99), crs="EPSG:5070")
+
+    assert routes["route_id"].tolist() == ["63_001", "63_002"]
+    assert gdf["route_id"].tolist() == observations["route_id"].to_list()  # row order kept
+    assert gdf.crs.to_epsg() == 5070
+    first = gdf[gdf["route_id"] == "63_001"].geometry
+    assert first.geom_equals(first.iloc[0]).all()

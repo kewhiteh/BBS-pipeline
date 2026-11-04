@@ -64,8 +64,7 @@ def build(release: Path, dest: Path) -> None:
     weather = _filter((release / "Weather.csv").read_bytes(), on_route)
     (dest / "Weather.csv").write_bytes(weather)
     run_ids = {
-        r["RouteDataID"].strip()
-        for r in csv.DictReader(io.StringIO(weather.decode("cp1252")))
+        r["RouteDataID"].strip() for r in csv.DictReader(io.StringIO(weather.decode("cp1252")))
     }
 
     def on_run(row: dict[str, str]) -> bool:

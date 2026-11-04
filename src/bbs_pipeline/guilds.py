@@ -22,6 +22,11 @@ from bbs_pipeline.sources.tables import read_text_table
 
 IDENTIFIER_COLUMNS: tuple[str, ...] = ("aou", "scientific_name", "common_name")
 
+# Free-text columns: kept and joinable by name, but never offered as filters
+NOTE_COLUMNS: frozenset[str] = frozenset(
+    {"note", "notes", "comment", "comments", "source", "citation", "reference"}
+)
+
 
 def _key(value: str) -> str:
     return re.sub(r"\s+", " ", value).strip().lower()
