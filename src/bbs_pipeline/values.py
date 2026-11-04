@@ -9,7 +9,7 @@ import polars as pl
 
 from bbs_pipeline.config import RunProfile
 from bbs_pipeline.contracts import JOIN_TABLES
-from bbs_pipeline.guilds import read_guild_csv, resolve_guilds
+from bbs_pipeline.guilds import NOTE_COLUMNS, read_guild_csv, resolve_guilds
 from bbs_pipeline.sources.loader import load_sources
 from bbs_pipeline.sources.regions import POSTAL_ABBREVIATIONS
 from bbs_pipeline.stages.common import normalize_canonical_keys, to_lazy
@@ -19,7 +19,7 @@ from bbs_pipeline.taxonomy import lumped_species
 
 ABBREVIATION_BY_NAME: dict[str, str] = {name: abbr for abbr, name in POSTAL_ABBREVIATIONS.items()}
 
-# Traits with more distinct values than this are free text (names, notes), not categories
+# Traits with more distinct values than this are free text (names), not categories
 MAX_TRAIT_VALUES = 50
 
 
@@ -103,6 +103,8 @@ def collect_values(profile: RunProfile) -> ProfileValues:
         )
         guild_df, traits = guilds.table, guilds.traits
         for trait in traits:
+            if trait.lower() in NOTE_COLUMNS:
+                continue
             values = _sorted_unique(guilds.table, trait)
             if len(values) <= MAX_TRAIT_VALUES:
                 trait_values[trait] = values

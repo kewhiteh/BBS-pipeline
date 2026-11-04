@@ -56,6 +56,7 @@ def test_collect_values_reads_the_release(tmp_path: Path) -> None:
     assert "is_first_year" in values.join_columns["observer"]
     assert "woodland" in values.guild_traits["breeding_habitat"]
     assert "pwrc_name" not in values.guild_traits  # free text, not a category
+    assert "note" not in values.guild_traits  # a note column, not a trait to filter on
     assert any(s["English_Common_Name"] == "Dark-eyed Junco" for s in values.species)
 
 

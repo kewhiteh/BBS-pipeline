@@ -27,6 +27,11 @@ than one if you like; they are cross-checked. Header names for the three identif
 are case-insensitive. Trait names are used exactly as written, so pick names that are
 not already BBS output columns (`Family`, `Order`, `RouteName`, ...).
 
+Columns named `note`, `notes`, `comment`, `comments`, `source`, `citation`, or
+`reference` (any case) are treated as notes: they stay in the file and can be joined by
+name, but the editor and `bbs values` do not offer them as filters. Columns with more
+than 50 distinct values (such as `pwrc_name`) are not offered as filters either.
+
 ## Starter file
 
 [`guilds/pwrc_species_groups.csv`](../guilds/pwrc_species_groups.csv) covers 412 BBS
