@@ -1,38 +1,30 @@
 """End-to-End Integration Verification Suite for BBS-Pipeline v3.
 
 Proves full integration across:
-- Frozen Pydantic v2 JSON Contracts (guilds.json, protocol.json, spatial.json)
+- TOML run profiles with --set overrides
 - Release sources: typed loading of release-shaped files (padded values, NULL tokens,
   cp1252, nested zips, fixed-width SpeciesList.txt) and the release-tied parquet cache
 - Predicate-First Polars Ecological Engine (cancelled-2020 continuity, observer tenure,
   start-point boundary selection, extirpation-aware zero-filling, 10/50-stop
   harmonization, dynamic a-la-carte joins)
 - Route start-point geometry, STRtree Polygon Overlays & Multi-CRS Vector/Tabular Exports
-- Two-Way Streamlit Visual Workbench end-to-end execution
+- The Streamlit profile editor's Run button
 """
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 import geopandas as gpd
 import polars as pl
+import pytest
 from shapely.geometry import Polygon, box
 from streamlit.testing.v1 import AppTest
 
-from bbs_pipeline.contracts import (
-    ExportFormat,
-    GuildProfileContract,
-    GuildRegistryContract,
-    JoinDimension,
-    ObserverTenureMode,
-    PipelineConfigBundle,
-    ProtocolConfigContract,
-    SpatialExportConfigContract,
-    StopAggregationMode,
-    TemporalRoutingMode,
-)
-from bbs_pipeline.pipeline import run_bbs_pipeline, run_bbs_pipeline_from_dir
+from bbs_pipeline.cli import main as cli_main
+from bbs_pipeline.config import load_profile
+from bbs_pipeline.pipeline import run_profile
 from tests.release_fixtures import (
     TEST_DOI,
     fifty_frame,
@@ -92,170 +84,146 @@ def _build_synthetic_raw_bbs_dir(raw_dir: Path) -> None:
     )
 
 
+def _write_profile(path: Path, raw_dir: Path, cache_dir: Path, output: Path) -> Path:
+    path.write_text(
+        f"""
+[source]
+release = "{TEST_DOI}"
+raw_dir = "{raw_dir}"
+cache_dir = "{cache_dir}"
+offline = true
+
+[runs]
+start_year = 2018
+end_year = 2022
+min_continuity = 1.0   # 63_001 has 4/4 active years (2018, 2019, 2021, 2022)
+observer_tenure = "drop_first_year_on_route"
+
+[observations]
+stops = "ten_stop_bins"
+
+[species]
+aous = ["07550", "06740"]
+
+[joins]
+tables = ["species", "routes"]   # weather excluded
+
+[output]
+path = "{output}"
+""",
+        encoding="utf-8",
+    )
+    return path
+
+
 def test_end_to_end_pipeline_zerofill_boundary_and_multicrs(tmp_path: Path) -> None:
-    """Prove end-to-end execution: release -> cache -> cache hit, zero-fill, boundary, multi-CRS."""
-    raw_dir = tmp_path / "raw"
-    cache_dir = tmp_path / "cache"
+    """Profile -> release -> cache -> outputs; zero-fill, boundary, vector CRS, overlays."""
+    raw_dir, cache_dir, out_dir = tmp_path / "raw", tmp_path / "cache", tmp_path / "out"
     spatial_dir = tmp_path / "spatial_inputs"
-    output_dir = tmp_path / "output"
     spatial_dir.mkdir(parents=True, exist_ok=True)
-
     _build_synthetic_raw_bbs_dir(raw_dir)
-
-    watersheds_gdf = gpd.GeoDataFrame(
-        {
-            "basin_name": ["Neuse_River_Basin", "Cape_Fear_Basin"],
-            "geometry": [
-                Polygon([(-79.0, 35.5), (-78.0, 35.5), (-78.0, 36.2), (-79.0, 36.2)]),
-                Polygon([(-80.0, 34.5), (-79.0, 34.5), (-79.0, 35.4), (-80.0, 35.4)]),
-            ],
-        },
-        crs="EPSG:4326",
+    profile_path = _write_profile(
+        tmp_path / "project.toml", raw_dir, cache_dir, out_dir / "obs.parquet"
     )
+
     watershed_path = spatial_dir / "nc_watersheds.parquet"
-    watersheds_gdf.to_parquet(watershed_path)
-
-    guilds = GuildRegistryContract(
-        active_guild="whitcomb_interior_obligates",
-        profiles={
-            "whitcomb_interior_obligates": GuildProfileContract(
-                citation="Whitcomb et al. (1981)",
-                description="Forest interior obligates",
-                aou_codes=["07550", "06740"],
-            )
-        },
-    )
-
-    # Run 1: cache built from the release + 100% continuity over 2018-2022 (2020 not counted)
-    protocol_full = ProtocolConfigContract(
-        sanitized_cache_dir=cache_dir,
-        sciencebase_doi=TEST_DOI,
-        offline=True,
-        raw_data_dir=raw_dir,
-        year_range=(2018, 2022),
-        min_route_continuity_ratio=1.0,  # Route 63_001 has 4/4 active years (2018,2019,2021,2022) -> 1.0!
-        observer_tenure_mode=ObserverTenureMode.DROP_FIRST_YEAR_ON_ROUTE,
-        temporal_routing_mode=TemporalRoutingMode.FIFTY_STOP_1997_PLUS,
-        stop_aggregation=StopAggregationMode.TEN_STOP_BINS,
-        enable_extirpation_zero_fill=True,
-        include_joins=[JoinDimension.SPECIES, JoinDimension.ROUTES],  # Weather excluded!
-    )
-
-    spatial_cfg = SpatialExportConfigContract(
-        enable_spatial_join=True,
-        custom_overlay_paths={"watershed": watershed_path},
-        target_crs_list=["EPSG:4326", "EPSG:5070", "EPSG:32119"],
-        export_formats=[
-            ExportFormat.GEOPARQUET,
-            ExportFormat.GPKG,
-            ExportFormat.PARQUET,
-            ExportFormat.CSV,
+    gpd.GeoDataFrame(
+        {"basin_name": ["Neuse_River_Basin", "Cape_Fear_Basin"]},
+        geometry=[
+            Polygon([(-79.0, 35.5), (-78.0, 35.5), (-78.0, 36.2), (-79.0, 36.2)]),
+            Polygon([(-80.0, 34.5), (-79.0, 34.5), (-79.0, 35.4), (-80.0, 35.4)]),
         ],
-        output_dir=output_dir,
-    )
+        crs="EPSG:4326",
+    ).to_parquet(watershed_path)
 
-    res1 = run_bbs_pipeline(
-        PipelineConfigBundle(guilds=guilds, protocol=protocol_full, spatial=spatial_cfg)
-    )
-    assert res1.funnel_metrics.ingress_tier_used == "built_from_release"
-    assert (
-        res1.funnel_metrics.continuity_filtered_routes == 1
-    )  # Only route 63_001 has 100% continuity
-    assert res1.funnel_metrics.target_species_count == 2  # 07550 & 06740
-    # 1 route * 4 active years (2018, 2019, 2021, 2022) * 2 species = 8 rows!
-    assert res1.funnel_metrics.zero_filled_matrix_rows == 8
+    # Run 1: cache built from the release
+    res1 = run_profile(load_profile(profile_path))
+    assert res1.funnel_metrics.data_source == "built_from_release"
+    assert res1.funnel_metrics.continuity_filtered_routes == 1
+    assert res1.funnel_metrics.target_species_count == 2
+    # 1 route * 4 active years * 2 species = 8 rows
     assert res1.funnel_metrics.final_output_rows == 8
 
-    obs_df1 = pl.read_parquet(output_dir / "bbs_observations.parquet")
-    assert 2020 not in obs_df1["Year"].to_list()
-    # Verify extirpation zero-fill in 2022 for Wood Thrush (07550)
-    wt_2022 = obs_df1.filter((pl.col("AOU") == "07550") & (pl.col("Year") == 2022))
-    assert wt_2022.height == 1
+    obs = pl.read_parquet(out_dir / "obs.parquet")
+    assert obs.columns == res1.output_columns
+    assert 2020 not in obs["Year"].to_list()
+    wt_2022 = obs.filter((pl.col("AOU") == "07550") & (pl.col("Year") == 2022))
     assert wt_2022["route_total"].item() == 0
     assert wt_2022["is_zero_filled"].item() is True
-    # Verify Weather columns were NOT joined (since Weather was omitted from include_joins)
-    assert "StartTemp" not in obs_df1.columns
-    assert "English_Common_Name" in obs_df1.columns
+    assert "StartTemp" not in obs.columns
+    assert "English_Common_Name" in obs.columns
 
-    # One start point per output row, reprojected per CRS, with the overlay attribute
-    gdf_32119 = gpd.read_parquet(output_dir / "bbs_observations_epsg_32119.geoparquet")
-    assert len(gdf_32119) == 8
-    assert gdf_32119.crs.to_epsg() == 32119
-    assert set(gdf_32119.geometry.geom_type) == {"Point"}
-    assert (gdf_32119["overlay_watershed"] == "Neuse_River_Basin").all()
+    manifest = json.loads((out_dir / "obs.parquet.manifest.json").read_text())
+    assert manifest["release"]["doi"] == TEST_DOI
+    assert manifest["output"]["rows"] == 8
+    assert manifest["profile"]["species"]["aous"] == ["07550", "06740"]
+    assert manifest["stage_counts"]["routes_selected"] == 2
 
-    # Run 2: cache hit + boundary around 63_001's start point only
+    # Same profile as a projected GeoParquet with an overlay, via --set
+    res_vec = run_profile(
+        load_profile(
+            profile_path,
+            [
+                f'output.path="{out_dir / "obs.geoparquet"}"',
+                "output.crs=EPSG:32119",
+                f'output.overlays={{ watershed = "{watershed_path}" }}',
+            ],
+        )
+    )
+    gdf = gpd.read_parquet(out_dir / "obs.geoparquet")
+    assert res_vec.funnel_metrics.data_source == "cache"
+    assert list(gdf.columns) == res_vec.output_columns
+    assert gdf.crs.to_epsg() == 32119
+    assert set(gdf.geometry.geom_type) == {"Point"}
+    assert (gdf["overlay_watershed"] == "Neuse_River_Basin").all()
+
+    # Boundary around 63_001's start point only
     boundary_path = spatial_dir / "raleigh_box.gpkg"
     gpd.GeoDataFrame(geometry=[box(-78.7, 35.7, -78.6, 35.85)], crs="EPSG:4269").to_file(
         boundary_path, driver="GPKG"
     )
-    protocol_boundary = protocol_full.model_copy(
-        update={"min_route_continuity_ratio": 0.0, "boundary_path": boundary_path}
-    )
-    res2 = run_bbs_pipeline(
-        PipelineConfigBundle(guilds=guilds, protocol=protocol_boundary, spatial=spatial_cfg)
-    )
-    assert res2.funnel_metrics.ingress_tier_used == "cache"
-    obs_df2 = pl.read_parquet(output_dir / "bbs_observations.parquet")
-    assert set(obs_df2["route_id"].to_list()) == {"63_001"}
+    base = ["runs.min_continuity=0.0"]
+    res2 = run_profile(load_profile(profile_path, [*base, f'routes.boundary="{boundary_path}"']))
+    assert res2.funnel_metrics.routes_selected == 1
+    assert set(pl.read_parquet(out_dir / "obs.parquet")["route_id"].to_list()) == {"63_001"}
 
     # Without the boundary, 63_002 (outside the box) also survives at 0.0 continuity
-    res3 = run_bbs_pipeline(
-        PipelineConfigBundle(
-            guilds=guilds,
-            protocol=protocol_boundary.model_copy(update={"boundary_path": None}),
-            spatial=spatial_cfg,
-        )
-    )
+    res3 = run_profile(load_profile(profile_path, base))
     assert res3.funnel_metrics.continuity_filtered_routes == 2
 
 
-def test_streamlit_tab5_end_to_end_execution(tmp_path: Path, monkeypatch) -> None:
-    """Verify clicking 'Run BBS Pipeline' inside Tab 5 of ui/app.py executes the pipeline cleanly."""
-    config_dir = tmp_path / "config"
-    raw_dir = tmp_path / "raw"
-    cache_dir = tmp_path / "cache"
-    out_dir = tmp_path / "out"
+def test_cli_inspect_writes_nothing_and_run_writes_output(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    raw_dir, cache_dir, out = tmp_path / "raw", tmp_path / "cache", tmp_path / "out" / "o.csv"
     _build_synthetic_raw_bbs_dir(raw_dir)
+    profile = str(_write_profile(tmp_path / "p.toml", raw_dir, cache_dir, out))
 
-    bundle = PipelineConfigBundle(
-        guilds=GuildRegistryContract(
-            active_guild="whitcomb_interior_obligates",
-            profiles={
-                "whitcomb_interior_obligates": GuildProfileContract(
-                    citation="Whitcomb (1981)",
-                    description="Interior forest birds",
-                    aou_codes=["07550"],
-                )
-            },
-        ),
-        protocol=ProtocolConfigContract(
-            sanitized_cache_dir=cache_dir,
-            raw_data_dir=raw_dir,
-            sciencebase_doi=TEST_DOI,
-            offline=True,
-            year_range=(2018, 2022),
-            min_route_continuity_ratio=1.0,
-        ),
-        spatial=SpatialExportConfigContract(
-            enable_spatial_join=False,
-            export_formats=[ExportFormat.PARQUET, ExportFormat.CSV],
-            output_dir=out_dir,
-        ),
-    )
-    bundle.save_to_dir(config_dir)
+    assert cli_main(["inspect", "--config", profile]) == 0
+    printed = capsys.readouterr().out
+    assert "routes after route filters" in printed
+    assert "English_Common_Name" in printed
+    assert not out.exists()
 
-    monkeypatch.setenv("BBS_CONFIG_DIR", str(config_dir))
-    app_path = Path(__file__).resolve().parents[1] / "ui" / "app.py"
-    at = AppTest.from_file(str(app_path))
+    assert cli_main(["run", "--config", profile, "--set", 'species.aous=["07550"]']) == 0
+    assert pl.read_csv(out)["AOU"].unique().to_list() == [7550]
+
+    assert cli_main(["validate", "--config", profile, "--set", "runs.start_yeer=2000"]) == 2
+    assert "runs.start_yeer: unknown key" in capsys.readouterr().err
+
+
+def test_streamlit_run_button_executes_the_profile(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    raw_dir, cache_dir, out = tmp_path / "raw", tmp_path / "cache", tmp_path / "out" / "o.parquet"
+    _build_synthetic_raw_bbs_dir(raw_dir)
+    profile_path = _write_profile(tmp_path / "p.toml", raw_dir, cache_dir, out)
+    monkeypatch.setenv("BBS_PROFILE", str(profile_path))
+
+    at = AppTest.from_file(str(Path(__file__).resolve().parents[1] / "ui" / "app.py"))
     at.run(timeout=15)
     assert not at.exception
 
     at.button(key="btn_run_pipeline").click().run(timeout=15)
     assert not at.exception
-    assert (out_dir / "bbs_observations.parquet").exists()
-    assert (out_dir / "bbs_observations.csv").exists()
-
-    # Also verify run_bbs_pipeline_from_dir directly
-    res = run_bbs_pipeline_from_dir(config_dir)
-    assert res.funnel_metrics.final_output_rows == 4
+    assert pl.read_parquet(out).height == 8

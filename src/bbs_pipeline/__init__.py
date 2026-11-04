@@ -1,16 +1,16 @@
-"""BBS-Pipeline v3: Contract-First Polars/Shapely Spatial & Ecological ETL Engine."""
+"""BBS-Pipeline v3: config-driven extraction of North American Breeding Bird Survey data."""
 
+from bbs_pipeline.config import ProfileError, RunProfile, load_profile
 from bbs_pipeline.contracts import (
     ExportFormat,
     FunnelAuditMetrics,
-    GuildProfileContract,
-    GuildRegistryContract,
     JoinDimension,
     ObserverTenureMode,
+    OutputContract,
     PipelineConfigBundle,
     PipelineExecutionResult,
     ProtocolConfigContract,
-    SpatialExportConfigContract,
+    SpeciesSelectionContract,
     StopAggregationMode,
     TemporalRoutingMode,
 )
@@ -18,16 +18,18 @@ from bbs_pipeline.contracts import (
 __all__ = [
     "ExportFormat",
     "FunnelAuditMetrics",
-    "GuildProfileContract",
-    "GuildRegistryContract",
     "JoinDimension",
     "ObserverTenureMode",
+    "OutputContract",
     "PipelineConfigBundle",
     "PipelineExecutionResult",
+    "ProfileError",
     "ProtocolConfigContract",
-    "SpatialExportConfigContract",
+    "RunProfile",
+    "SpeciesSelectionContract",
     "StopAggregationMode",
     "TemporalRoutingMode",
+    "load_profile",
 ]
 
 __version__ = "3.0.0"

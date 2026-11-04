@@ -6,14 +6,14 @@ import polars as pl
 import pytest
 
 from bbs_pipeline.contracts import (
-    GuildRegistryContract,
     ProtocolConfigContract,
+    SpeciesSelectionContract,
     StopAggregationMode,
     TemporalRoutingMode,
 )
 from bbs_pipeline.engine import harmonize_observations, run_ecological_engine
 
-NO_GUILD = GuildRegistryContract(active_guild=None, profiles={})
+NO_GUILD = SpeciesSelectionContract()
 
 
 def _stops(**values: list[int | None]) -> dict[str, list[int | None]]:

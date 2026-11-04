@@ -1,15 +1,11 @@
-"""Frozen Pydantic v2 JSON Contracts for BBS-Pipeline v3.
+"""Internal, frozen settings consumed by the engine, sources, and exporter.
 
-All state between the Streamlit GUI, CLI, and Polars/Shapely Backend flows
-strictly through three validated JSON files backed by frozen=True models:
-1. config/guilds.json   -> GuildRegistryContract
-2. config/protocol.json -> ProtocolConfigContract
-3. config/spatial.json  -> SpatialExportConfigContract
+Users never write these directly: ``bbs_pipeline.config.RunProfile`` (one TOML file per
+project) is validated and converted into a ``PipelineConfigBundle``.
 """
 
 from __future__ import annotations
 
-import json
 from enum import StrEnum
 from pathlib import Path
 from typing import Any
@@ -55,7 +51,7 @@ class JoinDimension(StrEnum):
 
 
 class ExportFormat(StrEnum):
-    """Supported vector and tabular output sinks."""
+    """Supported vector and tabular output formats, chosen by the output file extension."""
 
     GEOPARQUET = "geoparquet"
     GPKG = "gpkg"
@@ -65,114 +61,60 @@ class ExportFormat(StrEnum):
     CSV = "csv"
 
 
-class GuildProfileContract(BaseModel):
-    """Single ecological guild definition with taxonomic & AOU filters."""
+FORMAT_BY_SUFFIX: dict[str, ExportFormat] = {
+    ".parquet": ExportFormat.PARQUET,
+    ".csv": ExportFormat.CSV,
+    ".geoparquet": ExportFormat.GEOPARQUET,
+    ".gpkg": ExportFormat.GPKG,
+    ".fgb": ExportFormat.FLATGEOBUF,
+    ".geojson": ExportFormat.GEOJSON,
+}
+
+VECTOR_FORMATS: frozenset[ExportFormat] = frozenset(
+    {ExportFormat.GEOPARQUET, ExportFormat.GPKG, ExportFormat.FLATGEOBUF, ExportFormat.GEOJSON}
+)
+
+
+def normalize_aou(value: Any) -> str:
+    """Return a 5-digit, zero-padded AOU code; raise on anything else."""
+    text = str(value).strip()
+    if not text.isdigit() or len(text) > 5:
+        raise ValueError(f"AOU code must be 1-5 digits, got '{value}'")
+    return text.zfill(5)
+
+
+def normalize_epsg(value: Any) -> str:
+    """Return 'EPSG:XXXX' for '4326', 4326, or 'epsg:4326'; raise on anything else."""
+    text = str(value).strip().upper()
+    if text.isdigit():
+        text = f"EPSG:{text}"
+    if not text.startswith("EPSG:") or not text.split(":", 1)[1].isdigit():
+        raise ValueError(f"Invalid EPSG code '{value}'. Expected format 'EPSG:XXXX'.")
+    return text
+
+
+class SpeciesSelectionContract(BaseModel):
+    """Which species to keep. Selectors combine as a union; all empty keeps every species."""
 
     model_config = ConfigDict(frozen=True, extra="forbid")
 
-    citation: str = Field(
-        default="",
-        description="Bibliographic citation defining this ecological guild.",
-    )
-    description: str = Field(
-        default="",
-        description="Ecological description and habitat affinity notes.",
-    )
-    aou_codes: list[str] = Field(
-        default_factory=list,
-        description="Explicit list of 5-digit zero-padded string AOU codes (e.g., '07550').",
-    )
-    orders: list[str] = Field(
-        default_factory=list,
-        description="Optional taxonomic Order names to include.",
-    )
-    families: list[str] = Field(
-        default_factory=list,
-        description="Optional taxonomic Family names to include.",
-    )
-    english_names: list[str] = Field(
-        default_factory=list,
-        description="Optional English common names to include.",
-    )
-    lump_subspecies_and_hybrids: bool = Field(
-        default=True,
-        description="Whether to consolidate subspecies/unidentified/hybrid forms into parent species.",
-    )
+    aous: list[str] = Field(default_factory=list)
+    common_names: list[str] = Field(default_factory=list)
+    families: list[str] = Field(default_factory=list)
+    orders: list[str] = Field(default_factory=list)
 
-    @field_validator("aou_codes", mode="before")
+    @field_validator("aous", mode="before")
     @classmethod
-    def _normalize_aou_codes(cls, v: list[Any]) -> list[str]:
-        normalized: list[str] = []
-        for item in v:
-            code_str = str(item).strip()
-            if not code_str.isdigit():
-                raise ValueError(f"AOU code must contain only digits, got '{item}'")
-            padded = code_str.zfill(5)
-            if len(padded) != 5:
-                raise ValueError(f"AOU code must be 5 digits when zero-padded, got '{padded}'")
-            normalized.append(padded)
-        return normalized
+    def _normalize_aous(cls, v: list[Any]) -> list[str]:
+        return [normalize_aou(item) for item in v]
 
-
-class GuildRegistryContract(BaseModel):
-    """Contract for config/guilds.json mapping guild keys to GuildProfileContract."""
-
-    model_config = ConfigDict(frozen=True, extra="forbid")
-
-    active_guild: str | None = Field(
-        default="whitcomb_interior_obligates",
-        description="Currently selected guild profile key (or None for all profiles/unfiltered).",
-    )
-    profiles: dict[str, GuildProfileContract] = Field(
-        default_factory=dict,
-        description="Mapping of guild profile keys to their definitions.",
-    )
-
-    @model_validator(mode="before")
-    @classmethod
-    def _coerce_flat_mapping(cls, data: Any) -> Any:
-        if isinstance(data, dict) and "profiles" not in data:
-            # Support flat dict of guild profiles for ergonomic loading
-            active = data.get("active_guild")
-            profiles = {
-                k: v
-                for k, v in data.items()
-                if k != "active_guild" and isinstance(v, (dict, GuildProfileContract))
-            }
-            if profiles:
-                if active is None:
-                    active = next(iter(profiles.keys()))
-                return {"active_guild": active, "profiles": profiles}
-        return data
-
-    @model_validator(mode="after")
-    def _validate_active_guild(self) -> GuildRegistryContract:
-        if (
-            self.active_guild is not None
-            and self.profiles
-            and self.active_guild not in self.profiles
-        ):
-            raise ValueError(
-                f"active_guild '{self.active_guild}' not found in profiles: {list(self.profiles.keys())}"
-            )
-        return self
-
-    def save_json(self, path: Path | str) -> None:
-        target = Path(path)
-        target.parent.mkdir(parents=True, exist_ok=True)
-        target.write_text(
-            json.dumps(self.model_dump(mode="json"), indent=2) + "\n",
-            encoding="utf-8",
-        )
-
-    @classmethod
-    def load_json(cls, path: Path | str) -> GuildRegistryContract:
-        raw = json.loads(Path(path).read_text(encoding="utf-8"))
-        return cls.model_validate(raw)
+    @property
+    def is_empty(self) -> bool:
+        return not (self.aous or self.common_names or self.families or self.orders)
 
 
 class ProtocolConfigContract(BaseModel):
-    """Contract for config/protocol.json governing data sources, filtering, and zero-fill."""
+    """Data sources, route/run filters, observation handling, and joins."""
 
     model_config = ConfigDict(frozen=True, extra="forbid")
 
@@ -278,6 +220,10 @@ class ProtocolConfigContract(BaseModel):
         default=StopAggregationMode.ROUTE_TOTAL,
         description="Output stop aggregation granularity.",
     )
+    lump_subspecies_and_hybrids: bool = Field(
+        default=True,
+        description="Count subspecies/unidentified/hybrid forms under their parent species.",
+    )
     enable_extirpation_zero_fill: bool = Field(
         default=True,
         description="Cross-join valid sampling events x target species and zero-fill missing observations.",
@@ -316,86 +262,55 @@ class ProtocolConfigContract(BaseModel):
         start, end = self.year_range
         return [y for y in range(start, end + 1) if y not in CANCELLED_SURVEY_YEARS]
 
-    def save_json(self, path: Path | str) -> None:
-        target = Path(path)
-        target.parent.mkdir(parents=True, exist_ok=True)
-        target.write_text(
-            json.dumps(self.model_dump(mode="json"), indent=2) + "\n",
-            encoding="utf-8",
-        )
 
-    @classmethod
-    def load_json(cls, path: Path | str) -> ProtocolConfigContract:
-        raw = json.loads(Path(path).read_text(encoding="utf-8"))
-        return cls.model_validate(raw)
-
-
-class SpatialExportConfigContract(BaseModel):
-    """Contract for config/spatial.json governing route geometry, overlays, CRS, and sinks."""
+class OutputContract(BaseModel):
+    """One output file; its format comes from the file extension."""
 
     model_config = ConfigDict(frozen=True, extra="forbid")
 
-    enable_spatial_join: bool = Field(
-        default=True,
-        description="Attach route start-point geometry for vector formats (False = tabular only).",
-    )
-    custom_overlay_paths: dict[str, Path] = Field(
+    path: Path = Field(default=Path("output/bbs_observations.parquet"))
+    crs: str = Field(default="EPSG:4326", description="CRS for vector formats.")
+    layer_name: str = Field(default="bbs_observations", description="GeoPackage layer name.")
+    overlays: dict[str, Path] = Field(
         default_factory=dict,
-        description="Named external polygon layers (e.g., watersheds, BCR polygons) for STRtree overlay.",
+        description="Named polygon layers whose attribute is attached to each route (vector).",
     )
-    target_crs_list: list[str] = Field(
-        default_factory=lambda: ["EPSG:4326", "EPSG:5070", "EPSG:32119"],
-        description="List of EPSG coordinate reference systems to export.",
-    )
-    export_formats: list[ExportFormat] = Field(
-        default_factory=lambda: [
-            ExportFormat.GEOPARQUET,
-            ExportFormat.PARQUET,
-            ExportFormat.CSV,
-        ],
-        description="Output vector and tabular sink formats.",
-    )
-    output_dir: Path = Field(
-        default=Path("output"),
-        description="Target directory for exported spatial and tabular artifacts.",
-    )
+    manifest: bool = Field(default=True, description="Write <path>.manifest.json.")
 
-    @field_validator("target_crs_list", mode="before")
+    @field_validator("path")
     @classmethod
-    def _normalize_crs_list(cls, v: list[Any]) -> list[str]:
-        normalized: list[str] = []
-        for item in v:
-            crs_str = str(item).strip().upper()
-            if crs_str.isdigit():
-                crs_str = f"EPSG:{crs_str}"
-            if not crs_str.startswith("EPSG:") or not crs_str.split(":", 1)[1].isdigit():
-                raise ValueError(f"Invalid EPSG code '{item}'. Expected format 'EPSG:XXXX'.")
-            normalized.append(crs_str)
-        return normalized
+    def _known_suffix(cls, v: Path) -> Path:
+        if v.suffix.lower() not in FORMAT_BY_SUFFIX:
+            raise ValueError(
+                f"Unknown output extension '{v.suffix}'; use one of {sorted(FORMAT_BY_SUFFIX)}"
+            )
+        return v
 
-    def save_json(self, path: Path | str) -> None:
-        target = Path(path)
-        target.parent.mkdir(parents=True, exist_ok=True)
-        target.write_text(
-            json.dumps(self.model_dump(mode="json"), indent=2) + "\n",
-            encoding="utf-8",
-        )
-
+    @field_validator("crs", mode="before")
     @classmethod
-    def load_json(cls, path: Path | str) -> SpatialExportConfigContract:
-        raw = json.loads(Path(path).read_text(encoding="utf-8"))
-        return cls.model_validate(raw)
+    def _normalize_crs(cls, v: Any) -> str:
+        return normalize_epsg(v)
+
+    @property
+    def format(self) -> ExportFormat:
+        return FORMAT_BY_SUFFIX[self.path.suffix.lower()]
+
+    @property
+    def is_vector(self) -> bool:
+        return self.format in VECTOR_FORMATS
 
 
 class FunnelAuditMetrics(BaseModel):
-    """Row-count funnel metrics from raw ingress through zero-filled matrix."""
+    """Counts after each pipeline stage, from the raw release to the output table."""
 
     model_config = ConfigDict(frozen=True, extra="forbid")
 
-    ingress_tier_used: str
+    data_source: str
     total_routes_raw: int
     total_sampling_events_raw: int
+    routes_selected: int
     protocol_filtered_events: int
+    runs_after_continuity: int
     continuity_filtered_routes: int
     target_species_count: int
     zero_filled_matrix_rows: int
@@ -403,37 +318,22 @@ class FunnelAuditMetrics(BaseModel):
 
 
 class PipelineExecutionResult(BaseModel):
-    """Summary artifact emitted by a full end-to-end BBS pipeline run."""
+    """Summary of one pipeline run (or inspection, when nothing is exported)."""
 
     model_config = ConfigDict(frozen=True, extra="forbid")
 
     funnel_metrics: FunnelAuditMetrics
+    output_columns: list[str] = Field(default_factory=list)
     exported_files: list[Path] = Field(default_factory=list)
     active_joins: list[str] = Field(default_factory=list)
     preview_records: list[dict[str, Any]] = Field(default_factory=list)
 
 
 class PipelineConfigBundle(BaseModel):
-    """Immutable container bundling all three configuration contracts."""
+    """All internal settings for one run."""
 
     model_config = ConfigDict(frozen=True, extra="forbid")
 
-    guilds: GuildRegistryContract = Field(default_factory=GuildRegistryContract)
+    species: SpeciesSelectionContract = Field(default_factory=SpeciesSelectionContract)
     protocol: ProtocolConfigContract = Field(default_factory=ProtocolConfigContract)
-    spatial: SpatialExportConfigContract = Field(default_factory=SpatialExportConfigContract)
-
-    @classmethod
-    def load_from_dir(cls, config_dir: Path | str = Path("config")) -> PipelineConfigBundle:
-        base = Path(config_dir)
-        return cls(
-            guilds=GuildRegistryContract.load_json(base / "guilds.json"),
-            protocol=ProtocolConfigContract.load_json(base / "protocol.json"),
-            spatial=SpatialExportConfigContract.load_json(base / "spatial.json"),
-        )
-
-    def save_to_dir(self, config_dir: Path | str = Path("config")) -> None:
-        base = Path(config_dir)
-        base.mkdir(parents=True, exist_ok=True)
-        self.guilds.save_json(base / "guilds.json")
-        self.protocol.save_json(base / "protocol.json")
-        self.spatial.save_json(base / "spatial.json")
+    output: OutputContract = Field(default_factory=OutputContract)

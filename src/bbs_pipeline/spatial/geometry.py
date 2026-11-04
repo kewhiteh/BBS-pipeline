@@ -12,7 +12,6 @@ import shapely
 from pyproj import Transformer
 from shapely.geometry import Point
 
-from bbs_pipeline.contracts import SpatialExportConfigContract
 from bbs_pipeline.spatial.selection import ROUTE_START_CRS, load_boundary
 
 # Geometries are assembled in WGS84, then reprojected per export CRS
@@ -142,7 +141,7 @@ def assign_custom_overlays(
 def build_spatial_geodataframe(
     observations_df: pl.DataFrame,
     routes_df: pl.DataFrame | pl.LazyFrame | None,
-    spatial: SpatialExportConfigContract,
+    overlays: dict[str, Path] | None = None,
 ) -> gpd.GeoDataFrame:
     """Attach route start-point geometry (EPSG:4326) and run STRtree overlays."""
     points = route_start_points(observations_df, routes_df)
@@ -155,7 +154,9 @@ def build_spatial_geodataframe(
 
     gdf = gpd.GeoDataFrame(observations_df.to_pandas(), geometry=geometries, crs=WORKING_CRS)
 
-    if spatial.custom_overlay_paths:
-        gdf = assign_custom_overlays(gdf, spatial.custom_overlay_paths)
+    if overlays:
+        gdf = assign_custom_overlays(gdf, overlays)
 
-    return gdf
+    # Geometry last, as GeoPackage/GeoJSON readers return it, so every format agrees
+    geom_col = gdf.geometry.name
+    return gdf[[c for c in gdf.columns if c != geom_col] + [geom_col]]
