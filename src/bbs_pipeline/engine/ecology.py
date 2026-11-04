@@ -21,6 +21,7 @@ from bbs_pipeline.contracts import (
     StopAggregationMode,
     TemporalRoutingMode,
 )
+from bbs_pipeline.sources.regions import resolve_states
 from bbs_pipeline.spatial.selection import routes_within_boundary
 
 # Canonical BBS subspecies/unidentified/hybrid AOU to parent AOU mappings
@@ -285,8 +286,6 @@ def _prepare_50_stop_frame(
         lf = lf.with_columns(_null_aware_sum_horizontal(present_stops).alias("route_total"))
     elif "route_total" in schema_names:
         lf = lf.with_columns(pl.col("route_total").cast(pl.Int64).alias("route_total"))
-    elif "StopTotal" in schema_names:
-        lf = lf.with_columns(pl.col("StopTotal").cast(pl.Int64).alias("route_total"))
     else:
         lf = lf.with_columns(
             _null_aware_sum_horizontal([f"Count{b * 10}" for b in range(1, 6)]).alias("route_total")
@@ -309,8 +308,10 @@ def _prepare_10_stop_frame(ten_stop: pl.LazyFrame) -> pl.LazyFrame:
             bin_exprs.append(pl.lit(None, dtype=pl.Int64).alias(c))
     lf = lf.with_columns(bin_exprs)
 
-    if "StopTotal" in schema_names:
-        lf = lf.with_columns(pl.col("StopTotal").cast(pl.Int64).alias("route_total"))
+    # SpeciesTotal is the number of birds; StopTotal is only the number of stops with a
+    # detection, so it must never be used as abundance.
+    if "SpeciesTotal" in schema_names:
+        lf = lf.with_columns(pl.col("SpeciesTotal").cast(pl.Int64).alias("route_total"))
     elif "route_total" in schema_names:
         lf = lf.with_columns(pl.col("route_total").cast(pl.Int64).alias("route_total"))
     else:
@@ -556,7 +557,9 @@ def run_ecological_engine(
             pl.col("QualityCurrentID").cast(pl.Int64).is_in(protocol.quality_current_ids)
         )
     if protocol.states and "StateNum" in events_schema:
-        predicates.append(pl.col("StateNum").cast(pl.Int64).is_in(protocol.states))
+        regions_df = _to_lazy(tables["regions"]).collect() if "regions" in tables else None
+        state_nums = resolve_states(protocol.states, regions_df)
+        predicates.append(pl.col("StateNum").cast(pl.Int64).is_in(state_nums))
     if protocol.bcrs and "BCR" in events_schema:
         predicates.append(pl.col("BCR").cast(pl.Int64).is_in(protocol.bcrs))
     if protocol.strata and "Stratum" in events_schema:

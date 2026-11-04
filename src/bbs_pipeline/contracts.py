@@ -16,16 +16,6 @@ from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
-
-class IngressMode(StrEnum):
-    """Three-Tier Ingress Gate execution mode."""
-
-    AUTO_THREE_TIER = "auto_three_tier"
-    CACHE_ONLY = "cache_only"
-    LOCAL_RAW_VIA_INTAKE = "local_raw_via_intake"
-    SCIENCEBASE_STREAM = "sciencebase_stream"
-
-
 # The 2020 survey was cancelled (COVID-19); the release has no 2020 runs
 CANCELLED_SURVEY_YEARS: frozenset[int] = frozenset({2020})
 
@@ -182,31 +172,31 @@ class GuildRegistryContract(BaseModel):
 
 
 class ProtocolConfigContract(BaseModel):
-    """Contract for config/protocol.json governing ingress, filtering, COVID gap, and zero-fill."""
+    """Contract for config/protocol.json governing data sources, filtering, and zero-fill."""
 
     model_config = ConfigDict(frozen=True, extra="forbid")
 
-    ingress_mode: IngressMode = Field(
-        default=IngressMode.AUTO_THREE_TIER,
-        description="Three-Tier Ingress Gate execution mode.",
-    )
     sanitized_cache_dir: Path = Field(
         default=Path("data/sanitized_cache"),
-        description="Path to the sanitized Parquet cache directory containing intake_manifest.json.",
+        description="Typed Parquet cache built from raw_data_dir (with cache_manifest.json).",
     )
     raw_data_dir: Path = Field(
         default=Path("data/raw"),
-        description="Fallback path to local raw USGS .zip/.csv/.txt files.",
+        description="Release files downloaded by `bbs fetch`, with release.json.",
     )
     sciencebase_doi: str = Field(
-        default="10.5066/P14SNUV4",
-        description="USGS ScienceBase release DOI for remote streaming.",
+        default="10.5066/P144YU3S",
+        description="BBS release DOI (or ScienceBase item id); default: 2026 release, 1966-2025.",
+    )
+    offline: bool = Field(
+        default=False,
+        description="Never use the network; fail if raw_data_dir has no release.json.",
     )
     http_max_retries: int = Field(
         default=3,
         ge=0,
         le=10,
-        description="Maximum HTTP retry attempts for ScienceBase streaming.",
+        description="Maximum HTTP retry attempts for ScienceBase downloads.",
     )
     http_backoff_seconds: float = Field(
         default=1.0,
@@ -234,9 +224,12 @@ class ProtocolConfigContract(BaseModel):
         default=(1997, 2024),
         description="Inclusive survey year range (1966 to 2026).",
     )
-    states: list[int] = Field(
+    states: list[int | str] = Field(
         default_factory=list,
-        description="Filter by numeric USGS StateNum codes (empty = all states).",
+        description=(
+            "Filter by StateNum code, region name, or postal abbreviation, e.g. [63], "
+            '["North Carolina"], ["NC"] (empty = all states).'
+        ),
     )
     bcrs: list[int] = Field(
         default_factory=list,
@@ -297,6 +290,17 @@ class ProtocolConfigContract(BaseModel):
         ],
         description="Dimension tables to stitch a-la-carte onto observations.",
     )
+
+    @field_validator("states", mode="before")
+    @classmethod
+    def _normalize_states(cls, v: list[Any]) -> list[int | str]:
+        normalized: list[int | str] = []
+        for item in v:
+            text = str(item).strip()
+            if not text:
+                raise ValueError("Empty state value.")
+            normalized.append(int(text) if text.isdigit() else text)
+        return normalized
 
     @model_validator(mode="after")
     def _validate_year_range(self) -> ProtocolConfigContract:
