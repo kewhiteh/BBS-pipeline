@@ -25,7 +25,23 @@ uv run bbs run      --config project.toml --offline # writes the output file + m
 - `bbs run` writes `output.path` (format from the extension: `.parquet`, `.csv`,
   `.geoparquet`, `.gpkg`, `.fgb`, `.geojson`) and `<path>.manifest.json` with the resolved
   profile, release, package version and git commit, and the counts after each stage.
-- Editor: `BBS_PROFILE=project.toml uv run streamlit run ui/app.py`.
+- `bbs values --config project.toml routes.states` (or `routes.bcrs`, `routes.route_ids`,
+  `species.families`, `joins.weather`, `guilds.<trait>`, ...) lists the valid values for a
+  field from the release.
+
+## Editor
+
+```bash
+BBS_PROFILE=project.toml uv run streamlit run ui/app.py
+```
+
+Pick lists for states, BCRs, strata, routes (narrowed to the chosen states and BCRs),
+species, families, orders, guild trait values, and each table's join columns come from
+the release. Edits stay in a draft until **Save profile**; the sidebar shows unsaved
+changes and validation errors. **Inspect** shows the count after every stage, the exact
+output columns, and the guild report (turn on *Live inspect* to update after each
+change); **Run** writes the output. Without a fetched release, a **Fetch release** button
+appears and list fields fall back to text boxes.
 
 See `examples/profile_template.toml` for every setting and its default.
 

@@ -59,6 +59,17 @@ def build_parser() -> argparse.ArgumentParser:
         "--config", type=Path, help="Take --release and --dest from this run profile's [source]"
     )
 
+    values = sub.add_parser(
+        "values", help="List valid values for a profile field, e.g. routes.states or joins.weather"
+    )
+    _add_profile_args(values)
+    values.add_argument(
+        "field",
+        help="routes.states | routes.bcrs | routes.strata | routes.route_ids | species.aous | "
+        "species.common_names | species.families | species.orders | joins.<table> | "
+        "guilds | guilds.<trait>",
+    )
+
     for name, help_text in (
         ("validate", "Check a run profile and print it with every default filled in"),
         ("inspect", "Dry run: counts after each stage and the exact output columns"),
@@ -134,6 +145,11 @@ def main(argv: list[str] | None = None) -> int:
         if args.command == "fetch":
             return _fetch(args)
         profile = _load(args)
+        if args.command == "values":
+            from bbs_pipeline.values import collect_values  # noqa: PLC0415 (loads the cache)
+
+            print("\n".join(collect_values(profile).field_values(args.field)))
+            return 0
         if args.command == "validate":
             print(dump_profile(profile), end="")
             return 0
@@ -142,8 +158,8 @@ def main(argv: list[str] | None = None) -> int:
         for path in result.exported_files:
             print(f"wrote {path}")
         return 0
-    except ProfileError as exc:
-        print(exc, file=sys.stderr)
+    except (ProfileError, KeyError) as exc:
+        print(exc.args[0] if isinstance(exc, KeyError) else exc, file=sys.stderr)
         return 2
 
 

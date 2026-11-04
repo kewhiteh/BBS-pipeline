@@ -1,0 +1,138 @@
+"""Valid values for profile fields, read from the release cache (for `bbs values` and the UI)."""
+
+from __future__ import annotations
+
+from dataclasses import dataclass, field
+from pathlib import Path
+
+import polars as pl
+
+from bbs_pipeline.config import RunProfile
+from bbs_pipeline.contracts import JOIN_TABLES
+from bbs_pipeline.guilds import read_guild_csv, resolve_guilds
+from bbs_pipeline.sources.loader import load_sources
+from bbs_pipeline.sources.regions import POSTAL_ABBREVIATIONS
+from bbs_pipeline.stages.common import normalize_canonical_keys, to_lazy
+from bbs_pipeline.stages.enrich import join_sources
+from bbs_pipeline.stages.runs import compute_observer_tenure
+from bbs_pipeline.taxonomy import lumped_species
+
+ABBREVIATION_BY_NAME: dict[str, str] = {name: abbr for abbr, name in POSTAL_ABBREVIATIONS.items()}
+
+# Traits with more distinct values than this are free text (names, notes), not categories
+MAX_TRAIT_VALUES = 50
+
+
+@dataclass(frozen=True)
+class ProfileValues:
+    """Everything a profile field can be set to, for one release (and guild file)."""
+
+    states: list[dict[str, object]]  # {"StateNum", "StateName", "abbreviation"}
+    bcrs: list[int]
+    strata: list[int]
+    routes: list[dict[str, object]]  # {"route_id", "RouteName", "StateNum", "BCR"}
+    species: list[dict[str, str]]  # {"AOU", "English_Common_Name", "Family", "Order"}
+    families: list[str]
+    orders: list[str]
+    join_columns: dict[str, list[str]]
+    guild_traits: dict[str, list[str]] = field(default_factory=dict)
+
+    def field_values(self, name: str) -> list[str]:
+        """Plain-text values for `bbs values FIELD` (e.g. routes.states, guilds.habitat)."""
+        simple: dict[str, list[str]] = {
+            "routes.states": [
+                f"{s['StateNum']}\t{s['abbreviation'] or ''}\t{s['StateName']}" for s in self.states
+            ],
+            "routes.bcrs": [str(b) for b in self.bcrs],
+            "routes.strata": [str(s) for s in self.strata],
+            "routes.route_ids": [f"{r['route_id']}\t{r['RouteName']}" for r in self.routes],
+            "species.aous": [f"{s['AOU']}\t{s['English_Common_Name']}" for s in self.species],
+            "species.common_names": [s["English_Common_Name"] for s in self.species],
+            "species.families": self.families,
+            "species.orders": self.orders,
+            "guilds": list(self.guild_traits),
+        }
+        if name in simple:
+            return simple[name]
+        table_or_trait = name.split(".", 1)[1] if "." in name else ""
+        if name.startswith("joins.") and table_or_trait in self.join_columns:
+            return self.join_columns[table_or_trait]
+        if name.startswith("guilds.") and table_or_trait in self.guild_traits:
+            return self.guild_traits[table_or_trait]
+        valid = [
+            *simple,
+            *(f"joins.{t}" for t in JOIN_TABLES),
+            *(f"guilds.{t}" for t in self.guild_traits),
+        ]
+        raise KeyError(f"Unknown field '{name}'. Fields: {', '.join(valid)}")
+
+
+def _sorted_unique(df: pl.DataFrame, column: str) -> list:
+    if column not in df.columns:
+        return []
+    return sorted(df[column].drop_nulls().unique().to_list())
+
+
+def collect_values(profile: RunProfile) -> ProfileValues:
+    """Read the release (building the cache if needed) and list every valid value."""
+    bundle = profile.to_bundle()
+    tables = load_sources(bundle.protocol).tables
+
+    routes = normalize_canonical_keys(to_lazy(tables["routes"])).collect()
+    species_raw = normalize_canonical_keys(to_lazy(tables["species"])).collect()
+    species = (
+        lumped_species(species_raw) if bundle.protocol.lump_subspecies_and_hybrids else species_raw
+    )
+
+    if "regions" in tables:
+        regions = to_lazy(tables["regions"]).collect().sort("StateNum")
+        states = [
+            {"StateNum": code, "StateName": name, "abbreviation": ABBREVIATION_BY_NAME.get(name)}
+            for code, name in regions.select("StateNum", "StateName").iter_rows()
+        ]
+    else:
+        states = [
+            {"StateNum": code, "StateName": "", "abbreviation": None}
+            for code in _sorted_unique(routes, "StateNum")
+        ]
+
+    guild_df, traits, trait_values = None, [], {}
+    if bundle.guilds.file is not None and Path(bundle.guilds.file).exists():
+        guilds = resolve_guilds(
+            read_guild_csv(Path(bundle.guilds.file)), species_raw, Path(bundle.guilds.file)
+        )
+        guild_df, traits = guilds.table, guilds.traits
+        for trait in traits:
+            values = _sorted_unique(guilds.table, trait)
+            if len(values) <= MAX_TRAIT_VALUES:
+                trait_values[trait] = values
+
+    tenure = compute_observer_tenure(
+        normalize_canonical_keys(to_lazy(tables["weather"])), bundle.protocol
+    )
+    sources = join_sources(
+        normalize_canonical_keys(to_lazy(tables["routes"])),
+        tenure,
+        species.lazy(),
+        tables,
+        guild_df,
+        traits,
+    )
+    join_columns = {t: (s.columns if s is not None else []) for t, s in sources.items()}
+
+    route_cols = [c for c in ("route_id", "RouteName", "StateNum", "BCR") if c in routes.columns]
+    return ProfileValues(
+        states=states,
+        bcrs=_sorted_unique(routes, "BCR"),
+        strata=_sorted_unique(routes, "Stratum"),
+        routes=routes.select(route_cols).sort("route_id").to_dicts(),
+        species=species.select(
+            [c for c in ("AOU", "English_Common_Name", "Family", "Order") if c in species.columns]
+        )
+        .sort("AOU")
+        .to_dicts(),
+        families=_sorted_unique(species, "Family"),
+        orders=_sorted_unique(species, "Order"),
+        join_columns=join_columns,
+        guild_traits=trait_values,
+    )

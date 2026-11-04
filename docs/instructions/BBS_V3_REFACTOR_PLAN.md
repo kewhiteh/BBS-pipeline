@@ -185,6 +185,8 @@ These corrupt numbers today, so they come before the refactor. Write a failing t
 
 ---
 
+- **Phase 9 done:** `bbs values FIELD` and `bbs_pipeline/values.py` list valid values from the release; `ui/app.py` is a profile editor with pick lists, per-table column pickers, guild trait filters, a draft with explicit Save, and an Inspect panel (optional live updates, cached per profile). It calls only `pipeline.run_profile`.
+
 ## 4. Definition of done (fast path)
 1. `bbs fetch` once, then `bbs run --config project_a.toml` produces output with no network access.
 2. An excluded run never contributes to any count (filter-propagation test passes on real data).
