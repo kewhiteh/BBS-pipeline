@@ -136,6 +136,8 @@ These corrupt numbers today, so they come before the refactor. Write a failing t
 - **V2:** Read all raw CSVs with `infer_schema=False` (all strings), and cast in one place with explicit dtypes.
 - **V3:** Load the region-codes file. Accept a state abbreviation, name, or StateNum in `routes.states`. Add a test that `(CountryNum, StateNum)` is unique, and decide from the file whether `route_id` must include `CountryNum`.
 - Add `--offline`, which fails if the cache is missing rather than fetching.
+- Rename `IngressMode.LOCAL_RAW_VIA_INTAKE` (the intake_engine hook was removed in Phase 2).
+- **intake_engine:** Kyle's separate, in-progress package for cleaning messy unknown databases. Once its API is stable, give it an explicit, opt-in integration point in `sources/` (the old hook called `assess`/`execute_pipeline`, which did not exist yet). Until then, the built-in sanitizer is the only path.
 
 ### Phase 4 — Run profile config
 - `config.py`: Pydantic models following original plan §2.2, built with `extra="forbid"`, and validation errors name the bad key. Port the useful v3 validators (AOU padding, year range, EPSG normalization).
@@ -187,8 +189,8 @@ These corrupt numbers today, so they come before the refactor. Write a failing t
 | D1 | One TOML profile replacing the three JSON contracts? | Phase 4 |
 | D2 | ~~Git remote~~ **Decided:** replace `kewhiteh/BBS-pipeline`, one PR per phase | Phase 0 |
 | D3 | ~~Multiple runs per route-year~~ **Resolved by data:** guard that raises | Phase 1 |
-| D4 | Spatial selection default method; are polylines needed | Phase 2 |
-| D5 | Which v3 extras to keep (10-stop/hybrid, COVID imputation, rolling mean, guild rollup, DuckDB, intake_engine, AGOL) | Phase 2 |
+| D4 | ~~Spatial selection~~ **Decided:** route start points only; no polylines | Phase 2 |
+| D5 | ~~v3 extras~~ **Decided:** keep 10-stop/hybrid (pre-1997 years are needed) and the 2020 exclusion; drop COVID imputation, rolling mean, guild rollup, DuckDB, AGOL. intake_engine is Kyle's in-progress project: hook removed for now (see Phase 3) | Phase 2 |
 | D6 | ~~Zero-fill semantics~~ **Decided:** historical species pool per route; NULL beyond TotalStops | Phase 1 |
 | D7 | Guild file format and match key; guild source per project | Phase 5 |
 | D8 | Species selector combination: union vs intersection | Phase 5 |
