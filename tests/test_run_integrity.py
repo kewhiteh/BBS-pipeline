@@ -221,7 +221,11 @@ def test_ten_stop_abundance_is_species_total_not_stop_total() -> None:
         stop_aggregation=StopAggregationMode.TEN_STOP_BINS,
     )
 
-    row = harmonize_observations({"ten_stop": ten_stop}, protocol).collect().row(0, named=True)
+    row = (
+        harmonize_observations({"ten_stop": ten_stop}, protocol, lump_subspecies_and_hybrids=False)
+        .collect()
+        .row(0, named=True)
+    )
 
     assert row["route_total"] == 12
 

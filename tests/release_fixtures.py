@@ -180,8 +180,9 @@ def species_frame(rows: list[tuple[str, str, str, str]]) -> pl.DataFrame:
             "French_Common_Name": ["Grive à dos olive"] * n,
             "Order": [r[2] for r in rows],
             "Family": [r[3] for r in rows],
-            "Genus": ["Genus"] * n,
-            "Species": ["species"] * n,
+            # distinct binomials, so no two test species look like forms of one species
+            "Genus": [f"Genus{i}" for i in range(n)],
+            "Species": [f"species{i}" for i in range(n)],
         }
     )
 

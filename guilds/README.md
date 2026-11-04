@@ -36,8 +36,9 @@ looked up in the release, never typed by hand.
   Rufous-sided towhee → Eastern and Spotted Towhee; Solitary vireo → Blue-headed,
   Cassin's, and Plumbeous Vireo (`note = split`). Check these if a daughter species
   matters to your study.
-- **Subspecies forms**: Myrtle/Audubon's warbler → the Yellow-rumped Warbler entry the
-  pipeline lumps them under; likewise Slate-colored/Oregon junco and the flickers.
+- **Subspecies forms**: Myrtle/Audubon's warbler → Yellow-rumped Warbler; Slate-colored,
+  Oregon, and Gray-headed junco → Dark-eyed Junco; the flickers → Northern Flicker. The
+  pipeline counts every form under its species (see `bbs_pipeline/taxonomy.py`).
 - **Dropped**: Northwestern crow (now part of American Crow, which has its own row).
 
 ### Adding forest guilds

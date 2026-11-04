@@ -62,8 +62,10 @@ aou,common_name,scientific_name,habitat,forest_guild,notes
 4. Species recorded on the kept runs that have **no guild row** are listed too, so you
    can see what your file does not cover in your study area.
 
-Subspecies and hybrid forms are counted under their parent species when
-`observations.lump_subspecies = true` (the default), so give the parent species a row.
+With `observations.lump_subspecies = true` (the default), every subspecies, form, and
+within-species hybrid is counted under its species, using the release's scientific names
+(e.g. Gray-headed and Oregon Junco under Dark-eyed Junco, `Junco hyemalis`). Give the
+species one row; its plain name ("Dark-eyed Junco") or the species-level AOU works.
 
 ### Old names will not match
 

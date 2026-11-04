@@ -152,7 +152,7 @@ aou,common_name,scientific_name,breeding_habitat,nest_type,migration,nest_locati
 04090,Red-bellied Woodpecker,Melanerpes carolinus,woodland,cavity,permanent_resident,,,Red-bellied woodpecker,""
 04100,Golden-fronted Woodpecker,Melanerpes aurifrons,woodland,cavity,permanent_resident,,,Golden-fronted woodpkr,""
 04110,Gila Woodpecker,Melanerpes uropygialis,,cavity,permanent_resident,,,Gila woodpecker,""
-04120,(Yellow-shafted Flicker) Northern Flicker,Colaptes auratus auratus,,cavity,short_distance,,,Red-shafted flicker; Yellow-shafted flicker,"subspecies form; subspecies form, lumped"
+04123,Northern Flicker,Colaptes auratus,,cavity,short_distance,,,Red-shafted flicker; Yellow-shafted flicker,subspecies form
 04160,Chuck-will's-widow,Antrostomus carolinensis,woodland,,neotropical,,,Chuck-will's-widow,""
 04171,Eastern Whip-poor-will,Antrostomus vociferus,woodland,,neotropical,,,Whip-poor-will,split
 04172,Mexican Whip-poor-will,Antrostomus arizonae,woodland,,neotropical,,,Whip-poor-will,split
@@ -185,8 +185,7 @@ aou,common_name,scientific_name,breeding_habitat,nest_type,migration,nest_locati
 04610,Eastern Wood-Pewee,Contopus virens,woodland,open_cup_passerine,neotropical,midstory_canopy,,Eastern wood-pewee,""
 04620,Western Wood-Pewee,Contopus sordidulus,woodland,open_cup_passerine,neotropical,midstory_canopy,,Western wood-pewee,""
 04630,Yellow-bellied Flycatcher,Empidonax flaviventris,woodland,open_cup_passerine,neotropical,ground_low,,Yellow-bell. flycatcher,""
-04640,(Cordilleran Flycatcher) Western Flycatcher,Empidonax difficilis occidentalis,woodland,open_cup_passerine,neotropical,ground_low,,Western flycatcher,BBS lists two forms
-04641,(Pacific-slope Flycatcher) Western Flycatcher,Empidonax difficilis difficilis,woodland,open_cup_passerine,neotropical,ground_low,,Western flycatcher,BBS lists two forms
+04642,Western Flycatcher,Empidonax difficilis,woodland,open_cup_passerine,neotropical,ground_low,,Western flycatcher,""
 04650,Acadian Flycatcher,Empidonax virescens,woodland,open_cup_passerine,neotropical,midstory_canopy,,Acadian flycatcher,""
 04660,Willow Flycatcher,Empidonax traillii,successional_scrub,open_cup_passerine,neotropical,ground_low,,Willow flycatcher,""
 04661,Alder Flycatcher,Empidonax alnorum,successional_scrub,open_cup_passerine,neotropical,ground_low,,Alder flycatcher,""
@@ -259,8 +258,7 @@ aou,common_name,scientific_name,breeding_habitat,nest_type,migration,nest_locati
 05620,Brewer's Sparrow,Spizella breweri,successional_scrub,open_cup_passerine,neotropical,ground_low,,Brewer's sparrow,""
 05630,Field Sparrow,Spizella pusilla,successional_scrub,open_cup_passerine,short_distance,ground_low,,Field sparrow,""
 05650,Black-chinned Sparrow,Spizella atrogularis,successional_scrub,open_cup_passerine,short_distance,ground_low,,Black-chinned sparrow,""
-05670,(Slate-colored Junco) Dark-eyed Junco,Junco hyemalis hyemalis,woodland,open_cup_passerine,short_distance,ground_low,,Oregon junco; Slate-colored junco,"subspecies form; subspecies form, lumped"
-05690,(Gray-headed Junco) Dark-eyed Junco,Junco hyemalis caniceps,woodland,open_cup_passerine,short_distance,ground_low,,Gray-headed junco,subspecies form
+05677,Dark-eyed Junco,Junco hyemalis,woodland,open_cup_passerine,short_distance,ground_low,,Gray-headed junco; Oregon junco; Slate-colored junco,subspecies form
 05730,Black-throated Sparrow,Amphispiza bilineata,successional_scrub,open_cup_passerine,short_distance,ground_low,,Black-throated sparrow,""
 05738,Sagebrush Sparrow,Artemisiospiza nevadensis,successional_scrub,open_cup_passerine,short_distance,ground_low,,Sage sparrow,split
 05739,Bell's Sparrow,Artemisiospiza belli,successional_scrub,open_cup_passerine,short_distance,ground_low,,Sage sparrow,split
@@ -328,7 +326,7 @@ aou,common_name,scientific_name,breeding_habitat,nest_type,migration,nest_locati
 06500,Cape May Warbler,Setophaga tigrina,woodland,open_cup_passerine,neotropical,midstory_canopy,,Cape May warbler,""
 06520,Yellow Warbler,Setophaga petechia,successional_scrub,open_cup_passerine,neotropical,midstory_canopy,,Yellow warbler,""
 06540,Black-throated Blue Warbler,Setophaga caerulescens,woodland,open_cup_passerine,neotropical,midstory_canopy,,Black-thr. blue warbler,""
-06550,(Myrtle Warbler) Yellow-rumped Warbler,Setophaga coronata coronata,woodland,open_cup_passerine,short_distance,midstory_canopy,,Audubon's warbler; Myrtle warbler,"subspecies form; subspecies form, lumped"
+06556,Yellow-rumped Warbler,Setophaga coronata,woodland,open_cup_passerine,short_distance,midstory_canopy,,Audubon's warbler; Myrtle warbler,subspecies form
 06570,Magnolia Warbler,Setophaga magnolia,woodland,open_cup_passerine,neotropical,midstory_canopy,,Magnolia warbler,""
 06580,Cerulean Warbler,Setophaga cerulea,woodland,open_cup_passerine,neotropical,midstory_canopy,,Cerulean warbler,""
 06590,Chestnut-sided Warbler,Setophaga pensylvanica,successional_scrub,open_cup_passerine,neotropical,ground_low,,Chestnut-sided warbler,""

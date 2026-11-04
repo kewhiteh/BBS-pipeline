@@ -21,6 +21,8 @@ from pathlib import Path
 
 import polars as pl
 
+from bbs_pipeline.taxonomy import lumped_species
+
 SOURCE_URL = "https://www.mbr-pwrc.usgs.gov/bbs15/guildlst.html"
 
 # Page section heading -> (output column, value)
@@ -42,8 +44,8 @@ TRAITS: tuple[str, ...] = ("breeding_habitat", "nest_type", "migration", "nest_l
 
 # Page name -> (current BBS English names, note). AOU codes are always looked up in the
 # release's species list, never typed here. A split maps to every daughter species (each
-# gets the parent's groups); a subspecies form maps to the BBS entry the pipeline lumps
-# it under; None drops the name.
+# gets the parent's groups); a subspecies form maps to its species (the pipeline counts
+# every form under the species, see bbs_pipeline.taxonomy); None drops the name.
 NAME_MAP: dict[str, tuple[list[str] | None, str]] = {
     "Am. Swallow-tailed kite": (["Swallow-tailed Kite"], ""),
     "Black-&-white warbler": (["Black-and-white Warbler"], ""),
@@ -96,23 +98,14 @@ NAME_MAP: dict[str, tuple[list[str] | None, str]] = {
     "Sharp-tailed sparrow": (["Nelson's Sparrow", "Saltmarsh Sparrow"], "split"),
     "Solitary vireo": (["Blue-headed Vireo", "Cassin's Vireo", "Plumbeous Vireo"], "split"),
     "Whip-poor-will": (["Eastern Whip-poor-will", "Mexican Whip-poor-will"], "split"),
-    "Western flycatcher": (
-        [
-            "(Cordilleran Flycatcher) Western Flycatcher",
-            "(Pacific-slope Flycatcher) Western Flycatcher",
-        ],
-        "BBS lists two forms",
-    ),
-    "Myrtle warbler": (["(Myrtle Warbler) Yellow-rumped Warbler"], "subspecies form"),
-    "Audubon's warbler": (["(Myrtle Warbler) Yellow-rumped Warbler"], "subspecies form, lumped"),
-    "Slate-colored junco": (["(Slate-colored Junco) Dark-eyed Junco"], "subspecies form"),
-    "Oregon junco": (["(Slate-colored Junco) Dark-eyed Junco"], "subspecies form, lumped"),
-    "Gray-headed junco": (["(Gray-headed Junco) Dark-eyed Junco"], "subspecies form"),
-    "Yellow-shafted flicker": (["(Yellow-shafted Flicker) Northern Flicker"], "subspecies form"),
-    "Red-shafted flicker": (
-        ["(Yellow-shafted Flicker) Northern Flicker"],
-        "subspecies form, lumped",
-    ),
+    "Western flycatcher": (["Western Flycatcher"], ""),
+    "Myrtle warbler": (["Yellow-rumped Warbler"], "subspecies form"),
+    "Audubon's warbler": (["Yellow-rumped Warbler"], "subspecies form"),
+    "Slate-colored junco": (["Dark-eyed Junco"], "subspecies form"),
+    "Oregon junco": (["Dark-eyed Junco"], "subspecies form"),
+    "Gray-headed junco": (["Dark-eyed Junco"], "subspecies form"),
+    "Yellow-shafted flicker": (["Northern Flicker"], "subspecies form"),
+    "Red-shafted flicker": (["Northern Flicker"], "subspecies form"),
     "Northwestern crow": (None, "lumped into American Crow, which has its own groups"),
 }
 
@@ -144,6 +137,7 @@ def parse_groups(page: str) -> pl.DataFrame:
 
 
 def build(page: str, species: pl.DataFrame) -> pl.DataFrame:
+    species = lumped_species(species)
     groups = parse_groups(page)
     by_name = {_key(n): a for a, n in species.select("AOU", "English_Common_Name").iter_rows()}
     mapped: list[dict[str, str]] = []
