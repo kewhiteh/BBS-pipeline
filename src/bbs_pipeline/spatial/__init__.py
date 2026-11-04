@@ -1,5 +1,13 @@
-"""Spatial boundary filtering subsystem (Track B Phase 3)."""
+"""Spatial referencing, STRtree overlay, and multi-CRS vector/tabular export package."""
 
-from .filtering import build_route_spatial_index, filter_stops_by_boundary
+from bbs_pipeline.spatial.exporter import run_spatial_export
+from bbs_pipeline.spatial.linear_referencing import (
+    assign_custom_overlays,
+    build_spatial_geodataframe,
+)
 
-__all__ = ["build_route_spatial_index", "filter_stops_by_boundary"]
+__all__ = [
+    "assign_custom_overlays",
+    "build_spatial_geodataframe",
+    "run_spatial_export",
+]

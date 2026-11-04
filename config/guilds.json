@@ -1,0 +1,86 @@
+{
+  "active_guild": "whitcomb_interior_obligates",
+  "profiles": {
+    "whitcomb_interior_obligates": {
+      "citation": "Whitcomb et al. (1981) Forest Island Dynamics in Man-Dominated Landscapes",
+      "description": "Neotropical migrant forest-interior obligate breeding birds sensitive to fragmentation.",
+      "aou_codes": [
+        "07550",
+        "06740",
+        "06080",
+        "06240",
+        "07560",
+        "06360"
+      ],
+      "orders": [
+        "Passeriformes"
+      ],
+      "families": [
+        "Turdidae",
+        "Parulidae",
+        "Cardinalidae",
+        "Vireonidae"
+      ],
+      "english_names": [
+        "Wood Thrush",
+        "Ovenbird",
+        "Scarlet Tanager",
+        "Red-eyed Vireo",
+        "Veery",
+        "Black-and-white Warbler"
+      ],
+      "lump_subspecies_and_hybrids": true
+    },
+    "freemark_edge_specialists": {
+      "citation": "Freemark & Merriam (1986) Importance of Area and Habitat Heterogeneity to Bird Assemblies",
+      "description": "Forest-edge and shrubland specialist species tolerant of ecotonal boundaries.",
+      "aou_codes": [
+        "05930",
+        "05980",
+        "07040",
+        "05870"
+      ],
+      "orders": [
+        "Passeriformes"
+      ],
+      "families": [
+        "Cardinalidae",
+        "Mimidae",
+        "Passerellidae"
+      ],
+      "english_names": [
+        "Northern Cardinal",
+        "Indigo Bunting",
+        "Gray Catbird",
+        "Eastern Towhee"
+      ],
+      "lump_subspecies_and_hybrids": true
+    },
+    "generalists": {
+      "citation": "Robbins et al. (1989) Habitat Area Requirements of Breeding Forest Birds of the Middle Atlantic States",
+      "description": "Synanthropic and habitat-generalist species occurring across rural, suburban, and agricultural matrices.",
+      "aou_codes": [
+        "07610",
+        "04880",
+        "04770",
+        "03160"
+      ],
+      "orders": [
+        "Passeriformes",
+        "Columbiformes"
+      ],
+      "families": [
+        "Turdidae",
+        "Corvidae",
+        "Columbidae"
+      ],
+      "english_names": [
+        "American Robin",
+        "American Crow",
+        "Blue Jay",
+        "Mourning Dove"
+      ],
+      "lump_subspecies_and_hybrids": true
+    }
+  }
+}
