@@ -12,6 +12,7 @@ import bbs_pipeline
 from bbs_pipeline.config import RunProfile
 from bbs_pipeline.contracts import PipelineConfigBundle, PipelineExecutionResult
 from bbs_pipeline.engine.ecology import normalize_canonical_keys, run_ecological_engine
+from bbs_pipeline.shape import to_wide
 from bbs_pipeline.sources.loader import SourceResult, load_sources
 from bbs_pipeline.spatial.exporter import write_output
 
@@ -36,12 +37,14 @@ def _write_manifest(
     result: PipelineExecutionResult,
     sources: SourceResult,
     profile: RunProfile | None,
+    shape: str,
 ) -> Path:
     manifest: dict[str, Any] = {
         "created_at": datetime.now(UTC).isoformat(timespec="seconds"),
         "output": {
             "path": str(output_path),
-            "rows": result.funnel_metrics.final_output_rows,
+            "rows": result.output_rows,
+            "shape": shape,
             "columns": result.output_columns,
         },
         "package": {
@@ -79,6 +82,8 @@ def run_bbs_pipeline(
         data_source=sources.source,
     )
     observations = engine_result.observations_df
+    if bundle.output.shape == "wide":
+        observations = to_wide(observations, bundle.output.wide_value)
     columns = observations.columns
     if bundle.output.is_vector:
         columns = [*columns, *(f"overlay_{name}" for name in bundle.output.overlays), "geometry"]
@@ -86,6 +91,7 @@ def run_bbs_pipeline(
     result = PipelineExecutionResult(
         funnel_metrics=engine_result.funnel_metrics,
         output_columns=columns,
+        output_rows=observations.height,
         active_joins=engine_result.active_joins,
         preview_records=observations.head(50).to_dicts(),
     )
@@ -98,7 +104,7 @@ def run_bbs_pipeline(
     output_path = write_output(observations, routes_lf, bundle.output)
     exported = [output_path]
     if bundle.output.manifest:
-        exported.append(_write_manifest(output_path, result, sources, profile))
+        exported.append(_write_manifest(output_path, result, sources, profile, bundle.output.shape))
     return result.model_copy(update={"exported_files": exported})
 
 

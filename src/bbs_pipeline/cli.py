@@ -102,6 +102,7 @@ def _print_stages(result: PipelineExecutionResult) -> None:
     print(f"data source: {metrics['data_source']}")
     for key, label in STAGE_LABELS:
         print(f"  {label:<28} {metrics[key]:>12,}")
+    print(f"  {'rows in output file':<28} {result.output_rows:>12,}")
     print(f"output columns ({len(result.output_columns)}):")
     for col in result.output_columns:
         print(f"  {col}")

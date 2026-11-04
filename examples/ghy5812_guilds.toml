@@ -1,0 +1,26 @@
+# GHY 5812 final project: guild responses to land-use change across NC river basins.
+# Starting point for exploration; the year range is open until the data has been explored.
+# Routes are filtered by BCR here and masked to the river-basin extent in ArcGIS.
+# Guild assignment (Freemark & Collins 1992; Whitcomb et al. 1981) arrives with the guild
+# file in Phase 5; until then every species is kept.
+
+[routes]
+bcrs = [27, 28, 29]
+
+[runs]
+start_year = 1966
+end_year = 2025
+run_types = [1]            # meets official BBS criteria (see RunType.pdf in the release)
+quality_current_ids = [1]  # stop completion: QualityCurrentID 1 requires >= 45 of 50 stops completed
+min_continuity = 0.8       # "80% completion": share of non-cancelled years surveyed
+
+[observations]
+source = "10_stop"         # 10-stop summary counts, 1966 onward
+rolling_years = 0          # e.g. 5 for a 5-year rolling mean
+
+[joins]
+tables = ["species", "routes", "bcr"]
+
+[output]
+path = "output/ghy5812_bcr27-29.csv"
+shape = "long"

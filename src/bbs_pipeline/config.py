@@ -129,6 +129,7 @@ class ObservationsSection(_Section):
     stops: Literal["route_total", "ten_stop_bins", "stops"] = "route_total"
     zero_fill: bool = True
     lump_subspecies: bool = True
+    rolling_years: int = Field(default=0, ge=0)  # 0 = off; N >= 2 = mean over N calendar years
 
 
 class SpeciesSection(_Section):
@@ -155,6 +156,8 @@ class OutputSection(_Section):
     layer_name: str = "bbs_observations"
     overlays: dict[str, Path] = Field(default_factory=dict)
     manifest: bool = True
+    shape: Literal["long", "wide"] = "long"
+    wide_value: Literal["route_total", "rolling_mean"] = "route_total"
 
     @field_validator("crs", mode="before")
     @classmethod
@@ -197,6 +200,20 @@ class RunProfile(_Section):
                 "observations.stops = 'stops' needs per-stop counts, which only "
                 "observations.source = '50_stop' has"
             )
+        if obs.source == "50_stop" and rn.start_year < 1997:
+            raise ValueError(
+                f"observations.source = '50_stop' starts in 1997 but runs.start_year is "
+                f"{rn.start_year}; use '10_stop' or 'hybrid' for earlier years"
+            )
+        if obs.rolling_years == 1:
+            raise ValueError("observations.rolling_years must be 0 (off) or at least 2")
+        if obs.rolling_years and not obs.zero_fill:
+            raise ValueError(
+                "observations.rolling_years needs observations.zero_fill = true; without "
+                "zeros the mean would cover only years the species was detected"
+            )
+        if self.output.wide_value == "rolling_mean" and not obs.rolling_years:
+            raise ValueError("output.wide_value = 'rolling_mean' needs observations.rolling_years")
         protocol = ProtocolConfigContract(
             sanitized_cache_dir=src.cache_dir,
             raw_data_dir=src.raw_dir,
@@ -222,6 +239,7 @@ class RunProfile(_Section):
             stop_aggregation=STOP_LAYOUTS[obs.stops],
             enable_extirpation_zero_fill=obs.zero_fill,
             lump_subspecies_and_hybrids=obs.lump_subspecies,
+            rolling_window_years=obs.rolling_years,
             include_joins=self.joins.tables,
         )
         species = SpeciesSelectionContract(**self.species.model_dump())

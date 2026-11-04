@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from enum import StrEnum
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
@@ -224,6 +224,14 @@ class ProtocolConfigContract(BaseModel):
         default=True,
         description="Count subspecies/unidentified/hybrid forms under their parent species.",
     )
+    rolling_window_years: int = Field(
+        default=0,
+        ge=0,
+        description=(
+            "0 = off. N >= 2 adds rolling_mean (mean route_total over the N calendar years "
+            "ending at Year, surveyed years only) and rolling_n_years."
+        ),
+    )
     enable_extirpation_zero_fill: bool = Field(
         default=True,
         description="Cross-join valid sampling events x target species and zero-fill missing observations.",
@@ -236,6 +244,13 @@ class ProtocolConfigContract(BaseModel):
         ],
         description="Dimension tables to stitch a-la-carte onto observations.",
     )
+
+    @field_validator("rolling_window_years")
+    @classmethod
+    def _rolling(cls, v: int) -> int:
+        if v == 1:
+            raise ValueError("rolling_window_years must be 0 (off) or at least 2")
+        return v
 
     @field_validator("states", mode="before")
     @classmethod
@@ -276,6 +291,13 @@ class OutputContract(BaseModel):
         description="Named polygon layers whose attribute is attached to each route (vector).",
     )
     manifest: bool = Field(default=True, description="Write <path>.manifest.json.")
+    shape: Literal["long", "wide"] = Field(
+        default="long",
+        description="long: one row per run and species; wide: one row per route and species.",
+    )
+    wide_value: Literal["route_total", "rolling_mean"] = Field(
+        default="route_total", description="Value spread into one column per year when wide."
+    )
 
     @field_validator("path")
     @classmethod
@@ -324,6 +346,7 @@ class PipelineExecutionResult(BaseModel):
 
     funnel_metrics: FunnelAuditMetrics
     output_columns: list[str] = Field(default_factory=list)
+    output_rows: int = 0
     exported_files: list[Path] = Field(default_factory=list)
     active_joins: list[str] = Field(default_factory=list)
     preview_records: list[dict[str, Any]] = Field(default_factory=list)
