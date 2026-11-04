@@ -27,6 +27,13 @@ than one if you like; they are cross-checked. Header names for the three identif
 are case-insensitive. Trait names are used exactly as written, so pick names that are
 not already BBS output columns (`Family`, `Order`, `RouteName`, ...).
 
+## Starter file
+
+[`guilds/pwrc_species_groups.csv`](../guilds/pwrc_species_groups.csv) covers 412 BBS
+species with the USGS Patuxent breeding-habitat, nest-type, migration, and nest-location
+groups, plus an empty `forest_guild` column to fill in. See
+[guilds/README.md](../guilds/README.md) for its source and how old names were matched.
+
 ## Example
 
 [`examples/guilds_example.csv`](../examples/guilds_example.csv). **This is a format

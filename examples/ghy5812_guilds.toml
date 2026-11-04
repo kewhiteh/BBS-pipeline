@@ -1,8 +1,9 @@
 # GHY 5812 final project: guild responses to land-use change across NC river basins.
 # Starting point for exploration; the year range is open until the data has been explored.
 # Routes are filtered by BCR here and masked to the river-basin extent in ArcGIS.
-# Guild assignment (Freemark & Collins 1992; Whitcomb et al. 1981) arrives with the guild
-# file in Phase 5; until then every species is kept.
+# Guilds: starts from the USGS Patuxent breeding-habitat groups (guilds/README.md). Copy
+# guilds/pwrc_species_groups.csv to guilds/ghy5812.csv, fill forest_guild for woodland
+# species (Freemark & Collins 1992; Whitcomb et al. 1981), and point guilds.file at it.
 
 [routes]
 bcrs = [27, 28, 29]
@@ -18,8 +19,12 @@ min_continuity = 0.8       # "80% completion": share of non-cancelled years surv
 source = "10_stop"         # 10-stop summary counts, 1966 onward
 rolling_years = 0          # e.g. 5 for a 5-year rolling mean
 
+[guilds]
+file = "guilds/pwrc_species_groups.csv"
+# filters = { breeding_habitat = ["woodland"], forest_guild = ["interior"] }
+
 [joins]
-tables = ["species", "routes", "bcr"]
+tables = ["species", "routes", "bcr", "guilds"]
 
 [output]
 path = "output/ghy5812_bcr27-29.csv"
