@@ -1,10 +1,9 @@
 """Polars Ecological Engine for BBS-Pipeline v3.
 
 Implements predicate-first protocol filtering, observer tenure classification,
-route continuity ratio filtering, 10-stop/50-stop temporal harmonization,
-extirpation-aware zero-filling (decoupled from observation tables), 2020 COVID
-survey cancellation handling, rolling window smoothing, a-la-carte metadata
-joins, and ecological guild rollups.
+route continuity ratio filtering, start-point boundary selection, 10-stop/50-stop
+temporal harmonization, extirpation-aware zero-filling over each route's historical
+species pool, and a-la-carte metadata joins.
 """
 
 from __future__ import annotations
@@ -14,7 +13,6 @@ from dataclasses import dataclass
 import polars as pl
 
 from bbs_pipeline.contracts import (
-    Covid2020Mode,
     FunnelAuditMetrics,
     GuildRegistryContract,
     JoinDimension,
@@ -23,6 +21,7 @@ from bbs_pipeline.contracts import (
     StopAggregationMode,
     TemporalRoutingMode,
 )
+from bbs_pipeline.spatial.selection import routes_within_boundary
 
 # Canonical BBS subspecies/unidentified/hybrid AOU to parent AOU mappings
 SUBSPECIES_PARENT_AOU_MAP: dict[str, str] = {
@@ -76,7 +75,6 @@ class EcologicalEngineResult:
     """Output bundle from the Polars Ecological Engine."""
 
     observations_df: pl.DataFrame
-    guild_rollup_df: pl.DataFrame
     funnel_metrics: FunnelAuditMetrics
     active_joins: list[str]
 
@@ -451,92 +449,6 @@ def harmonize_observations(
     return deduped.select([*OBSERVATION_KEYS, *bin_val_cols])
 
 
-def apply_covid_2020_policy[FrameT: (pl.DataFrame, pl.LazyFrame)](
-    matrix: FrameT,
-    protocol: ProtocolConfigContract,
-) -> FrameT:
-    """Apply the configured 2020 COVID-19 survey cancellation policy."""
-    lf = _to_lazy(matrix)
-    schema = lf.collect_schema()
-    schema_names = list(schema.names())
-
-    if "is_covid_imputed" not in schema_names:
-        lf = lf.with_columns(pl.lit(False).alias("is_covid_imputed"))
-        schema_names.append("is_covid_imputed")
-
-    start_yr, end_yr = protocol.year_range
-    if not (start_yr <= 2020 <= end_yr):
-        return _match_return_type(lf, matrix)
-
-    mode = protocol.covid_2020_mode
-    base_no_2020 = lf.filter(pl.col("Year") != 2020)
-    # Imputed 2020 rows were never surveyed, so they carry no run ID
-    imputed_run_exprs: list[pl.Expr] = (
-        [pl.lit(None, dtype=pl.Int64).alias("RouteDataID")] if "RouteDataID" in schema_names else []
-    )
-
-    if mode == Covid2020Mode.EXCLUDE_GAP:
-        return _match_return_type(base_no_2020, matrix)
-
-    if mode == Covid2020Mode.SUBSTITUTE_2019:
-        imputed_2020 = (
-            base_no_2020.filter(pl.col("Year") == 2019)
-            .with_columns(
-                [
-                    pl.lit(2020, dtype=pl.Int64).alias("Year"),
-                    pl.lit(True).alias("is_covid_imputed"),
-                    *imputed_run_exprs,
-                ]
-            )
-            .select(schema_names)
-        )
-        out_lf = pl.concat(
-            [base_no_2020.select(schema_names), imputed_2020], how="vertical_relaxed"
-        )
-        return _match_return_type(out_lf, matrix)
-
-    if mode == Covid2020Mode.INTERPOLATE_2019_2021:
-        count_candidates = [
-            "route_total",
-            *[f"Count{b * 10}" for b in range(1, 6)],
-            *[f"Stop{i}" for i in range(1, 51)],
-        ]
-        present_count_cols = [c for c in count_candidates if c in schema_names]
-
-        df_2019 = base_no_2020.filter(pl.col("Year") == 2019)
-        df_2021 = base_no_2020.filter(pl.col("Year") == 2021).select(
-            [
-                "route_id",
-                "AOU",
-                *[pl.col(c).alias(f"{c}__2021") for c in present_count_cols],
-            ]
-        )
-
-        avg_exprs = [
-            ((pl.col(c).cast(pl.Float64) + pl.col(f"{c}__2021").cast(pl.Float64)) / 2.0).alias(c)
-            for c in present_count_cols
-        ]
-        meta_exprs: list[pl.Expr] = [
-            pl.lit(2020, dtype=pl.Int64).alias("Year"),
-            pl.lit(True).alias("is_covid_imputed"),
-            *imputed_run_exprs,
-        ]
-        if "is_zero_filled" in schema_names:
-            meta_exprs.append(pl.lit(False).alias("is_zero_filled"))
-
-        imputed_2020 = (
-            df_2019.join(df_2021, on=["route_id", "AOU"], how="inner")
-            .with_columns([*avg_exprs, *meta_exprs])
-            .select(schema_names)
-        )
-        out_lf = pl.concat(
-            [base_no_2020.select(schema_names), imputed_2020], how="vertical_relaxed"
-        )
-        return _match_return_type(out_lf, matrix)
-
-    return _match_return_type(lf, matrix)
-
-
 def historical_species_pool(
     tables: dict[str, pl.LazyFrame | pl.DataFrame],
     lump_subspecies_and_hybrids: bool = True,
@@ -637,8 +549,6 @@ def run_ecological_engine(
 
     start_yr, end_yr = protocol.year_range
     predicates: list[pl.Expr] = [(pl.col("Year") >= start_yr) & (pl.col("Year") <= end_yr)]
-    if protocol.covid_2020_mode == Covid2020Mode.EXCLUDE_GAP:
-        predicates.append(pl.col("Year") != 2020)
     if protocol.run_types and "RunType" in events_schema:
         predicates.append(pl.col("RunType").cast(pl.Int64).is_in(protocol.run_types))
     if protocol.quality_current_ids and "QualityCurrentID" in events_schema:
@@ -653,6 +563,9 @@ def run_ecological_engine(
         predicates.append(pl.col("Stratum").cast(pl.Int64).is_in(protocol.strata))
     if protocol.routes:
         predicates.append(pl.col("route_id").is_in(protocol.routes))
+    if protocol.boundary_path is not None:
+        inside_ids = routes_within_boundary(routes_dedup_lf.collect(), protocol.boundary_path)
+        predicates.append(pl.col("route_id").is_in(inside_ids))
 
     combined_pred = predicates[0]
     for p in predicates[1:]:
@@ -735,46 +648,9 @@ def run_ecological_engine(
 
     zero_filled_matrix_rows = int(matrix_lf.select(pl.len()).collect().item())
 
-    # Step 8: 2020 COVID Survey Cancellation Handling
-    covid_handled_lf = apply_covid_2020_policy(matrix_lf, protocol)
+    final_lf = matrix_lf
 
-    # Step 9a: Guild Rollup per (route_id, Year)
-    guild_key_str = guilds.active_guild or "all"
-    guild_rollup_df = (
-        covid_handled_lf.group_by(["route_id", "Year"])
-        .agg(
-            [
-                pl.lit(guild_key_str).alias("guild_key"),
-                pl.col("route_total").sum().alias("guild_total_abundance"),
-                (pl.col("route_total") > 0).cast(pl.Int64).sum().alias("species_richness"),
-                pl.lit(n_target_species, dtype=pl.Int64).alias("target_species_count"),
-            ]
-        )
-        .with_columns(
-            (
-                pl.col("species_richness").cast(pl.Float64)
-                / pl.lit(float(max(1, n_target_species)))
-            ).alias("guild_occupancy_rate")
-        )
-        .sort(["route_id", "Year"])
-        .collect()
-    )
-
-    # Step 9b: Rolling Window Smoothing
-    final_lf = covid_handled_lf.sort(["route_id", "AOU", "Year"])
-    if protocol.rolling_window_years is not None and protocol.rolling_window_years > 1:
-        final_lf = final_lf.with_columns(
-            pl.col("route_total")
-            .cast(pl.Float64)
-            .rolling_mean(
-                window_size=protocol.rolling_window_years,
-                min_samples=1,
-            )
-            .over(["route_id", "AOU"])
-            .alias("rolling_mean_abundance")
-        )
-
-    # Step 9c: A-La-Carte Joins
+    # Step 8: A-La-Carte Joins
     active_joins: list[str] = []
     requested_joins = set(protocol.include_joins)
 
@@ -827,7 +703,6 @@ def run_ecological_engine(
 
     return EcologicalEngineResult(
         observations_df=observations_df,
-        guild_rollup_df=guild_rollup_df,
         funnel_metrics=funnel_metrics,
         active_joins=active_joins,
     )

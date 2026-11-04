@@ -6,7 +6,6 @@ import polars as pl
 import pytest
 
 from bbs_pipeline.contracts import (
-    Covid2020Mode,
     GuildProfileContract,
     GuildRegistryContract,
     JoinDimension,
@@ -144,7 +143,6 @@ def test_extirpation_aware_zero_filling() -> None:
     protocol = ProtocolConfigContract(
         year_range=(2018, 2022),
         routes=["63_001"],
-        covid_2020_mode=Covid2020Mode.EXCLUDE_GAP,
         enable_extirpation_zero_fill=True,
     )
 
@@ -166,21 +164,13 @@ def test_extirpation_aware_zero_filling() -> None:
     assert woth_2021["route_total"].item() == 16
     assert woth_2021["is_zero_filled"].item() is False
 
-    # Guild rollup in 2021 should have abundance=16, species_richness=1, occupancy=0.5
-    rollup_2021 = res.guild_rollup_df.filter(pl.col("Year") == 2021)
-    assert rollup_2021["guild_total_abundance"].item() == 16
-    assert rollup_2021["species_richness"].item() == 1
-    assert rollup_2021["target_species_count"].item() == 2
-    assert rollup_2021["guild_occupancy_rate"].item() == pytest.approx(0.5)
 
-
-def test_covid_2020_exclude_gap_and_continuity() -> None:
-    """Prove exclude_gap yields 1.0 (4/4) continuity over 2018-2022 and no 2020 rows."""
+def test_cancelled_2020_survey_does_not_count_against_continuity() -> None:
+    """Prove 2020 is left out of the continuity denominator: 4/4 years over 2018-2022 = 1.0."""
     tables = _build_synthetic_tables()
     guilds = _build_two_species_guilds()
     protocol = ProtocolConfigContract(
         year_range=(2018, 2022),
-        covid_2020_mode=Covid2020Mode.EXCLUDE_GAP,
         min_route_continuity_ratio=1.0,
     )
 
@@ -192,55 +182,6 @@ def test_covid_2020_exclude_gap_and_continuity() -> None:
     assert set(df["route_id"].to_list()) == {"63_001"}
     assert 2020 not in df["Year"].to_list()
     assert df["route_continuity_ratio"].unique().to_list() == [pytest.approx(1.0)]
-    assert all(val is False for val in df["is_covid_imputed"].to_list())
-
-
-def test_covid_2020_substitute_2019() -> None:
-    """Prove substitute_2019 clones 2019 rows into 2020 with is_covid_imputed == True."""
-    tables = _build_synthetic_tables()
-    guilds = _build_two_species_guilds()
-    protocol = ProtocolConfigContract(
-        year_range=(2018, 2022),
-        routes=["63_001"],
-        covid_2020_mode=Covid2020Mode.SUBSTITUTE_2019,
-    )
-
-    res = run_ecological_engine(tables, guilds, protocol)
-    df = res.observations_df
-
-    rows_2019 = df.filter(pl.col("Year") == 2019).sort("AOU")
-    rows_2020 = df.filter(pl.col("Year") == 2020).sort("AOU")
-
-    assert rows_2020.height == 2
-    assert rows_2020["route_total"].to_list() == rows_2019["route_total"].to_list()
-    assert rows_2020["is_covid_imputed"].to_list() == [True, True]
-
-
-def test_covid_2020_interpolate_2019_2021() -> None:
-    """Prove interpolate_2019_2021 computes arithmetic mean of 2019 and 2021 per (route_id, AOU)."""
-    tables = _build_synthetic_tables()
-    guilds = _build_two_species_guilds()
-    protocol = ProtocolConfigContract(
-        year_range=(2018, 2022),
-        routes=["63_001"],
-        covid_2020_mode=Covid2020Mode.INTERPOLATE_2019_2021,
-    )
-
-    res = run_ecological_engine(tables, guilds, protocol)
-    df = res.observations_df
-
-    # For Wood Thrush (07550): 2019 route_total = 10 (6+4), 2021 route_total = 16 (10+6) -> 2020 = 13.0
-    woth_2020 = df.filter((pl.col("AOU") == "07550") & (pl.col("Year") == 2020))
-    assert woth_2020.height == 1
-    assert woth_2020["route_total"].item() == pytest.approx(13.0)
-    assert woth_2020["is_covid_imputed"].item() is True
-    assert woth_2020["is_zero_filled"].item() is False
-
-    # For Ovenbird (06740): 2019 route_total = 2, 2021 route_total = 0 -> 2020 = 1.0
-    oven_2020 = df.filter((pl.col("AOU") == "06740") & (pl.col("Year") == 2020))
-    assert oven_2020.height == 1
-    assert oven_2020["route_total"].item() == pytest.approx(1.0)
-    assert oven_2020["is_covid_imputed"].item() is True
 
 
 def test_observer_tenure_modes() -> None:
@@ -338,23 +279,21 @@ def test_hybrid_harmonized_10_stop() -> None:
     assert row_2018["route_total"].item() == 6
 
 
-def test_a_la_carte_include_joins_and_rolling_window() -> None:
+def test_a_la_carte_include_joins() -> None:
     """Prove unrequested tables in include_joins are never joined onto observations_df."""
     tables = _build_synthetic_tables()
     guilds = _build_two_species_guilds()
 
-    # Request ONLY species join, with 2-year rolling window
+    # Request ONLY species join
     protocol_sp_only = ProtocolConfigContract(
         year_range=(2018, 2022),
         routes=["63_001"],
-        rolling_window_years=2,
         include_joins=[JoinDimension.SPECIES],
     )
     res_sp = run_ecological_engine(tables, guilds, protocol_sp_only)
     cols_sp = set(res_sp.observations_df.columns)
 
     assert "English_Common_Name" in cols_sp
-    assert "rolling_mean_abundance" in cols_sp
     # Routes, Weather, and BCR columns MUST NOT appear
     assert "RouteName" not in cols_sp
     assert "Latitude" not in cols_sp

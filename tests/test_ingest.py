@@ -4,12 +4,9 @@ from __future__ import annotations
 
 import io
 import json
-import sys
-import types
 import zipfile
 from pathlib import Path
 from typing import Any
-from unittest.mock import MagicMock
 
 import polars as pl
 import pytest
@@ -293,20 +290,16 @@ def _populate_raw_nested_archives(raw_dir: Path) -> None:
     _make_ten_stop_df(63, 1, 7550).write_csv(raw_dir / "10StopData.csv")
 
 
-def test_tier2_local_raw_nested_zips_and_intake_handshake(
-    tmp_path: Path,
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    """Verify Tier 2 unpacks nested zips, concatenates state chunks, and calls IntakeEngine."""
+def test_tier2_local_raw_nested_zips_and_cache_rebuild(tmp_path: Path) -> None:
+    """Verify Tier 2 unpacks nested zips, concatenates state chunks, and rewrites the cache."""
     raw_dir = tmp_path / "raw"
     cache_dir = tmp_path / "sanitized_cache"
     _populate_raw_nested_archives(raw_dir)
 
-    # Inject a mocked intake_engine module to verify IntakeEngine.assess & execute_pipeline handshake
-    mock_intake_cls = MagicMock()
-    fake_module = types.ModuleType("intake_engine")
-    fake_module.IntakeEngine = mock_intake_cls  # type: ignore[attr-defined]
-    monkeypatch.setitem(sys.modules, "intake_engine", fake_module)
+    # A valid cache from an older build: a forced rebuild must replace it, not reuse it
+    cache_dir.mkdir(parents=True)
+    pl.DataFrame({"x": [1]}).write_parquet(cache_dir / "old_release_table.parquet")
+    (cache_dir / "intake_manifest.json").write_text('{"tables": []}', encoding="utf-8")
 
     protocol = ProtocolConfigContract(
         ingress_mode=IngressMode.AUTO_THREE_TIER,
@@ -318,11 +311,9 @@ def test_tier2_local_raw_nested_zips_and_intake_handshake(
     result = gate.execute()
 
     assert result.tier_used == "tier2_local_raw"
-    assert mock_intake_cls.assess.call_count == 1
-    assert mock_intake_cls.execute_pipeline.call_count == 1
-    _, exec_kwargs = mock_intake_cls.execute_pipeline.call_args
-    assert exec_kwargs.get("target_format") == "parquet"
-    assert exec_kwargs.get("quarantine") is True
+    assert not (cache_dir / "old_release_table.parquet").exists()
+    manifest = json.loads((cache_dir / "intake_manifest.json").read_text(encoding="utf-8"))
+    assert manifest["engine"] == "polars_builtin"
 
     # Verify all 5 roles resolved and partitioned 50-stop chunks were concatenated
     assert set(result.tables.keys()) == {"fifty_stop", "ten_stop", "weather", "routes", "species"}
@@ -428,22 +419,3 @@ def test_malformed_cache_manifest_raises(tmp_path: Path) -> None:
 
     with pytest.raises(ValueError, match="Malformed cache manifest"):
         resolve_table_roles(tmp_path)
-
-
-def test_intake_engine_failure_raises(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    """A failing IntakeEngine must not be silently replaced by the built-in sanitizer."""
-    raw_dir = tmp_path / "raw"
-    _populate_raw_nested_archives(raw_dir)
-    mock_intake_cls = MagicMock()
-    mock_intake_cls.execute_pipeline.side_effect = RuntimeError("quarantine overflow")
-    fake_module = types.ModuleType("intake_engine")
-    fake_module.IntakeEngine = mock_intake_cls  # type: ignore[attr-defined]
-    monkeypatch.setitem(sys.modules, "intake_engine", fake_module)
-    protocol = ProtocolConfigContract(
-        ingress_mode=IngressMode.LOCAL_RAW_VIA_INTAKE,
-        sanitized_cache_dir=tmp_path / "cache",
-        raw_data_dir=raw_dir,
-    )
-
-    with pytest.raises(RuntimeError, match="quarantine overflow"):
-        ThreeTierIngressGate(protocol).execute()

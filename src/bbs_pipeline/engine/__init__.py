@@ -2,7 +2,6 @@
 
 from bbs_pipeline.engine.ecology import (
     EcologicalEngineResult,
-    apply_covid_2020_policy,
     compute_observer_tenure,
     filter_target_species,
     harmonize_observations,
@@ -13,7 +12,6 @@ from bbs_pipeline.engine.ecology import (
 
 __all__ = [
     "EcologicalEngineResult",
-    "apply_covid_2020_policy",
     "compute_observer_tenure",
     "filter_target_species",
     "harmonize_observations",
