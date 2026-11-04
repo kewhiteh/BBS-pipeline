@@ -34,9 +34,9 @@ def write_output(
         observations_df.write_csv(path)
         return path
 
-    gdf = build_spatial_geodataframe(observations_df, routes_df, overlays=output.overlays)
-    if gdf.crs is None or gdf.crs.to_string().upper() != output.crs:
-        gdf = gdf.to_crs(output.crs)
+    gdf = build_spatial_geodataframe(
+        observations_df, routes_df, overlays=output.overlays, crs=output.crs
+    )
     if fmt == ExportFormat.GEOPARQUET:
         gdf.to_parquet(path)
     elif fmt == ExportFormat.GPKG:
