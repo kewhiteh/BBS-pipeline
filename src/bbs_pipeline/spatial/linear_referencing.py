@@ -2,12 +2,14 @@
 
 from __future__ import annotations
 
+import logging
 from pathlib import Path
 
 import geopandas as gpd
 import numpy as np
 import polars as pl
 import shapely
+from pyproj import Transformer
 from shapely.geometry import LineString, MultiLineString, Point
 from shapely.ops import linemerge, substring
 
@@ -40,6 +42,12 @@ TEN_STOP_BIN_INDICES: dict[str, int] = {
 }
 RAW_50_STOP_COLS: tuple[str, ...] = tuple(f"Stop{i}" for i in range(1, 51))
 
+# routes.csv start coordinates are NAD83; geometries are assembled in WGS84
+ROUTE_START_CRS = "EPSG:4269"
+WORKING_CRS = "EPSG:4326"
+
+logger = logging.getLogger(__name__)
+
 
 def _load_geodataframe(path: Path) -> gpd.GeoDataFrame:
     """Load a GeoDataFrame from GeoParquet or standard OGR vector formats."""
@@ -49,9 +57,9 @@ def _load_geodataframe(path: Path) -> gpd.GeoDataFrame:
     else:
         gdf = gpd.read_file(path)
     if gdf.crs is None:
-        gdf = gdf.set_crs("EPSG:4326")
-    elif gdf.crs.to_string() != "EPSG:4326":
-        gdf = gdf.to_crs("EPSG:4326")
+        raise ValueError(f"'{path}' has no CRS; set one on the file rather than guessing.")
+    if gdf.crs.to_string() != WORKING_CRS:
+        gdf = gdf.to_crs(WORKING_CRS)
     return gdf
 
 
@@ -82,7 +90,10 @@ def _extract_route_coordinates(
     observations_df: pl.DataFrame,
     routes_df: pl.DataFrame | pl.LazyFrame | None,
 ) -> dict[str, tuple[float, float]]:
-    """Extract (lon, lat) start coordinates per route_id from routes_df or observations_df."""
+    """Extract NAD83 (lon, lat) start coordinates per route_id from routes_df or observations_df.
+
+    Routes with missing coordinates are left out, never placed at (0, 0).
+    """
     coords_map: dict[str, tuple[float, float]] = {}
 
     sources: list[pl.DataFrame] = []
@@ -99,15 +110,13 @@ def _extract_route_coordinates(
         if lat_col and lon_col:
             dedup = (
                 df.select(["route_id", lon_col, lat_col])
-                .drop_nulls(subset=["route_id"])
+                .drop_nulls()
                 .unique(subset=["route_id"], keep="first")
             )
             for row in dedup.iter_rows(named=True):
                 rid = str(row["route_id"])
                 if rid not in coords_map:
-                    lon_val = float(row[lon_col]) if row[lon_col] is not None else 0.0
-                    lat_val = float(row[lat_col]) if row[lat_col] is not None else 0.0
-                    coords_map[rid] = (lon_val, lat_val)
+                    coords_map[rid] = (float(row[lon_col]), float(row[lat_col]))
     return coords_map
 
 
@@ -116,8 +125,14 @@ def _resolve_route_geometries(
     routes_df: pl.DataFrame | pl.LazyFrame | None,
     spatial: SpatialExportConfigContract,
 ) -> dict[str, shapely.Geometry]:
-    """Build a mapping from route_id to base geometry (LineString or Point) in EPSG:4326."""
-    coords_map = _extract_route_coordinates(observations_df, routes_df)
+    """Build a mapping from route_id to base geometry (LineString or Point) in EPSG:4326.
+
+    Routes with neither a polyline nor start coordinates are absent from the mapping and
+    logged, so they end up with NULL geometry.
+    """
+    nad83_coords = _extract_route_coordinates(observations_df, routes_df)
+    to_working = Transformer.from_crs(ROUTE_START_CRS, WORKING_CRS, always_xy=True)
+    coords_map = {rid: to_working.transform(lon, lat) for rid, (lon, lat) in nad83_coords.items()}
     geom_map: dict[str, shapely.Geometry] = {}
 
     if (
@@ -129,16 +144,20 @@ def _resolve_route_geometries(
             (c for c in ("route_id", "RouteID", "ROUTE_ID", "rteno") if c in route_gdf.columns),
             None,
         )
-        if id_col is not None:
-            for _idx, row in route_gdf.iterrows():
-                rid = str(row[id_col])
-                geom = row.geometry
-                if geom is not None and not geom.is_empty:
-                    if spatial.enable_stop_linear_referencing:
-                        lon, lat = coords_map.get(rid, (0.0, 0.0))
-                        geom_map[rid] = _ensure_linestring(geom, lon, lat)
-                    else:
-                        geom_map[rid] = geom
+        if id_col is None:
+            raise KeyError(
+                f"'{spatial.route_geometry_path}' has no route id column "
+                f"(expected one of route_id, RouteID, ROUTE_ID, rteno); "
+                f"found {list(route_gdf.columns)}."
+            )
+        for _idx, row in route_gdf.iterrows():
+            rid = str(row[id_col])
+            geom = row.geometry
+            if geom is not None and not geom.is_empty:
+                if spatial.enable_stop_linear_referencing:
+                    geom_map[rid] = _ensure_linestring(geom)
+                else:
+                    geom_map[rid] = geom
 
     unique_routes: list[str] = []
     if "route_id" in observations_df.columns:
@@ -146,14 +165,24 @@ def _resolve_route_geometries(
             str(r) for r in observations_df["route_id"].drop_nulls().unique().to_list()
         ]
 
+    missing: list[str] = []
     for rid in unique_routes:
         if rid not in geom_map:
-            lon, lat = coords_map.get(rid, (0.0, 0.0))
+            if rid not in coords_map:
+                missing.append(rid)
+                continue
+            lon, lat = coords_map[rid]
             if spatial.enable_stop_linear_referencing:
                 geom_map[rid] = LineString([(lon, lat), (lon + 0.36, lat + 0.36)])
             else:
                 geom_map[rid] = Point(lon, lat)
 
+    if missing:
+        logger.warning(
+            "%d route(s) have no polyline or start coordinates and get NULL geometry: %s",
+            len(missing),
+            sorted(missing),
+        )
     return geom_map
 
 
@@ -195,7 +224,11 @@ def _apply_stop_linear_referencing(
             bin_indices = df["bin_index"].to_list()
             geoms: list[shapely.Geometry] = []
             for rid, b_idx in zip(route_ids, bin_indices, strict=False):
-                line = _ensure_linestring(geom_map.get(str(rid)))
+                base = geom_map.get(str(rid))
+                if base is None:
+                    geoms.append(None)
+                    continue
+                line = _ensure_linestring(base)
                 idx_clamped = max(0, min(4, int(b_idx if b_idx is not None else 0)))
                 start_frac = idx_clamped * 0.2
                 end_frac = (idx_clamped + 1) * 0.2
@@ -225,7 +258,11 @@ def _apply_stop_linear_referencing(
             stop_nums = df["stop_number"].to_list()
             geoms = []
             for rid, s_num in zip(route_ids, stop_nums, strict=False):
-                line = _ensure_linestring(geom_map.get(str(rid)))
+                base = geom_map.get(str(rid))
+                if base is None:
+                    geoms.append(None)
+                    continue
+                line = _ensure_linestring(base)
                 if isinstance(s_num, str) and s_num.startswith("Stop"):
                     num_int = int(s_num.removeprefix("Stop"))
                 else:
@@ -236,7 +273,7 @@ def _apply_stop_linear_referencing(
             return df, geoms
 
     route_ids = df["route_id"].to_list() if "route_id" in df.columns else [""] * df.height
-    geoms = [geom_map.get(str(rid), Point(0.0, 0.0)) for rid in route_ids]
+    geoms = [geom_map.get(str(rid)) for rid in route_ids]
     return df, geoms
 
 
@@ -255,8 +292,7 @@ def assign_custom_overlays(
         path_obj = Path(layer_path)
         col_name = f"overlay_{layer_name}"
         if not path_obj.exists():
-            result_gdf[col_name] = None
-            continue
+            raise FileNotFoundError(f"Overlay '{layer_name}' file not found: '{path_obj}'.")
 
         overlay_gdf = _load_geodataframe(path_obj)
         if overlay_gdf.empty:
@@ -313,10 +349,10 @@ def build_spatial_geodataframe(
             if "route_id" in working_df.columns
             else [""] * working_df.height
         )
-        geometries = [geom_map.get(str(rid), Point(0.0, 0.0)) for rid in route_ids]
+        geometries = [geom_map.get(str(rid)) for rid in route_ids]
 
     pdf = working_df.to_pandas()
-    gdf = gpd.GeoDataFrame(pdf, geometry=geometries, crs="EPSG:4326")
+    gdf = gpd.GeoDataFrame(pdf, geometry=geometries, crs=WORKING_CRS)
 
     if spatial.custom_overlay_paths:
         gdf = assign_custom_overlays(gdf, spatial.custom_overlay_paths)
