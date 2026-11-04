@@ -103,9 +103,29 @@ def _print_stages(result: PipelineExecutionResult) -> None:
     for key, label in STAGE_LABELS:
         print(f"  {label:<28} {metrics[key]:>12,}")
     print(f"  {'rows in output file':<28} {result.output_rows:>12,}")
+    if result.guild_report is not None:
+        _print_guilds(result.guild_report)
     print(f"output columns ({len(result.output_columns)}):")
     for col in result.output_columns:
         print(f"  {col}")
+
+
+def _print_guilds(report: dict, limit: int = 25) -> None:
+    unmatched, missing = report["unmatched_rows"], report["species_without_guild"]
+    print(
+        f"guild file: {report['file']} ({report['matched_rows']} of {report['rows']} rows "
+        f"matched; traits: {', '.join(report['traits'])})"
+    )
+    if unmatched:
+        print(f"  guild rows matching no BBS species ({len(unmatched)}):")
+        for row in unmatched[:limit]:
+            print(f"    {row}")
+    if missing:
+        print(f"  species recorded on kept runs with no guild row ({len(missing)}):")
+        for sp in missing[:limit]:
+            print(f"    {sp['AOU']} {sp.get('English_Common_Name') or ''}")
+    if len(unmatched) > limit or len(missing) > limit:
+        print(f"  (first {limit} shown; the manifest lists all)")
 
 
 def main(argv: list[str] | None = None) -> int:

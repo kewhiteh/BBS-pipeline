@@ -15,6 +15,7 @@ from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_valida
 
 from bbs_pipeline.contracts import (
     FORMAT_BY_SUFFIX,
+    GuildSettingsContract,
     JoinDimension,
     ObserverTenureMode,
     OutputContract,
@@ -33,6 +34,7 @@ SECTION_ORDER: tuple[str, ...] = (
     "runs",
     "observations",
     "species",
+    "guilds",
     "joins",
     "output",
 )
@@ -144,6 +146,28 @@ class SpeciesSection(_Section):
         return [normalize_aou(item) for item in v]
 
 
+class GuildsSection(_Section):
+    file: Path | None = None  # "" = no guild file
+    filters: dict[str, list[str]] = Field(default_factory=dict)
+    unmatched: Literal["report", "error"] = "report"
+
+    @field_validator("file", mode="before")
+    @classmethod
+    def _file(cls, v: Any) -> Any:
+        return None if v is None or str(v).strip() == "" else v
+
+    @field_validator("filters", mode="before")
+    @classmethod
+    def _filters(cls, v: dict[str, Any]) -> dict[str, list[str]]:
+        out: dict[str, list[str]] = {}
+        for trait, values in v.items():
+            items = values if isinstance(values, list) else [values]
+            if not items:
+                raise ValueError(f"filter '{trait}' needs at least one value")
+            out[trait] = [str(item) for item in items]
+        return out
+
+
 class JoinsSection(_Section):
     tables: list[JoinDimension] = Field(
         default_factory=lambda: [JoinDimension.SPECIES, JoinDimension.ROUTES, JoinDimension.WEATHER]
@@ -180,6 +204,7 @@ class RunProfile(_Section):
     runs: RunsSection = Field(default_factory=RunsSection)
     observations: ObservationsSection = Field(default_factory=ObservationsSection)
     species: SpeciesSection = Field(default_factory=SpeciesSection)
+    guilds: GuildsSection = Field(default_factory=GuildsSection)
     joins: JoinsSection = Field(default_factory=JoinsSection)
     output: OutputSection = Field(default_factory=OutputSection)
 
@@ -212,6 +237,10 @@ class RunProfile(_Section):
                 "observations.rolling_years needs observations.zero_fill = true; without "
                 "zeros the mean would cover only years the species was detected"
             )
+        if self.guilds.file is None and (
+            self.guilds.filters or JoinDimension.GUILDS in self.joins.tables
+        ):
+            raise ValueError("guilds.filters and joins.tables = ['guilds'] need guilds.file")
         if self.output.wide_value == "rolling_mean" and not obs.rolling_years:
             raise ValueError("output.wide_value = 'rolling_mean' needs observations.rolling_years")
         protocol = ProtocolConfigContract(
@@ -243,8 +272,11 @@ class RunProfile(_Section):
             include_joins=self.joins.tables,
         )
         species = SpeciesSelectionContract(**self.species.model_dump())
+        guilds = GuildSettingsContract(**self.guilds.model_dump())
         output = OutputContract(**self.output.model_dump())
-        return PipelineConfigBundle(species=species, protocol=protocol, output=output)
+        return PipelineConfigBundle(
+            species=species, guilds=guilds, protocol=protocol, output=output
+        )
 
 
 def _format_validation_error(exc: ValidationError, origin: str) -> str:

@@ -158,6 +158,8 @@ These corrupt numbers today, so they come before the refactor. Write a failing t
 - Migrant/non-breeder exclusion from `MigrantNonBreeder`.
 - Convert the old `config/guilds.json` (removed in Phase 4; see git history) into `examples/guilds_example.csv` as a format reference only.
 
+- **Done:** `bbs_pipeline/guilds.py`, the `[guilds]` profile section, `joins.tables = ["guilds"]`, `docs/guild_file.md`, `examples/guilds_example.csv`. Guild filters combine with the `[species]` lists by AND (D12, flagged to Kyle). Migrant non-breeders are already excluded: since Phase 3 they are separate tables that never enter the observations.
+
 ### Phase 6 — Joins, columns, manifest
 - `[joins]` per table (routes, weather, vehicle, observer, species, guilds): `[]` | `["*"]` | an explicit list. Validate names against the source table and fail with the list of valid names. Replaces `JoinDimension`, `*_JOIN_COLS`, and the separate BCR dimension (B1).
 - Assert row count is unchanged across every join.
@@ -201,6 +203,7 @@ These corrupt numbers today, so they come before the refactor. Write a failing t
 | D8 | ~~Selector combination~~ **Decided:** union (any selector matches); a selector value that matches no species raises | Phase 4 |
 | D11 | ~~Minimum stops per run~~ **Decided:** use BBS's own criterion. QualityCurrentID = 1 (part of RunType = 1) requires >= 45 of 50 stops completed; the release has no per-run stop count, so there is no separate stop filter. "80% completion" means `runs.min_continuity = 0.8` | Phase 4 follow-up |
 | D9 | ~~Project profiles~~ **Decided:** `examples/wood_thrush_story_map.toml` (12 NC routes, 1995-2025, no quality filters, wide CSV) and `examples/ghy5812_guilds.toml` (BCRs 27-29, RunType 1, continuity 0.8, years open, long CSV). Output shape long/wide and an N-year rolling mean are profile options | Phase 4 |
+| D12 | Guild filters AND the `[species]` lists (chosen in Phase 5, flagged to Kyle; change if he prefers otherwise) | Phase 5 |
 | D10 | Real-data slice for the golden test | Phase 8 |
 
 Settled: Python ≥ 3.11, so `tomllib` (original decision 4).

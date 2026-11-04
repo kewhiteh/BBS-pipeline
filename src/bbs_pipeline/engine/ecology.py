@@ -8,7 +8,7 @@ species pool, and a-la-carte metadata joins.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 import polars as pl
 
@@ -21,6 +21,7 @@ from bbs_pipeline.contracts import (
     StopAggregationMode,
     TemporalRoutingMode,
 )
+from bbs_pipeline.guilds import GuildTable, guild_filter_aous
 from bbs_pipeline.sources.regions import resolve_states
 from bbs_pipeline.spatial.selection import routes_within_boundary
 
@@ -81,6 +82,8 @@ class EcologicalEngineResult:
     observations_df: pl.DataFrame
     funnel_metrics: FunnelAuditMetrics
     active_joins: list[str]
+    # Species recorded on surviving runs that have no guild row (when a guild file is used)
+    species_without_guild: list[dict[str, str]] = field(default_factory=list)
 
 
 def _to_lazy(frame: pl.DataFrame | pl.LazyFrame) -> pl.LazyFrame:
@@ -196,12 +199,12 @@ def filter_target_species[FrameT: (pl.DataFrame, pl.LazyFrame)](
     schema_names = set(lf.collect_schema().names())
     predicates: list[pl.Expr] = []
     unmatched: list[str] = []
-    for field, column in SPECIES_SELECTORS:
-        wanted = getattr(selection, field)
+    for selector, column in SPECIES_SELECTORS:
+        wanted = getattr(selection, selector)
         if not wanted:
             continue
         if column not in schema_names:
-            raise KeyError(f"species.{field} needs column '{column}' in the species list.")
+            raise KeyError(f"species.{selector} needs column '{column}' in the species list.")
         if column == "AOU":
             expr = pl.col(column)
             keys = list(wanted)
@@ -210,7 +213,7 @@ def filter_target_species[FrameT: (pl.DataFrame, pl.LazyFrame)](
             keys = [w.strip().lower() for w in wanted]
         present = set(lf.select(expr.alias("k")).collect()["k"].to_list())
         unmatched += [
-            f"{field}={w!r}" for w, k in zip(wanted, keys, strict=True) if k not in present
+            f"{selector}={w!r}" for w, k in zip(wanted, keys, strict=True) if k not in present
         ]
         predicates.append(expr.is_in(keys))
     if unmatched:
@@ -545,8 +548,15 @@ def run_ecological_engine(
     species: SpeciesSelectionContract,
     protocol: ProtocolConfigContract,
     data_source: str = "cache",
+    guilds: GuildTable | None = None,
+    guild_filters: dict[str, list[str]] | None = None,
 ) -> EcologicalEngineResult:
-    """Execute the end-to-end Polars Ecological Engine pipeline."""
+    """Execute the end-to-end Polars Ecological Engine pipeline.
+
+    With ``guilds``, the target species are further limited to those passing
+    ``guild_filters`` (AND with the species selection), and recorded species that have
+    no guild row are reported.
+    """
     if (
         protocol.temporal_routing_mode == TemporalRoutingMode.FIFTY_STOP_1997_PLUS
         and protocol.year_range[0] < FIFTY_STOP_FIRST_YEAR
@@ -690,6 +700,50 @@ def run_ecological_engine(
     count_cols = [c for c in obs_schema_names if c not in OBSERVATION_KEYS]
     run_obs_lf = harmonized_obs_lf.select(["RouteDataID", "AOU", *count_cols])
 
+    # Step 6b: Guild file — report recorded species without a guild row, then apply filters
+    species_without_guild: list[dict[str, str]] = []
+    guild_join_df: pl.DataFrame | None = None
+    if guilds is not None:
+        guild_join_df = guilds.table
+        if lump_flag:
+            guild_join_df = guild_join_df.with_columns(
+                pl.col("AOU").replace(SUBSPECIES_PARENT_AOU_MAP)
+            )
+            collapsed = guild_join_df.filter(pl.col("AOU").is_duplicated())["AOU"].unique()
+            if collapsed.len():
+                raise ValueError(
+                    f"Guild rows for a species and its subspecies collapse to the same AOU "
+                    f"when lumping: {sorted(collapsed.to_list())}"
+                )
+        recorded = (
+            valid_sampling_events_lf.select("RouteDataID")
+            .join(run_obs_lf.filter(pl.col("route_total") > 0), on="RouteDataID")
+            .select("AOU")
+            .unique()
+            .join(target_aous_df.lazy(), on="AOU", how="inner")
+            .join(guild_join_df.lazy().select("AOU"), on="AOU", how="anti")
+            .join(
+                species_raw_lf.select(["AOU", "English_Common_Name"]).unique(subset=["AOU"]),
+                on="AOU",
+                how="left",
+            )
+            .sort("AOU")
+            .collect()
+        )
+        species_without_guild = recorded.to_dicts()
+        if guild_filters:
+            allowed = guild_filter_aous(
+                GuildTable(
+                    source=guilds.source,
+                    table=guild_join_df,
+                    traits=guilds.traits,
+                    rows_total=guilds.rows_total,
+                ),
+                guild_filters,
+            )
+            target_aous_df = target_aous_df.filter(pl.col("AOU").is_in(sorted(allowed)))
+            n_target_species = int(target_aous_df.height)
+
     # Step 7: Extirpation-Aware Zero-Filling over each route's historical species pool.
     # Observations attach to surviving runs by RouteDataID, so a run removed by any
     # filter contributes nothing on either path.
@@ -758,6 +812,15 @@ def run_ecological_engine(
             final_lf = final_lf.join(wx_join_lf, on="RouteDataID", how="left")
         active_joins.append(JoinDimension.WEATHER.value)
 
+    if JoinDimension.GUILDS in requested_joins:
+        if guild_join_df is None:
+            raise ValueError("joins.tables includes 'guilds' but no guild file was given.")
+        clashes = sorted(set(guilds.traits) & set(final_lf.collect_schema().names()))
+        if clashes:
+            raise ValueError(f"Guild trait columns clash with output columns: {clashes}")
+        final_lf = final_lf.join(guild_join_df.lazy(), on="AOU", how="left")
+        active_joins.append(JoinDimension.GUILDS.value)
+
     observations_df = final_lf.sort(["route_id", "Year", "AOU"]).collect()
     final_output_rows = int(observations_df.height)
 
@@ -778,4 +841,5 @@ def run_ecological_engine(
         observations_df=observations_df,
         funnel_metrics=funnel_metrics,
         active_joins=active_joins,
+        species_without_guild=species_without_guild,
     )

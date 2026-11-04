@@ -28,3 +28,9 @@ uv run bbs run      --config project.toml --offline # writes the output file + m
 - Editor: `BBS_PROFILE=project.toml uv run streamlit run ui/app.py`.
 
 See `examples/profile_template.toml` for every setting and its default.
+
+## Guild file
+
+A CSV with one row per species (`aou`, `scientific_name`, and/or `common_name`, plus any
+trait columns) can filter species by trait and add the traits to the output. See
+[docs/guild_file.md](docs/guild_file.md) and `examples/guilds_example.csv`.
