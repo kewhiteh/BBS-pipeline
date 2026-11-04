@@ -1,14 +1,13 @@
 """Fixed-Width USGS SpeciesList.txt Normalizer.
 
-Converts raw USGS Breeding Bird Survey fixed-width ``SpeciesList.txt`` files
-(including banner headers and dashed underline formatting rows) into clean
-tabular Polars DataFrames and standard CSV files with canonical 5-digit AOU codes.
+Converts raw USGS Breeding Bird Survey fixed-width ``SpeciesList.txt`` text (releases
+before 2025; later releases ship ``SpeciesList.csv``), including banner headers and
+dashed underline rows, into a Polars DataFrame with canonical 5-digit AOU codes.
 """
 
 from __future__ import annotations
 
 import re
-from pathlib import Path
 
 import polars as pl
 
@@ -177,18 +176,3 @@ def parse_species_list_lines(raw_text: str) -> pl.DataFrame:
     if not records:
         return pl.DataFrame(schema=schema)
     return pl.DataFrame(records, schema=schema)
-
-
-def normalize_species_list_file(txt_path: Path | str, output_csv_path: Path | str) -> pl.DataFrame:
-    """Read a fixed-width ``SpeciesList.txt``, write normalized CSV, and return DataFrame."""
-    source = Path(txt_path)
-    target = Path(output_csv_path)
-    try:
-        raw_text = source.read_text(encoding="utf-8")
-    except UnicodeDecodeError:
-        raw_text = source.read_text(encoding="latin-1")
-
-    df = parse_species_list_lines(raw_text)
-    target.parent.mkdir(parents=True, exist_ok=True)
-    df.write_csv(target)
-    return df

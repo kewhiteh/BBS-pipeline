@@ -6,26 +6,23 @@ from pathlib import Path
 
 from bbs_pipeline.contracts import PipelineConfigBundle, PipelineExecutionResult
 from bbs_pipeline.engine.ecology import normalize_canonical_keys, run_ecological_engine
-from bbs_pipeline.ingest.gate import ThreeTierIngressGate
+from bbs_pipeline.sources.loader import load_sources
 from bbs_pipeline.spatial.exporter import run_spatial_export
 
 
 def run_bbs_pipeline(bundle: PipelineConfigBundle) -> PipelineExecutionResult:
     """Execute the full BBS-Pipeline v3 workflow from an immutable PipelineConfigBundle."""
-    gate = ThreeTierIngressGate(protocol=bundle.protocol)
-    ingress_result = gate.execute()
+    sources = load_sources(bundle.protocol)
 
     engine_result = run_ecological_engine(
-        tables=ingress_result.tables,
+        tables=sources.tables,
         guilds=bundle.guilds,
         protocol=bundle.protocol,
-        ingress_tier_used=ingress_result.tier_used,
+        ingress_tier_used=sources.source,
     )
 
     routes_lf = (
-        normalize_canonical_keys(ingress_result.tables["routes"])
-        if "routes" in ingress_result.tables
-        else None
+        normalize_canonical_keys(sources.tables["routes"]) if "routes" in sources.tables else None
     )
 
     exported_files = run_spatial_export(

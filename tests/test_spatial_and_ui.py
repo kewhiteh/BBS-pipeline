@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import json
 from pathlib import Path
 
 import geopandas as gpd
@@ -14,7 +13,6 @@ from streamlit.testing.v1 import AppTest
 from bbs_pipeline.cli import main as cli_main
 from bbs_pipeline.contracts import (
     ExportFormat,
-    IngressMode,
     ObserverTenureMode,
     PipelineConfigBundle,
     ProtocolConfigContract,
@@ -23,6 +21,14 @@ from bbs_pipeline.contracts import (
 from bbs_pipeline.pipeline import run_bbs_pipeline_from_dir
 from bbs_pipeline.spatial.exporter import run_spatial_export
 from bbs_pipeline.spatial.geometry import build_spatial_geodataframe
+from tests.release_fixtures import (
+    TEST_DOI,
+    fifty_frame,
+    routes_frame,
+    species_frame,
+    weather_frame,
+    write_release,
+)
 
 
 def _make_sample_observations() -> pl.DataFrame:
@@ -125,70 +131,21 @@ def test_multi_crs_and_all_six_export_formats(tmp_path: Path) -> None:
 
 
 def test_pipeline_orchestrator_and_cli(tmp_path: Path) -> None:
-    cache_dir = tmp_path / "cache"
-    cache_dir.mkdir(parents=True)
-
-    # Populate minimal Tier 1 sanitized cache
-    pl.DataFrame(
-        {
-            "StateNum": [63],
-            "Route": [1],
-            "RouteName": ["RALEIGH"],
-            "Latitude": [35.75],
-            "Longitude": [-78.65],
-            "Stratum": [11],
-            "BCR": [29],
-        }
-    ).write_parquet(cache_dir / "routes.parquet")
-
-    pl.DataFrame(
-        {
-            "RouteDataID": [1001],
-            "StateNum": [63],
-            "Route": [1],
-            "Year": [2022],
-            "ObsN": [501],
-            "RunType": [1],
-            "QualityCurrentID": [1],
-            "StartTemp": [65],
-            "EndTemp": [78],
-            "StartWind": [1],
-            "EndWind": [2],
-        }
-    ).write_parquet(cache_dir / "weather.parquet")
-
-    pl.DataFrame(
-        {
-            "AOU": ["07550"],
-            "English_Common_Name": ["Wood Thrush"],
-            "Order": ["Passeriformes"],
-            "Family": ["Turdidae"],
-            "Genus": ["Hylocichla"],
-            "Species": ["mustelina"],
-        }
-    ).write_parquet(cache_dir / "species_list.parquet")
-
-    fifty_df = pl.DataFrame(
-        {
-            "RouteDataID": [1001],
-            "StateNum": [63],
-            "Route": [1],
-            "Year": [2022],
-            "AOU": ["07550"],
-            **{f"Stop{i}": [1 if i <= 5 else 0] for i in range(1, 51)},
-        }
-    )
-    fifty_df.write_parquet(cache_dir / "fifty_stop.parquet")
-    (cache_dir / "intake_manifest.json").write_text(
-        json.dumps({"status": "healthy", "engine": "intake_engine", "tables": []}),
-        encoding="utf-8",
+    raw_dir, cache_dir = tmp_path / "raw", tmp_path / "cache"
+    write_release(
+        raw_dir,
+        routes=routes_frame([(63, 1, "RALEIGH", 35.75, -78.65)]),
+        weather=weather_frame([(1001, 63, 1, 2022, 501, 1)]),
+        species=species_frame([("07550", "Wood Thrush", "Passeriformes", "Turdidae")]),
+        fifty_stop=fifty_frame([(1001, 63, 1, 2022, "7550", dict.fromkeys(range(1, 6), 1))]),
     )
 
     cfg_dir = tmp_path / "config"
     bundle = PipelineConfigBundle(
         protocol=ProtocolConfigContract(
-            ingress_mode=IngressMode.CACHE_ONLY,
+            raw_data_dir=raw_dir,
             sanitized_cache_dir=cache_dir,
+            sciencebase_doi=TEST_DOI,
             year_range=(2021, 2023),
         ),
         spatial=SpatialExportConfigContract(
@@ -199,12 +156,11 @@ def test_pipeline_orchestrator_and_cli(tmp_path: Path) -> None:
     )
     bundle.save_to_dir(cfg_dir)
 
-    # Validate-only CLI check
-    rc_val = cli_main(["--config-dir", str(cfg_dir), "--validate-only"])
-    assert rc_val == 0
+    assert cli_main(["run", "--config-dir", str(cfg_dir), "--validate-only"]) == 0
+    assert cli_main(["run", "--config-dir", str(cfg_dir), "--offline"]) == 0
 
-    # End-to-end execution
     result = run_bbs_pipeline_from_dir(cfg_dir)
+    assert result.funnel_metrics.ingress_tier_used == "cache"
     assert result.funnel_metrics.final_output_rows == 1
     assert len(result.exported_files) == 2
     assert len(result.preview_records) == 1
@@ -226,7 +182,7 @@ def test_streamlit_workbench_two_way_contract_sync(
     assert not at.exception
 
     # Mutate Tab 1 (Ingress), Tab 2 (Guilds), Tab 3 (Protocol), Tab 4 (Spatial)
-    at.selectbox(key="ui_ingress_mode").select("local_raw_via_intake")
+    at.checkbox(key="ui_offline").check()
     at.text_input(key="ui_sciencebase_doi").set_value("10.5066/CUSTOM_DOI")
     at.checkbox(key="ui_force_resanitize").check()
 
@@ -237,7 +193,7 @@ def test_streamlit_workbench_two_way_contract_sync(
     at.text_input(key="ui_boundary_path").set_value("boundaries/nc_buffer.gpkg")
     at.slider(key="ui_continuity_ratio").set_value(0.5)
     at.selectbox(key="ui_observer_tenure_mode").select("veteran_only")
-    at.text_input(key="ui_states").set_value("63, 88")
+    at.text_input(key="ui_states").set_value("63, NC, Virginia")
     at.checkbox(key="ui_join_bcr").check()
 
     at.checkbox(key="ui_crs_5070").uncheck()
@@ -249,7 +205,7 @@ def test_streamlit_workbench_two_way_contract_sync(
     # Reload from disk and verify two-way JSON contract synchronization
     reloaded = PipelineConfigBundle.load_from_dir(cfg_dir)
 
-    assert reloaded.protocol.ingress_mode == IngressMode.LOCAL_RAW_VIA_INTAKE
+    assert reloaded.protocol.offline is True
     assert reloaded.protocol.sciencebase_doi == "10.5066/CUSTOM_DOI"
     assert reloaded.protocol.force_resanitize is True
 
@@ -262,7 +218,7 @@ def test_streamlit_workbench_two_way_contract_sync(
     assert reloaded.protocol.boundary_path == Path("boundaries/nc_buffer.gpkg")
     assert reloaded.protocol.min_route_continuity_ratio == pytest.approx(0.5)
     assert reloaded.protocol.observer_tenure_mode == ObserverTenureMode.VETERAN_ONLY
-    assert reloaded.protocol.states == [63, 88]
+    assert reloaded.protocol.states == [63, "NC", "Virginia"]
     assert "bcr" in [j.value for j in reloaded.protocol.include_joins]
 
     assert "EPSG:5070" not in reloaded.spatial.target_crs_list

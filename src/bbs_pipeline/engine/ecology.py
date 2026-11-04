@@ -21,6 +21,7 @@ from bbs_pipeline.contracts import (
     StopAggregationMode,
     TemporalRoutingMode,
 )
+from bbs_pipeline.sources.regions import resolve_states
 from bbs_pipeline.spatial.selection import routes_within_boundary
 
 # Canonical BBS subspecies/unidentified/hybrid AOU to parent AOU mappings
@@ -556,7 +557,9 @@ def run_ecological_engine(
             pl.col("QualityCurrentID").cast(pl.Int64).is_in(protocol.quality_current_ids)
         )
     if protocol.states and "StateNum" in events_schema:
-        predicates.append(pl.col("StateNum").cast(pl.Int64).is_in(protocol.states))
+        regions_df = _to_lazy(tables["regions"]).collect() if "regions" in tables else None
+        state_nums = resolve_states(protocol.states, regions_df)
+        predicates.append(pl.col("StateNum").cast(pl.Int64).is_in(state_nums))
     if protocol.bcrs and "BCR" in events_schema:
         predicates.append(pl.col("BCR").cast(pl.Int64).is_in(protocol.bcrs))
     if protocol.strata and "Stratum" in events_schema:

@@ -18,7 +18,6 @@ from bbs_pipeline.contracts import (
     ExportFormat,
     GuildProfileContract,
     GuildRegistryContract,
-    IngressMode,
     JoinDimension,
     ObserverTenureMode,
     PipelineConfigBundle,
@@ -28,6 +27,7 @@ from bbs_pipeline.contracts import (
     TemporalRoutingMode,
 )
 from bbs_pipeline.pipeline import run_bbs_pipeline_from_dir
+from bbs_pipeline.sources.cache import CACHE_MANIFEST
 
 
 def _parse_csv_strings(raw: str) -> list[str]:
@@ -81,7 +81,7 @@ def render_workbench() -> None:
 
     tab1, tab2, tab3, tab4, tab5 = st.tabs(
         [
-            "1. Data Ingress & Cache Manager",
+            "1. Release & Cache",
             "2. Taxonomic & Guild Studio",
             "3. Protocol, Geography & Join Matrix",
             "4. Spatial & Sink Configurator",
@@ -90,60 +90,51 @@ def render_workbench() -> None:
     )
 
     # -------------------------------------------------------------------------
-    # TAB 1: Data Ingress & Cache Manager
+    # TAB 1: Release & Cache
     # -------------------------------------------------------------------------
     with tab1:
-        st.subheader("Three-Tier Ingress Gate & Intake Manifest")
-        ingress_options = [m.value for m in IngressMode]
-        current_ingress_idx = (
-            ingress_options.index(bundle.protocol.ingress_mode.value)
-            if bundle.protocol.ingress_mode.value in ingress_options
-            else 0
-        )
-        ui_ingress_mode = st.selectbox(
-            "Ingress Execution Mode",
-            options=ingress_options,
-            index=current_ingress_idx,
-            key="ui_ingress_mode",
+        st.subheader("BBS Release Files & Typed Cache")
+        ui_offline = st.checkbox(
+            "Offline (never download; the release must already be fetched)",
+            value=bundle.protocol.offline,
+            key="ui_offline",
         )
         ui_sanitized_cache_dir = st.text_input(
-            "Sanitized Cache Directory",
+            "Cache Directory",
             value=str(bundle.protocol.sanitized_cache_dir),
             key="ui_sanitized_cache_dir",
         )
         ui_raw_data_dir = st.text_input(
-            "Local Raw Data Directory",
+            "Release Directory (from `bbs fetch`)",
             value=str(bundle.protocol.raw_data_dir),
             key="ui_raw_data_dir",
         )
         ui_sciencebase_doi = st.text_input(
-            "USGS ScienceBase Release DOI",
+            "BBS Release DOI or ScienceBase Item ID",
             value=bundle.protocol.sciencebase_doi,
             key="ui_sciencebase_doi",
         )
         ui_force_resanitize = st.checkbox(
-            "Force Re-Sanitize on Next Run",
+            "Rebuild Cache on Next Run",
             value=bundle.protocol.force_resanitize,
             key="ui_force_resanitize",
         )
         btn_force_resanitize = st.button(
-            "Force Re-Sanitize",
+            "Rebuild Cache",
             key="btn_force_resanitize",
         )
 
-        manifest_file = Path(ui_sanitized_cache_dir) / "intake_manifest.json"
+        manifest_file = Path(ui_sanitized_cache_dir) / CACHE_MANIFEST
         if manifest_file.is_file():
-            try:
-                manifest_json = json.loads(manifest_file.read_text(encoding="utf-8"))
-                st.success(
-                    f"Cache Status: {manifest_json.get('status', 'healthy')} "
-                    f"(Engine: {manifest_json.get('engine', 'unknown')})"
-                )
-                st.json(manifest_json)
-            except Exception as exc:
-                st.warning(f"Unable to parse intake_manifest.json: {exc}")
+            manifest_json = json.loads(manifest_file.read_text(encoding="utf-8"))
+            release = manifest_json.get("release", {})
+            st.success(
+                f"Cache built {manifest_json.get('built_at')} from "
+                f"{release.get('title', 'unknown release')} (DOI {release.get('doi')})"
+            )
+            st.json(manifest_json)
         else:
-            st.info("No intake_manifest.json detected in Sanitized Cache Directory.")
+            st.info(f"No {CACHE_MANIFEST} in the cache directory yet.")
 
     # -------------------------------------------------------------------------
     # TAB 2: Taxonomic & Guild Studio
@@ -316,7 +307,7 @@ def render_workbench() -> None:
         )
 
         ui_states = st.text_input(
-            "State Codes (comma-separated integers, empty = all)",
+            "States (StateNum, name, or abbreviation, comma-separated; empty = all)",
             value=", ".join(str(s) for s in bundle.protocol.states),
             key="ui_states",
         )
@@ -411,7 +402,7 @@ def render_workbench() -> None:
         effective_force_resanitize = True if btn_force_resanitize else bool(ui_force_resanitize)
 
         updated_protocol = ProtocolConfigContract(
-            ingress_mode=IngressMode(ui_ingress_mode),
+            offline=bool(ui_offline),
             sanitized_cache_dir=Path(ui_sanitized_cache_dir),
             raw_data_dir=Path(ui_raw_data_dir),
             sciencebase_doi=ui_sciencebase_doi,
@@ -422,7 +413,7 @@ def render_workbench() -> None:
             run_types=[int(x) for x in ui_run_types],
             quality_current_ids=[int(x) for x in ui_quality_ids],
             year_range=(int(ui_year_range[0]), int(ui_year_range[1])),
-            states=_parse_csv_ints(ui_states),
+            states=_parse_csv_strings(ui_states),
             bcrs=_parse_csv_ints(ui_bcrs),
             strata=_parse_csv_ints(ui_strata),
             routes=_parse_csv_strings(ui_routes),

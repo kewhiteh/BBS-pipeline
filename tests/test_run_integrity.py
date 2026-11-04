@@ -224,3 +224,24 @@ def test_ten_stop_abundance_is_species_total_not_stop_total() -> None:
     row = harmonize_observations({"ten_stop": ten_stop}, protocol).collect().row(0, named=True)
 
     assert row["route_total"] == 12
+
+
+def test_state_filter_accepts_abbreviations_via_release_regions() -> None:
+    tables = _tables(
+        weather_rows=[{"RouteDataID": 1, "RPID": 101, "Year": 2021, "ObsN": 5, "RunType": 1}],
+        fifty_rows=[{"RouteDataID": 1, "StateNum": 63, "Route": 1, "Year": 2021, "AOU": "07550"}],
+        stop1=[3],
+    )
+    tables["regions"] = pl.DataFrame(
+        {"StateNum": [63, 88], "StateName": ["North Carolina", "Virginia"]}
+    )
+
+    nc = run_ecological_engine(
+        tables, NO_GUILD, ProtocolConfigContract(year_range=(2021, 2021), states=["NC"])
+    )
+    va = run_ecological_engine(
+        tables, NO_GUILD, ProtocolConfigContract(year_range=(2021, 2021), states=["Virginia"])
+    )
+
+    assert nc.observations_df.height == 1
+    assert va.observations_df.height == 0

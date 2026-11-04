@@ -1,8 +1,8 @@
 {
-  "ingress_mode": "auto_three_tier",
   "sanitized_cache_dir": "data/sanitized_cache",
   "raw_data_dir": "data/raw",
-  "sciencebase_doi": "10.5066/P14SNUV4",
+  "sciencebase_doi": "10.5066/P144YU3S",
+  "offline": false,
   "http_max_retries": 3,
   "http_backoff_seconds": 1.0,
   "http_timeout_seconds": 30.0,
