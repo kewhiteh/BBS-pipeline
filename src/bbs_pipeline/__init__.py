@@ -1,8 +1,39 @@
-"""USGS Breeding Bird Survey (BBS) Pipeline."""
+"""BBS-Pipeline v3: Contract-First Polars/Shapely Spatial & Ecological ETL Engine."""
 
-import importlib.metadata
+from bbs_pipeline.contracts import (
+    Covid2020Mode,
+    ExportFormat,
+    FunnelAuditMetrics,
+    GeometrySource,
+    GuildProfileContract,
+    GuildRegistryContract,
+    IngressMode,
+    JoinDimension,
+    ObserverTenureMode,
+    PipelineConfigBundle,
+    PipelineExecutionResult,
+    ProtocolConfigContract,
+    SpatialExportConfigContract,
+    StopAggregationMode,
+    TemporalRoutingMode,
+)
 
-try:
-    __version__ = importlib.metadata.version("bbs_pipeline")
-except importlib.metadata.PackageNotFoundError:
-    __version__ = "2.0.0.dev0"
+__all__ = [
+    "Covid2020Mode",
+    "ExportFormat",
+    "FunnelAuditMetrics",
+    "GeometrySource",
+    "GuildProfileContract",
+    "GuildRegistryContract",
+    "IngressMode",
+    "JoinDimension",
+    "ObserverTenureMode",
+    "PipelineConfigBundle",
+    "PipelineExecutionResult",
+    "ProtocolConfigContract",
+    "SpatialExportConfigContract",
+    "StopAggregationMode",
+    "TemporalRoutingMode",
+]
+
+__version__ = "3.0.0"

@@ -15,22 +15,23 @@ htmlcov/
 .venv/
 env/
 venv/
-ENV/
-env.bak/
-venv.bak/
 
 # Packaging & Distribution
 build/
 dist/
 *.egg-info/
-*.egg
 
-# Data & Large Archives
-data/raw/
+# Raw data, caches, and pipeline outputs (never committed)
+data/
+output/
 *.zip
+*.csv
 *.parquet
+*.geoparquet
 *.gpkg
 *.geojson
+*.fgb
+*.duckdb
 
 # OS & Editor Artifacts
 .DS_Store
@@ -38,18 +39,5 @@ Thumbs.db
 .idea/
 .vscode/
 *.swp
-*.swo
 *~
 *Zone.Identifier
-.agents/skills/developing-with-streamlit
-
-# Data directory ignore rule (preserves required runtime guild registry)
-data/*
-!data/guilds.json
-
-# Local context dumps & data exports
-bbs_repo_context*.txt
-*.csv
-*.parquet
-*.gpkg
-*.geojson
