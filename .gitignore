@@ -26,6 +26,9 @@ data/
 output/
 *.zip
 *.csv
+# ...except reference CSVs that belong in the repo
+!examples/*.csv
+!guilds/*.csv
 *.parquet
 *.geoparquet
 *.gpkg
