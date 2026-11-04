@@ -70,6 +70,7 @@ def _build_synthetic_tables() -> dict[str, pl.DataFrame]:
     # Route 63_001 has Wood Thrush (07550) in 2018, 2019, 2021, 2022
     # Route 63_001 has Ovenbird (06740) ONLY in 2018 and 2019 (extirpated in 2021, 2022!)
     stop_data: dict[str, list[int]] = {
+        "RouteDataID": [1001, 1002, 1003, 1004, 1001, 1002],
         "CountryNum": [840, 840, 840, 840, 840, 840],
         "StateNum": [63, 63, 63, 63, 63, 63],
         "Route": [1, 1, 1, 1, 1, 1],
@@ -88,6 +89,7 @@ def _build_synthetic_tables() -> dict[str, pl.DataFrame]:
 
     ten_stop = pl.DataFrame(
         {
+            "RouteDataID": [9001, 9002],
             "CountryNum": [840, 840],
             "StateNum": [63, 63],
             "Route": [1, 1],
@@ -310,6 +312,7 @@ def test_hybrid_harmonized_10_stop() -> None:
 
     harm_df = harmonize_observations(tables, protocol).collect().sort(["Year", "AOU"])
     expected_cols = [
+        "RouteDataID",
         "route_id",
         "Year",
         "AOU",
