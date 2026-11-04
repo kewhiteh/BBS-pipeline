@@ -12,13 +12,11 @@ from bbs_pipeline.contracts import (
     StopAggregationMode,
     TemporalRoutingMode,
 )
-from bbs_pipeline.engine import (
-    compute_observer_tenure,
-    filter_target_species,
-    harmonize_observations,
-    normalize_canonical_keys,
-    run_ecological_engine,
-)
+from bbs_pipeline.engine import run_ecological_engine
+from bbs_pipeline.stages.common import normalize_canonical_keys
+from bbs_pipeline.stages.observations import harmonize_observations
+from bbs_pipeline.stages.runs import compute_observer_tenure
+from bbs_pipeline.stages.species import filter_target_species
 
 
 def _build_synthetic_tables() -> dict[str, pl.DataFrame]:

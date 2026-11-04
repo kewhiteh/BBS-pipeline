@@ -29,6 +29,8 @@ output/
 # ...except reference CSVs that belong in the repo
 !examples/*.csv
 !guilds/*.csv
+!tests/fixtures/**/*.csv
+!tests/fixtures/**/*.zip
 *.parquet
 *.geoparquet
 *.gpkg

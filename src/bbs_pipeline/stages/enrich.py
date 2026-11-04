@@ -1,4 +1,4 @@
-"""Configurable joins: which columns of which table go onto the observation rows.
+"""Enrich: configurable joins of route, run, species, and guild columns onto observations.
 
 Each table is a left join on its key. ``["*"]`` takes every joinable column, ``[]``
 nothing. A column the table does not have raises with the list of valid names. A right
@@ -11,9 +11,8 @@ from dataclasses import dataclass
 
 import polars as pl
 
-from bbs_pipeline.contracts import DEFAULT_JOINS, JOIN_TABLES
-
-__all__ = ["DEFAULT_JOINS", "JOIN_TABLES", "JoinSource", "apply_joins", "vehicle_source"]
+from bbs_pipeline.contracts import JOIN_TABLES
+from bbs_pipeline.stages.common import to_lazy
 
 # Route-level and species-level tables: their columns are constant per route or species,
 # so they survive a wide pivot
@@ -108,3 +107,66 @@ def apply_joins(
         present.update(columns)
         joined[table] = columns
     return observations, joined
+
+
+RUN_KEY_COLUMNS: frozenset[str] = frozenset(
+    {"RouteDataID", "route_id", "CountryNum", "StateNum", "Route", "Year"}
+)
+OBSERVER_COLUMNS: list[str] = ["ObsN", "obs_total_years", "is_first_year", "tenure_tier"]
+
+
+def join_sources(
+    routes_lf: pl.LazyFrame,
+    tenure_lf: pl.LazyFrame,
+    target_species_lf: pl.LazyFrame,
+    tables: dict[str, pl.LazyFrame | pl.DataFrame],
+    guild_join_df: pl.DataFrame | None,
+    guild_traits: list[str],
+) -> dict[str, JoinSource | None]:
+    """The joinable tables and the columns each offers."""
+    weather = tenure_lf.with_columns(pl.col("RouteDataID").cast(pl.Int64))
+    weather_cols = [
+        c
+        for c in weather.collect_schema().names()
+        if c not in RUN_KEY_COLUMNS and c not in OBSERVER_COLUMNS and c != "route_obs_year_rank"
+    ]
+    return {
+        "routes": JoinSource(
+            routes_lf,
+            "route_id",
+            [c for c in routes_lf.collect_schema().names() if c != "route_id"],
+        ),
+        "weather": JoinSource(weather, "RouteDataID", ["ObsN", *weather_cols]),
+        "observer": JoinSource(weather, "RouteDataID", OBSERVER_COLUMNS),
+        "vehicle": vehicle_source(to_lazy(tables["vehicle"])) if "vehicle" in tables else None,
+        "species": JoinSource(
+            target_species_lf,
+            "AOU",
+            [c for c in target_species_lf.collect_schema().names() if c != "AOU"],
+        ),
+        "guilds": (
+            JoinSource(guild_join_df.lazy(), "AOU", list(guild_traits))
+            if guild_join_df is not None
+            else None
+        ),
+    }
+
+
+def enrich(
+    observations: pl.LazyFrame,
+    sources: dict[str, JoinSource | None],
+    spec: dict[str, list[str]],
+) -> tuple[pl.LazyFrame, dict[str, list[str]], list[str]]:
+    """Apply the joins; return the frame, columns joined per table, and the wide index."""
+    spec = dict(spec)
+    if sources["guilds"] is None and spec.get("guilds") == ["*"]:
+        spec["guilds"] = []  # the default: guild traits when a guild file is given
+    observations, joined = apply_joins(observations, sources, spec)
+    wide_index = [
+        "route_id",
+        *(c for t in sorted(ROUTE_LEVEL_TABLES) for c in joined.get(t, [])),
+        "route_continuity_ratio",
+        "AOU",
+        *(c for t in ("species", "guilds") if t in SPECIES_LEVEL_TABLES for c in joined.get(t, [])),
+    ]
+    return observations, joined, wide_index

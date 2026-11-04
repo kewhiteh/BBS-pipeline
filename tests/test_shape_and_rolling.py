@@ -10,10 +10,10 @@ import pytest
 from bbs_pipeline.config import ProfileError, load_profile, profile_from_data
 from bbs_pipeline.contracts import ProtocolConfigContract, SpeciesSelectionContract
 from bbs_pipeline.engine import run_ecological_engine
-from bbs_pipeline.engine.ecology import add_rolling_mean
 from bbs_pipeline.pipeline import run_profile
 from bbs_pipeline.shape import to_wide
 from bbs_pipeline.sources.loader import load_sources
+from bbs_pipeline.stages.observations import add_rolling_mean
 from tests.release_fixtures import (
     TEST_DOI,
     fifty_frame,

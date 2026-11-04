@@ -1,0 +1,2777 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<metadata>
+  <idinfo>
+    <citation>
+      <citeinfo>
+        <origin>Ziolkowski, Jr., David J.</origin>
+        <origin>Lutmerding, Michael</origin>
+        <origin>Skalos, Shannon M.</origin>
+        <origin>English, Willow B.</origin>
+        <origin>Hudson, Marie-Anne R.</origin>
+        <pubdate>20260528</pubdate>
+        <title>2026 Release - North American Breeding Bird Survey Dataset (1966 - 2025)</title>
+        <geoform>Electronic text files.</geoform>
+        <pubinfo>
+          <pubplace>Laurel, MD</pubplace>
+          <publish>U.S. Geological Survey</publish>
+        </pubinfo>
+        <onlink>https://doi.org/10.5066/P144YU3S</onlink>
+      </citeinfo>
+    </citation>
+    <descript>
+      <abstract>The 1966-2025 North American Breeding Bird Survey (BBS) dataset contains avian point count data for more than 700 North American bird taxa (species, races, and unidentified species groupings). These data are collected annually during the breeding season, primarily in June, along thousands of randomly established roadside survey routes in the United States and Canada. Routes are roughly 24.5 miles (39.2 km) long with counting locations placed at approximately half-mile (800-m) intervals, for a total of 50 stops. At each stop, a citizen scientist highly skilled in avian identification conducts a 3-minute point count, recording all birds seen within a quarter-mile (400-m) radius and all birds heard. Surveys begin 30 minutes before local sunrise and take approximately 5 hours to complete. Routes are surveyed once per year, with the total number of routes sampled per year growing over time; just over 500 routes were sampled in 1966, while in recent decades approximately 3000 routes have been sampled annually. No data are provided for 2020. BBS field activities were cancelled in 2020 because of the coronavirus disease (COVID-19) global pandemic and observers were directed to not sample routes. In addition to avian count data, this dataset also contains survey date, survey start and end times, start and end weather conditions, a unique observer identification number, route identification information, and route location information including country, state, and BCR, as well as geographic coordinates of route start point, and an indicator of run data quality.</abstract>
+      <purpose>The North American Breeding Bird Survey uses standardized, statistically rigorous protocols to deliver scientifically credible measures of the status, trends, and environmental associations of North American birds. Federal, State, and local resource planners throughout the U.S. and Canada make extensive use of BBS information to identify at-risk species and to make wildlife management decisions.</purpose>
+    </descript>
+    <timeperd>
+      <timeinfo>
+        <rngdates>
+          <begdate>1966</begdate>
+          <enddate>2025</enddate>
+        </rngdates>
+      </timeinfo>
+      <current>ground condition</current>
+    </timeperd>
+    <status>
+      <progress>Complete</progress>
+      <update>Annually</update>
+    </status>
+    <spdom>
+      <descgeog>All U.S. states except Hawaii, as well as all Canadian provinces and territories. The Geographic coordinates for all route start points can be found in the Routes.csv file.</descgeog>
+      <bounding>
+        <westbc>-176.6350</westbc>
+        <eastbc>-52.6780</eastbc>
+        <northbc>81.8250</northbc>
+        <southbc>24.5970</southbc>
+      </bounding>
+    </spdom>
+    <keywords>
+      <theme>
+        <themekt>ISO 19115 Topic Category</themekt>
+        <themekey>biota</themekey>
+      </theme>
+      <theme>
+        <themekt>USGS Thesaurus</themekt>
+        <themekey>birds</themekey>
+        <themekey>wildlife</themekey>
+        <themekey>long-term ecological monitoring</themekey>
+        <themekey>field inventory and monitoring</themekey>
+        <themekey>animal and plant census</themekey>
+        <themekey>time series datasets</themekey>
+        <themekey>biodiversity</themekey>
+        <themekey>biogeography</themekey>
+        <themekey>wildlife population management</themekey>
+        <themekey>game species</themekey>
+        <themekey>migratory species</themekey>
+      </theme>
+      <theme>
+        <themekt>USGS Metadata Identifier</themekt>
+        <themekey>USGS:6a0b0b0ab66b0188da36aedd</themekey>
+      </theme>
+      <place>
+        <placekt>Geographic Names Information System (GNIS)</placekt>
+        <placekey>North America</placekey>
+        <placekey>United States of America</placekey>
+        <placekey>United States</placekey>
+        <placekey>Canada</placekey>
+      </place>
+    </keywords>
+    <taxonomy>
+      <keywtax>
+        <taxonkt>USGS Biocomplexity Thesaurus</taxonkt>
+        <taxonkey>Birds</taxonkey>
+      </keywtax>
+      <taxonsys>
+        <classsys>
+          <classcit>
+            <citeinfo>
+              <origin>American Ornithological Society</origin>
+              <pubdate>2026</pubdate>
+              <title>Check-list of North American Birds (online)</title>
+              <geoform>ONLINE_REFERENCE</geoform>
+              <pubinfo>
+                <pubplace>Washington, D.C.</pubplace>
+                <publish>American Ornithological Society</publish>
+              </pubinfo>
+              <onlink>https://checklist.americanornithology.org/</onlink>
+            </citeinfo>
+          </classcit>
+        </classsys>
+        <classsys>
+          <classcit>
+            <citeinfo>
+              <origin>R Terry Chesser, Shawn M Billerman, Kevin J Burns, Carla Cicero, Jon L Dunn, Blanca E Hernández-Baños, Rosa Alicia Jiménez, Oscar Johnson, Nicholas A Mason, Pamela C Rasmussen</origin>
+              <pubdate>2025</pubdate>
+              <title>Sixty-sixth supplement to the American Ornithological Society’s Check-list of North American Birds</title>
+              <geoform>ONLINE_REFERENCE</geoform>
+              <pubinfo>
+                <pubplace>Washington, D.C.</pubplace>
+                <publish>Ornithology, Volume 142, Issue 3, 1 July 2025</publish>
+              </pubinfo>
+              <onlink>https://doi.org/10.1093/ornithology/ukaf015</onlink>
+            </citeinfo>
+          </classcit>
+        </classsys>
+        <ider>
+          <cntinfo>
+            <cntperp>
+              <cntper>Dave Ziolkowski, Jr.</cntper>
+              <cntorg>USGS Eastern Ecological Science Center</cntorg>
+            </cntperp>
+            <cntpos>BBS Program Manager</cntpos>
+            <cntaddr>
+              <addrtype>mailing and physical</addrtype>
+              <address>12100 Beech Forest Road</address>
+              <city>Laurel</city>
+              <state>MD</state>
+              <postal>20708-4038</postal>
+              <country>USA</country>
+            </cntaddr>
+            <cntvoice>(301) 497-5753</cntvoice>
+            <cntemail>dziolkowski@usgs.gov</cntemail>
+          </cntinfo>
+        </ider>
+        <taxonpro>expert advice; identification keys</taxonpro>
+        <taxoncom>Data are collected by individuals who are highly skilled in aural and visual identification of wild birds. The data are then reviewed by area experts for accuracy, with appropriate corrections made, as necessary, in consultation with the observer, reference works, and local area experts.</taxoncom>
+      </taxonsys>
+      <taxongen>The majority of birds are identified to the level of species. In some cases, individuals are identified to race or an unidentified species group. See the file SpeciesList.csv for the list of species and taxa groups. Numerous changes in the taxonomy of North American birds have occurred since 1966 and are described in the sixth and seventh editions of the American Ornithologists' Union Check-list of North American Birds and subsequent supplements. The BBS attempts to maintain a database that reflects these taxonomic and nomenclatural changes. However, in some cases BBS data management needs dictate deviation from the AOU (now the AOS) check-list. For example, when two or more species have been lumped into a single species the BBS usually maintains the former species as separate taxonomic entities within the database. Thus, lumping and re-splitting of some species during the history of the BBS has not affected how the data have been treated. When a species is split into two or more species the treatment of existing data within the database is dependent on the population distributions of the new species. If their population distributions are completely disjunct, then assignment of existing data within the database to the new species poses no problems. If the new species' population distributions overlap, then it may not be possible to assign existing data to the appropriate species group, and it may dictate the formation of an indeterminate taxa group composed of the two or more overlapping species. The BBS uses a 5-digit species identification code to uniquely identify taxa within the database. These codes were originally derived from American Ornithologists' Union's species identification numbers and are referred to as "AOU" numbers in the data tables (see the file SpeciesList.csv). [Note: the American Ornithologists' Union is now known as the American Ornithological Society.]  The AOU abandoned this numbering system, but it was continued in the numbering system of Sibley and Monroe (1990) [Sibley, C.G., and B.L. Monroe, Jr. 1990. Distribution and taxonomy of birds of the world. Yale University Press, New Haven, CT. 1111p.]  The BBS no longer attempts to maintain concordance with either species numbering system. Thus, the "AOU" numbers are simply 5-digit species identification codes used to manage data within the BBS database.</taxongen>
+      <taxoncl>
+        <taxonrn>Kingdom</taxonrn>
+        <taxonrv>Animalia</taxonrv>
+        <taxoncl>
+          <taxonrn>Subkingdom</taxonrn>
+          <taxonrv>Bilateria</taxonrv>
+          <taxoncl>
+            <taxonrn>Infrakingdom</taxonrn>
+            <taxonrv>Deuterostomia</taxonrv>
+            <taxoncl>
+              <taxonrn>Phylum</taxonrn>
+              <taxonrv>Chordata</taxonrv>
+              <taxoncl>
+                <taxonrn>Subphylum</taxonrn>
+                <taxonrv>Vertebrata</taxonrv>
+                <taxoncl>
+                  <taxonrn>Infraphylum</taxonrn>
+                  <taxonrv>Gnathostomata</taxonrv>
+                  <taxoncl>
+                    <taxonrn>Superclass</taxonrn>
+                    <taxonrv>Tetrapoda</taxonrv>
+                    <taxoncl>
+                      <taxonrn>Class</taxonrn>
+                      <taxonrv>Aves</taxonrv>
+                      <common>Birds</common>
+                      <common>oiseaux</common>
+                    </taxoncl>
+                  </taxoncl>
+                </taxoncl>
+              </taxoncl>
+            </taxoncl>
+          </taxoncl>
+        </taxoncl>
+      </taxoncl>
+    </taxonomy>
+    <accconst>No access constraints. Please see 'Distribution Information' for details.</accconst>
+    <useconst>This database, identified as the North American Breeding Bird Survey Dataset, has been approved for release and publication by the U.S. Geological Survey (USGS) and the Canadian Wildlife Service of Environment and Climate Change Canada (ECCC). Although this database has been subjected to rigorous review and is substantially complete, the USGS and ECCC reserve the right to revise the data pursuant to further analysis and review.
+
+Furthermore, it is released on the condition that the USGS, the U.S. Government, the ECCC, and the Canadian Government may not be held liable for any damages resulting from its authorized or unauthorized use.
+
+Use of these BBS data should be formally recognized in publications, presentations and other outlets via appropriate citation and acknowledgements.
+
+[Citation: Ziolkowski Jr., D.J., Lutmerding, M., Skalos, S.M., English, W.B., and Hudson, M-A.R., 2025, North American Breeding Bird Survey Dataset 1966 - 2025: U.S. Geological Survey data release, https://doi.org/10.5066/P144YU3S.]
+
+Additionally, all work using these data should acknowledge the thousands of dedicated U.S. and Canadian participants who annually perform and coordinate the survey.
+
+If a publication is to be based on the analysis of BBS data, we encourage you to read and understand these metadata and supporting documents. The National BBS staff are also available to address any questions regarding the collection and presentation of these data. Also, depending on time constraints and other factors, BBS staff may be available to assist with the writing and/or review of the manuscript.
+
+It is in the best interest of the BBS program to demonstrate the utility of the data. One way we do this is by posting a BBS-based bibliography. Upon publication of your research, we encourage you to send the National BBS office a quick note with a link to your paper or a pdf copy so we can include it.  Thank you for supporting the BBS program and we look forward to learning of your work.</useconst>
+    <ptcontac>
+      <cntinfo>
+        <cntperp>
+          <cntper>Shannon M Skalos</cntper>
+          <cntorg>USGS - Northeast Region</cntorg>
+        </cntperp>
+        <cntpos>Biologist</cntpos>
+        <cntaddr>
+          <addrtype>mailing and physical</addrtype>
+          <address>EESC - Patuxent Research Refuge, PTX - Gabrielson Office</address>
+          <city>Laurel</city>
+          <state>MD</state>
+          <postal>20708</postal>
+        </cntaddr>
+        <cntvoice>301-497-5559</cntvoice>
+        <cntemail>sskalos@usgs.gov</cntemail>
+      </cntinfo>
+    </ptcontac>
+    <datacred>U.S. Geological Survey, Eastern Ecological Science Center; Environment Canada, Canadian Wildlife Service</datacred>
+  </idinfo>
+  <dataqual>
+    <attracc>
+      <attraccr>No formal attribute accuracy tests were conducted</attraccr>
+    </attracc>
+    <logic>The data set has been subjected to multiple computerized quality assurance and quality control routines that evaluate the data for computational, value range, and species range errors. Flags raised during the QAQC process are manually reviewed by professional staff for accuracy, with appropriate corrections made in consultation with the observers, reference works, and local area experts. Upon completion of data processing, the observers are asked to complete one final data review to ensure accuracy.</logic>
+    <complete>Detailed information about the completeness of the BBS database can be found in the file "Completeness_Report_NABBS_Dataset_1966-2025.pdf".
+
+In addition to the new records for 2025, the following route data from earlier years (101 runs, identified by their Year, CountryNum, StateNum, Route, and Run Protocol ID) were processed during the 2025 season and are available for the first time in the 1966-2025 release:
+
+(2015,840,17,307,101); (2016,124,68,207,101); (2016,124,68,242,101); (2017,124,68,242,101); (2017,840,21,107,101); (2018,124,11,020,101); (2018,124,11,420,101); (2019,124,11,020,101); (2019,124,11,420,101); (2019,840,33,016,101); (2019,840,33,207,101); (2021,124,11,020,101); (2021,124,75,001,101); (2021,124,76,102,101); (2021,840,33,016,101); (2021,840,44,016,101); (2021,840,44,021,101); (2021,840,44,022,101); (2021,840,44,033,101); (2022,840,02,017,101); (2022,840,69,044,101); (2022,840,91,009,101); (2022,840,91,031,101); (2023,124,11,020,101); (2023,124,11,233,101); (2023,124,11,420,101); (2023,124,56,131,101); (2023,124,75,001,101); (2023,124,93,154,101); (2023,840,33,207,101); (2023,840,64,005,101); (2023,840,64,019,101); (2023,840,64,037,101); (2023,840,64,043,101); (2023,840,92,001,101); (2023,840,92,901,101); (2024,124,04,017,101); (2024,124,04,123,101); (2024,124,11,020,101); (2024,124,11,057,101); (2024,124,11,167,101); (2024,124,11,233,101); (2024,124,11,309,101); (2024,124,11,420,101); (2024,124,43,007,101); (2024,124,56,131,101); (2024,124,65,003,101); (2024,124,65,007,101); (2024,124,68,174,101); (2024,124,68,907,101); (2024,124,75,001,101); (2024,124,93,154,101); (2024,840,02,017,101); (2024,840,02,105,101); (2024,840,02,207,101); (2024,840,03,003,101); (2024,840,03,010,101); (2024,840,03,118,101); (2024,840,03,318,101); (2024,840,27,308,101); (2024,840,33,002,101); (2024,840,33,111,101); (2024,840,33,202,101); (2024,840,33,207,101); (2024,840,33,907,101); (2024,840,53,004,101); (2024,840,53,323,101); (2024,840,53,329,101); (2024,840,58,006,101); (2024,840,60,023,101); (2024,840,60,073,101); (2024,840,61,065,101); (2024,840,63,228,101); (2024,840,69,003,101); (2024,840,72,004,101); (2024,840,72,033,101); (2024,840,82,001,101); (2024,840,85,103,101); (2024,840,85,152,101); (2024,840,89,075,101); (2024,840,90,014,101); (2024,840,92,001,101); (2024,840,92,072,101); (2024,840,92,901,101)   No data are provided for 2020. BBS field activities were cancelled in 2020 because of the coronavirus disease (COVID-19) global pandemic and the direction to observers to not sample routes.</complete>
+    <posacc>
+      <horizpa>
+        <horizpar>No formal positional accuracy tests were conducted</horizpar>
+      </horizpa>
+      <vertacc>
+        <vertaccr>No formal positional accuracy tests were conducted</vertaccr>
+      </vertacc>
+    </posacc>
+    <lineage>
+      <method>
+        <methtype>Field</methtype>
+        <methdesc>Sample locations are established using a stratified random process within a state/province/territory, where the stratification units are 1-degree blocks of latitude-longitude. Site selection is constrained by availability of suitable roads to conduct counts. Sample routes consist of 50 roadside sample locations spaced at approximately 800-meter intervals, as road and safety conditions allow. A 3-minute point count is conducted at each stop by one person, highly skilled in avian identification, who identifies and records all birds detected. Each route starts 30 minutes before local sunrise and takes approximately 5 hours to complete.</methdesc>
+        <methcite>
+          <citeinfo>
+            <origin>USGS and CWS</origin>
+            <pubdate>1998</pubdate>
+            <title>Instructions for Conducting the North American Breeding Bird Survey</title>
+            <geoform>Document</geoform>
+            <onlink>www.pwrc.usgs.gov/bbs/participate/instructions.html</onlink>
+          </citeinfo>
+        </methcite>
+      </method>
+      <procstep>
+        <procdesc>Each year avian point count data are submitted to the National BBS office by participants via a web-based data entry program (Data Entry and Review Portal 3.0). In approximately 15% of cases data are entered online by BBS staff using the same web application when participant does not do so. The observer then mails hard copies of completed data forms to BBS office for quality assurance and archiving purposes. Once in the BBS database (MS SQL), the newly submitted data are then subjected to computerized quality assurance and quality control routines to identify potentially incorrect, out of range, or incomplete data values which are temporarily flagged. These data flags are then manually reviewed by BBS staff who use original data sheets, communication with observers and regional coordinators, expert knowledge, published references, and local experts to resolve the identified data flags. The goals are two-fold: ensure submitted data were reported and entered accurately and then indicate if a route-based data set meets BBS criteria. Once the data flags are resolved, the data are released to the observers for their review and comment. The data are then subjected to a final review during which the route-based data set is evaluated to determine if it meets BBS criteria: The BBS provides a “RunType” code in the file Weather.csv to help data users determine which data do or do not meet the BBS program’s data quality criteria. Since 1966 approximately 10% of the route runs submitted have not met the criteria. See the file RunType.pdf for further information.</procdesc>
+        <procdate>202605</procdate>
+      </procstep>
+    </lineage>
+  </dataqual>
+  <spdoinfo>
+    <direct>Point</direct>
+  </spdoinfo>
+  <eainfo>
+    <detailed>
+      <enttyp>
+        <enttypl>Routes.csv</enttypl>
+        <enttypd>A Comma Separated Value (CSV) data file containing a list of routes with location name, latitude and longitude of the start point, stratum, BCR, and an indication of whether each route is currently active. There is one record in the Routes.csv file for each BBS route. Note that the BBS is a route-level program and the only spatial data are route start coordinates.</enttypd>
+        <enttypds>Producer Defined</enttypds>
+      </enttyp>
+      <attr>
+        <attrlabl>CountryNum</attrlabl>
+        <attrdef>Three-digit identification code for country. Leading zeros may not appear in the spreadsheet.</attrdef>
+        <attrdefs>Producer Defined</attrdefs>
+        <attrdomv>
+          <edom>
+            <edomv>124</edomv>
+            <edomvd>Canada</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <edom>
+            <edomv>840</edomv>
+            <edomvd>United States</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+      </attr>
+      <attr>
+        <attrlabl>StateNum</attrlabl>
+        <attrdef>Two-digit numerical code that identifies the state, province or territory where the route is located. Leading zeros may not appear in the spreadsheet.</attrdef>
+        <attrdefs>Producer Defined</attrdefs>
+        <attrdomv>
+          <udom>02,Alabama; 03,Alaska; 04,Alberta; 06,Arizona; 07,Arkansas; 11,British Columbia; 14,California; 17,Colorado; 18,Connecticut; 21,Delaware; 25,Florida; 27,Georgia; 33,Idaho; 34,Illinois; 35,Indiana; 36,Iowa; 38,Kansas; 39,Kentucky; 42,Louisiana; 43,Northwest Territories; 44,Maine; 45,Manitoba; 46,Maryland; 47,Massachusetts; 49,Michigan; 50,Minnesota; 51,Mississippi; 52,Missouri; 53,Montana; 54,Nebraska; 55,Nevada; 56,New Brunswick; 57,Newfoundland and Labrador; 58,New Hampshire; 59,New Jersey; 60,New Mexico; 61,New York; 62,Nunavut; 63,North Carolina; 64,North Dakota; 65,Nova Scotia; 66,Ohio; 67,Oklahoma; 68,Ontario; 69,Oregon; 72,Pennsylvania; 75,Prince Edward Island; 76,Quebec; 77,Rhode Island; 79,Saskatchewan; 80,South Carolina; 81,South Dakota; 82,Tennessee; 83,Texas; 85,Utah; 87,Vermont; 88,Virginia; 89,Washington; 90,West Virginia; 91,Wisconsin; 92,Wyoming; 93,Yukon</udom>
+        </attrdomv>
+      </attr>
+      <attr>
+        <attrlabl>Route</attrlabl>
+        <attrdef>Three-digit code that identifies the route; unique within states. (Leading zeros may not appear in the spreadsheet)</attrdef>
+        <attrdefs>Producer Defined</attrdefs>
+        <attrdomv>
+          <rdom>
+            <rdommin>1</rdommin>
+            <rdommax>999</rdommax>
+          </rdom>
+        </attrdomv>
+      </attr>
+      <attr>
+        <attrlabl>RouteName</attrlabl>
+        <attrdef>Name of the route.</attrdef>
+        <attrdefs>Producer Defined</attrdefs>
+        <attrdomv>
+          <udom>The name of the route, which is typically the name of a nearby population center or geographic feature.</udom>
+        </attrdomv>
+      </attr>
+      <attr>
+        <attrlabl>Active</attrlabl>
+        <attrdef>Indicates if the route is currently active or has been discontinued. A route can be active and not sampled in a given year.</attrdef>
+        <attrdefs>Producer Defined</attrdefs>
+        <attrdomv>
+          <edom>
+            <edomv>1</edomv>
+            <edomvd>Active</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <edom>
+            <edomv>0</edomv>
+            <edomvd>Discontinued</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+      </attr>
+      <attr>
+        <attrlabl>Latitude</attrlabl>
+        <attrdef>Latitude of the route start point (in decimal degrees, NAD 83).</attrdef>
+        <attrdefs>Producer Defined</attrdefs>
+        <attrdomv>
+          <rdom>
+            <rdommin>24.597</rdommin>
+            <rdommax>81.825</rdommax>
+          </rdom>
+        </attrdomv>
+      </attr>
+      <attr>
+        <attrlabl>Longitude</attrlabl>
+        <attrdef>Longitude of the route start point (in decimal degrees, NAD 83).</attrdef>
+        <attrdefs>Producer Defined</attrdefs>
+        <attrdomv>
+          <rdom>
+            <rdommin>-176.635</rdommin>
+            <rdommax>-52.678</rdommax>
+          </rdom>
+        </attrdomv>
+      </attr>
+      <attr>
+        <attrlabl>Stratum</attrlabl>
+        <attrdef>BBS physiographic stratum code for that route. Sources: (1) Droege, Sam. 1990. The North American Breeding Bird Survey. pages 1-4. in J.R. Sauer and S. Droege, eds. Survey designs and statistical methods for the estimation of avian population trends. USFWS Biological Report 90(1). 160 pp. (2) Bystrak, Danny. 1981. The North American Breeding Bird Survey. pages 34-41. in C.J. Ralph and J.M. Scott, eds. Estimating numbers of terrestrial birds. Studies in Avian Biology No. 6. 630 pp. For more information: http://www.pwrc.usgs.gov/bbs/StrataNames/index.html</attrdef>
+        <attrdefs>Producer Defined</attrdefs>
+        <attrdomv>
+          <edom>
+            <edomv>1</edomv>
+            <edomvd>Sub-tropical</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <edom>
+            <edomv>2</edomv>
+            <edomvd>Floridian</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <edom>
+            <edomv>3</edomv>
+            <edomvd>Coastal Flatwoods</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <edom>
+            <edomv>4</edomv>
+            <edomvd>Upper Coastal Plain</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <edom>
+            <edomv>5</edomv>
+            <edomvd>Mississippi Alluvial Plain</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <edom>
+            <edomv>6</edomv>
+            <edomvd>Coastal Prairies</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <edom>
+            <edomv>7</edomv>
+            <edomvd>South Texas Brushlands</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <edom>
+            <edomv>8</edomv>
+            <edomvd>East Texas Prairies</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <edom>
+            <edomv>9</edomv>
+            <edomvd>Glaciated Coastal Plain</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <edom>
+            <edomv>10</edomv>
+            <edomvd>Northern Piedmont</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <edom>
+            <edomv>11</edomv>
+            <edomvd>Southern Piedmont</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <edom>
+            <edomv>12</edomv>
+            <edomvd>Southern New England</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <edom>
+            <edomv>13</edomv>
+            <edomvd>Ridge and Valley</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <edom>
+            <edomv>14</edomv>
+            <edomvd>Highland Rim</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <edom>
+            <edomv>15</edomv>
+            <edomvd>Lexington Plain</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <edom>
+            <edomv>16</edomv>
+            <edomvd>Great Lakes Plain</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <edom>
+            <edomv>17</edomv>
+            <edomvd>Driftless Area</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <edom>
+            <edomv>18</edomv>
+            <edomvd>St. Lawrence River Plain</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <edom>
+            <edomv>19</edomv>
+            <edomvd>Ozark-Ouachita Plateau</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <edom>
+            <edomv>20</edomv>
+            <edomvd>Great Lakes Transition</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <edom>
+            <edomv>21</edomv>
+            <edomvd>Cumberland Plateau</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <edom>
+            <edomv>22</edomv>
+            <edomvd>Ohio Hills</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <edom>
+            <edomv>23</edomv>
+            <edomvd>Blue Ridge Mountains</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <edom>
+            <edomv>24</edomv>
+            <edomvd>Allegheny Plateau</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <edom>
+            <edomv>25</edomv>
+            <edomvd>Open Boreal Forest</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <edom>
+            <edomv>26</edomv>
+            <edomvd>Adirondack Mountains</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <edom>
+            <edomv>27</edomv>
+            <edomvd>Northern New England</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <edom>
+            <edomv>28</edomv>
+            <edomvd>N. Spruce-Hardwoods</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <edom>
+            <edomv>29</edomv>
+            <edomvd>Closed Boreal Forest</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <edom>
+            <edomv>30</edomv>
+            <edomvd>Aspen Parklands</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <edom>
+            <edomv>31</edomv>
+            <edomvd>Till Plains</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <edom>
+            <edomv>32</edomv>
+            <edomvd>Dissected Till Plains</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <edom>
+            <edomv>33</edomv>
+            <edomvd>Osage Plain-Cross Timbers</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <edom>
+            <edomv>34</edomv>
+            <edomvd>High Plains Border</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <edom>
+            <edomv>35</edomv>
+            <edomvd>Rolling Red Prairies</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <edom>
+            <edomv>36</edomv>
+            <edomvd>High Plains</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <edom>
+            <edomv>37</edomv>
+            <edomvd>Drift Prairie</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <edom>
+            <edomv>38</edomv>
+            <edomvd>Glaciated Missouri Plateau</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <edom>
+            <edomv>39</edomv>
+            <edomvd>Great Plains Roughlands</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <edom>
+            <edomv>40</edomv>
+            <edomvd>Black Prairie</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <edom>
+            <edomv>53</edomv>
+            <edomvd>Edward's Plateau</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <edom>
+            <edomv>54</edomv>
+            <edomvd>Rolling Red Plains</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <edom>
+            <edomv>55</edomv>
+            <edomvd>Staked Plains</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <edom>
+            <edomv>56</edomv>
+            <edomvd>Chihuahuan Desert</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <edom>
+            <edomv>61</edomv>
+            <edomvd>Black Hills</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <edom>
+            <edomv>62</edomv>
+            <edomvd>Southern Rockies</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <edom>
+            <edomv>63</edomv>
+            <edomvd>Fraser Plateau</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <edom>
+            <edomv>64</edomv>
+            <edomvd>Central Rockies</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <edom>
+            <edomv>65</edomv>
+            <edomvd>Dissected Rockies</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <edom>
+            <edomv>66</edomv>
+            <edomvd>Sierra Nevada</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <edom>
+            <edomv>67</edomv>
+            <edomvd>Cascade Mountains</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <edom>
+            <edomv>68</edomv>
+            <edomvd>Northern Rockies</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <edom>
+            <edomv>80</edomv>
+            <edomvd>Great Basin Deserts</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <edom>
+            <edomv>81</edomv>
+            <edomvd>Mexican Highlands</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <edom>
+            <edomv>82</edomv>
+            <edomvd>Sonoran Desert</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <edom>
+            <edomv>83</edomv>
+            <edomvd>Mojave Desert</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <edom>
+            <edomv>84</edomv>
+            <edomvd>Pinyon-Juniper Woodlands</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <edom>
+            <edomv>85</edomv>
+            <edomvd>Pitt-Klamath Plateau</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <edom>
+            <edomv>86</edomv>
+            <edomvd>Wyoming Basin</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <edom>
+            <edomv>87</edomv>
+            <edomvd>Intermountain Grasslands</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <edom>
+            <edomv>88</edomv>
+            <edomvd>Basin and Range</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <edom>
+            <edomv>89</edomv>
+            <edomvd>Columbia Plateau</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <edom>
+            <edomv>90</edomv>
+            <edomvd>S. California Grasslands</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <edom>
+            <edomv>91</edomv>
+            <edomvd>Central Valley</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <edom>
+            <edomv>92</edomv>
+            <edomvd>California Foothills</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <edom>
+            <edomv>93</edomv>
+            <edomvd>S. Pacific Rainforests</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <edom>
+            <edomv>94</edomv>
+            <edomvd>N. Pacific Rainforests</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <edom>
+            <edomv>95</edomv>
+            <edomvd>Los Angeles Ranges</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <edom>
+            <edomv>96</edomv>
+            <edomvd>Southern Alaska Coast</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <edom>
+            <edomv>98</edomv>
+            <edomvd>Willamette Lowlands</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <edom>
+            <edomv>99</edomv>
+            <edomvd>Tundra</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+      </attr>
+      <attr>
+        <attrlabl>BCR</attrlabl>
+        <attrdef>Bird Conservation Region where the route is located. Source: U.S. NABCI Committee. 2000. North American Bird Conservation Initiative: Bird Conservation Region Descriptions. 44pp. Available at: https://www.birdscanada.org/research/gislab/index.jsp?targetpg=bcr&amp;targetpg=bcr</attrdef>
+        <attrdefs>Producer Defined</attrdefs>
+        <attrdomv>
+          <edom>
+            <edomv>1</edomv>
+            <edomvd>Aleutian/Bering Sea Islands</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <edom>
+            <edomv>2</edomv>
+            <edomvd>Western Alaska</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <edom>
+            <edomv>3</edomv>
+            <edomvd>Arctic Plains and Mountains</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <edom>
+            <edomv>4</edomv>
+            <edomvd>Northwestern Interior Forest</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <edom>
+            <edomv>5</edomv>
+            <edomvd>Northern Pacific Rainforest</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <edom>
+            <edomv>6</edomv>
+            <edomvd>Boreal Taiga Plains</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <edom>
+            <edomv>7</edomv>
+            <edomvd>Taiga Shield and Hudson Plains</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <edom>
+            <edomv>8</edomv>
+            <edomvd>Boreal Softwood Shield</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <edom>
+            <edomv>9</edomv>
+            <edomvd>Great Basin</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <edom>
+            <edomv>10</edomv>
+            <edomvd>Northern Rockies</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <edom>
+            <edomv>11</edomv>
+            <edomvd>Prairie Potholes</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <edom>
+            <edomv>12</edomv>
+            <edomvd>Boreal Hardwood Transition</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <edom>
+            <edomv>13</edomv>
+            <edomvd>Lower Great Lakes/ St. Lawrence Plain</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <edom>
+            <edomv>14</edomv>
+            <edomvd>Atlantic Northern Forest</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <edom>
+            <edomv>15</edomv>
+            <edomvd>Sierra Nevada</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <edom>
+            <edomv>16</edomv>
+            <edomvd>Southern Rockies/Colorado Plateau</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <edom>
+            <edomv>17</edomv>
+            <edomvd>Badlands and Prairies</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <edom>
+            <edomv>18</edomv>
+            <edomvd>Shortgrass Prairie</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <edom>
+            <edomv>19</edomv>
+            <edomvd>Central Mixed Grass Prairie</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <edom>
+            <edomv>20</edomv>
+            <edomvd>Edwards Plateau</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <edom>
+            <edomv>21</edomv>
+            <edomvd>Oaks and Prairies</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <edom>
+            <edomv>22</edomv>
+            <edomvd>Eastern Tallgrass Prairie</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <edom>
+            <edomv>23</edomv>
+            <edomvd>Prairie Hardwood Transition</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <edom>
+            <edomv>24</edomv>
+            <edomvd>Central Hardwoods</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <edom>
+            <edomv>25</edomv>
+            <edomvd>West Gulf Coastal Plain/Ouachitas</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <edom>
+            <edomv>26</edomv>
+            <edomvd>Mississippi Alluvial Valley</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <edom>
+            <edomv>27</edomv>
+            <edomvd>Southeastern Coastal Plain</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <edom>
+            <edomv>28</edomv>
+            <edomvd>Appalachian Mountains</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <edom>
+            <edomv>29</edomv>
+            <edomvd>Piedmont</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <edom>
+            <edomv>30</edomv>
+            <edomvd>New England/Mid-Atlantic Coast</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <edom>
+            <edomv>31</edomv>
+            <edomvd>Peninsular Florida</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <edom>
+            <edomv>32</edomv>
+            <edomvd>Coastal California</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <edom>
+            <edomv>33</edomv>
+            <edomvd>Sonoran and Mojave Deserts</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <edom>
+            <edomv>34</edomv>
+            <edomvd>Sierra Madre Occidental</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <edom>
+            <edomv>35</edomv>
+            <edomvd>Chihuahuan Desert</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <edom>
+            <edomv>36</edomv>
+            <edomvd>Tamaulipan Brushlands</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <edom>
+            <edomv>37</edomv>
+            <edomvd>Gulf Coastal Prairie</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+      </attr>
+      <attr>
+        <attrlabl>RouteTypeID</attrlabl>
+        <attrdef>Indicates if a route was established along a roadside, or on a body of water.</attrdef>
+        <attrdefs>Producer Defined</attrdefs>
+        <attrdomv>
+          <edom>
+            <edomv>1</edomv>
+            <edomvd>Roadside</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <edom>
+            <edomv>2</edomv>
+            <edomvd>Water</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+      </attr>
+      <attr>
+        <attrlabl>RouteTypeDetailID</attrlabl>
+        <attrdef>Indicates route length and selection criteria.</attrdef>
+        <attrdefs>Producer Defined</attrdefs>
+        <attrdomv>
+          <edom>
+            <edomv>1</edomv>
+            <edomvd>Location of route randomly established, 50 point counts.</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <edom>
+            <edomv>2</edomv>
+            <edomvd>Location of route non-randomly established, 50 point counts.</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <edom>
+            <edomv>3</edomv>
+            <edomvd>Location of route non-randomly established, &lt; 50 point counts.</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+      </attr>
+    </detailed>
+    <detailed>
+      <enttyp>
+        <enttypl>Weather.csv</enttypl>
+        <enttypd>A Comma Separated Value (CSV) data file containing the sample history of each route (i.e. the unique data associated with each run of a route), including date and time sampled, who collected the data (observer ID), weather conditions, and run type information. There is one record in the Weather.csv file for every run of a route.</enttypd>
+        <enttypds>Producer Defined</enttypds>
+      </enttyp>
+      <attr>
+        <attrlabl>RouteDataID</attrlabl>
+        <attrdef>Data identification number; unique for each combination of CountryNum, StateNum, Route, RPID, and Year</attrdef>
+        <attrdefs>Producer Defined</attrdefs>
+        <attrdomv>
+          <udom>Unique data record ID assigned when record created.</udom>
+        </attrdomv>
+      </attr>
+      <attr>
+        <attrlabl>CountryNum</attrlabl>
+        <attrdef>Three-digit identification code for country. Leading zeros may not appear in the spreadsheet.</attrdef>
+        <attrdefs>Producer Defined</attrdefs>
+        <attrdomv>
+          <edom>
+            <edomv>124</edomv>
+            <edomvd>Canada</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <edom>
+            <edomv>840</edomv>
+            <edomvd>United States</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+      </attr>
+      <attr>
+        <attrlabl>StateNum</attrlabl>
+        <attrdef>Two-digit numerical code that identifies the state, province or territory where the route is located. Leading zeros may not appear in the spreadsheet.</attrdef>
+        <attrdefs>Producer Defined</attrdefs>
+        <attrdomv>
+          <udom>02,Alabama; 03,Alaska; 04,Alberta; 06,Arizona; 07,Arkansas; 11,British Columbia; 14,California; 17,Colorado; 18,Connecticut; 21,Delaware; 25,Florida; 27,Georgia; 33,Idaho; 34,Illinois; 35,Indiana; 36,Iowa; 38,Kansas; 39,Kentucky; 42,Louisiana; 43,Northwest Territories; 44,Maine; 45,Manitoba; 46,Maryland; 47,Massachusetts; 49,Michigan; 50,Minnesota; 51,Mississippi; 52,Missouri; 53,Montana; 54,Nebraska; 55,Nevada; 56,New Brunswick; 57,Newfoundland and Labrador; 58,New Hampshire; 59,New Jersey; 60,New Mexico; 61,New York; 62,Nunavut; 63,North Carolina; 64,North Dakota; 65,Nova Scotia; 66,Ohio; 67,Oklahoma; 68,Ontario; 69,Oregon; 72,Pennsylvania; 75,Prince Edward Island; 76,Quebec; 77,Rhode Island; 79,Saskatchewan; 80,South Carolina; 81,South Dakota; 82,Tennessee; 83,Texas; 85,Utah; 87,Vermont; 88,Virginia; 89,Washington; 90,West Virginia; 91,Wisconsin; 92,Wyoming; 93,Yukon</udom>
+        </attrdomv>
+      </attr>
+      <attr>
+        <attrlabl>Route</attrlabl>
+        <attrdef>Three-digit code that identifies the route; unique within states. (Leading zeros may not appear in the spreadsheet).</attrdef>
+        <attrdefs>Producer Defined</attrdefs>
+        <attrdomv>
+          <rdom>
+            <rdommin>1</rdommin>
+            <rdommax>999</rdommax>
+          </rdom>
+        </attrdomv>
+      </attr>
+      <attr>
+        <attrlabl>RPID</attrlabl>
+        <attrdef>Three-digit run protocol ID (RPID) number.</attrdef>
+        <attrdefs>Producer Defined</attrdefs>
+        <attrdomv>
+          <edom>
+            <edomv>101</edomv>
+            <edomvd>Standard BBS Protocol: 3-minute counts, 1 observer, single run per year.</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <edom>
+            <edomv>102</edomv>
+            <edomvd>Standard BBS Protocol, Replicate 1: 3-minute counts, 1 observer (same or different person), second run in year.</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <edom>
+            <edomv>103</edomv>
+            <edomvd>Standard BBS Protocol, Replicate 2: 3-minute counts, 1 observer (same or different person), third run in year.</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <edom>
+            <edomv>104</edomv>
+            <edomvd>Standard BBS Protocol, Replicate 3: 3-minute counts, 1 observer (same or different person), fourth run in year.</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <edom>
+            <edomv>203</edomv>
+            <edomvd>Experimental Protocol: Double-Observer Independent: 3-minute counts, 2 observer method, single run per year, Secondary Observer.</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <edom>
+            <edomv>501</edomv>
+            <edomvd>Experimental Protocol: Distance and time-of-detection methods: Three 1-minute sample periods; two distance bands (0-50 m, &gt;50-400m). For more information regarding the purpose of and methods used to collect experimental 501 data see: J.R. Sauer, W.A. Link, D.J. Ziolkowski Jr, K.L. Pardieck, D.J. Twedt. Consistency counts: Modeling the effects of a change in protocol on Breeding Bird Survey counts. 2019. The Condor 121:1-12. https://doi.org/10.1093/condor/duz009   Twedt, D. J. 2015. Estimating regional landbird populations from enhanced North American Breeding Bird Surveys. Journal of Field Ornithology 86:352–358.</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <edom>
+            <edomv>502</edomv>
+            <edomvd>Experimental Protocol: Distance and time-of-detection methods, Rep1: Three 1-minute sample periods; two distance bands (0-50 m, &gt;50-400m), second run in year.For more information regarding the purpose of and methods used to collect experimental 502 data see:J.R. Sauer, W.A. Link, D.J. Ziolkowski Jr, K.L. Pardieck, D.J. Twedt. Consistency counts: Modeling the effects of a change in protocol on Breeding Bird Survey counts. 2019. The Condor 121:1-12. https://doi.org/10.1093/condor/duz009   Twedt, D. J. 2015. Estimating regional landbird populations from enhanced North American Breeding Bird Surveys. Journal of Field Ornithology 86:352–358.</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+      </attr>
+      <attr>
+        <attrlabl>Year</attrlabl>
+        <attrdef>Four-digit year of the survey.</attrdef>
+        <attrdefs>Producer Defined</attrdefs>
+        <attrdomv>
+          <rdom>
+            <rdommin>1966</rdommin>
+            <rdommax>2025</rdommax>
+          </rdom>
+        </attrdomv>
+      </attr>
+      <attr>
+        <attrlabl>Month</attrlabl>
+        <attrdef>Month surveyed.</attrdef>
+        <attrdefs>Producer Defined</attrdefs>
+        <attrdomv>
+          <edom>
+            <edomv>1</edomv>
+            <edomvd>January</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <edom>
+            <edomv>2</edomv>
+            <edomvd>February</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <edom>
+            <edomv>3</edomv>
+            <edomvd>March</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <edom>
+            <edomv>4</edomv>
+            <edomvd>April</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <edom>
+            <edomv>5</edomv>
+            <edomvd>May</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <edom>
+            <edomv>6</edomv>
+            <edomvd>June</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <edom>
+            <edomv>7</edomv>
+            <edomvd>July</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <edom>
+            <edomv>8</edomv>
+            <edomvd>August</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <edom>
+            <edomv>9</edomv>
+            <edomvd>September</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <edom>
+            <edomv>10</edomv>
+            <edomvd>October</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <edom>
+            <edomv>11</edomv>
+            <edomvd>November</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <edom>
+            <edomv>12</edomv>
+            <edomvd>December</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+      </attr>
+      <attr>
+        <attrlabl>Day</attrlabl>
+        <attrdef>Day of the month surveyed</attrdef>
+        <attrdefs>Producer Defined</attrdefs>
+        <attrdomv>
+          <rdom>
+            <rdommin>1</rdommin>
+            <rdommax>31</rdommax>
+          </rdom>
+        </attrdomv>
+      </attr>
+      <attr>
+        <attrlabl>ObsN</attrlabl>
+        <attrdef>Observer Number of the person who conducted the run. [Each observer is assigned a unique observer number.]</attrdef>
+        <attrdefs>Producer Defined</attrdefs>
+        <attrdomv>
+          <udom>Unique numerical values that identify the individuals who collected the data.</udom>
+        </attrdomv>
+      </attr>
+      <attr>
+        <attrlabl>TotalSpp</attrlabl>
+        <attrdef>Total number of taxa recorded during the run (including species, easily identifiable subspecific forms, hybrids, and superspecies complexes for which species-level identification is not always possible).</attrdef>
+        <attrdefs>Producer Defined</attrdefs>
+        <attrdomv>
+          <rdom>
+            <rdommin>1</rdommin>
+            <rdommax>200</rdommax>
+          </rdom>
+        </attrdomv>
+      </attr>
+      <attr>
+        <attrlabl>StartTemp</attrlabl>
+        <attrdef>Temperature at the start of the run.</attrdef>
+        <attrdefs>Producer Defined</attrdefs>
+        <attrdomv>
+          <edom>
+            <edomv>NULL</edomv>
+            <edomvd>No Data</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <rdom>
+            <rdommin>-15</rdommin>
+            <rdommax>130</rdommax>
+          </rdom>
+        </attrdomv>
+      </attr>
+      <attr>
+        <attrlabl>EndTemp</attrlabl>
+        <attrdef>Temperature at the end of the run.</attrdef>
+        <attrdefs>Producer Defined</attrdefs>
+        <attrdomv>
+          <edom>
+            <edomv>NULL</edomv>
+            <edomvd>No Data</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <rdom>
+            <rdommin>-15</rdommin>
+            <rdommax>130</rdommax>
+          </rdom>
+        </attrdomv>
+      </attr>
+      <attr>
+        <attrlabl>TempScale</attrlabl>
+        <attrdef>Temperate Scale</attrdef>
+        <attrdefs>Producer Defined</attrdefs>
+        <attrdomv>
+          <edom>
+            <edomv>NULL (or blank)</edomv>
+            <edomvd>No Data</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <edom>
+            <edomv>F</edomv>
+            <edomvd>Fahrenheit</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <edom>
+            <edomv>C</edomv>
+            <edomvd>Celsius</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <edom>
+            <edomv>NULL (or blank)</edomv>
+            <edomvd>No Data</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+      </attr>
+      <attr>
+        <attrlabl>StartWind</attrlabl>
+        <attrdef>Wind speed status at the start of the run, using Beaufort Scale wind speed indicators.</attrdef>
+        <attrdefs>Producer Defined</attrdefs>
+        <attrdomv>
+          <edom>
+            <edomv>9</edomv>
+            <edomvd>No Data</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <edom>
+            <edomv>0</edomv>
+            <edomvd>Smoke rises vertically [&lt;1 mph, &lt;2 kph]</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <edom>
+            <edomv>1</edomv>
+            <edomvd>Wind direction shown by smoke drift [1-3 mph, 2-5 kph]</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <edom>
+            <edomv>2</edomv>
+            <edomvd>Wind felt on face; leaves rustle [4-7 mph, 6-12 kph]</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <edom>
+            <edomv>3</edomv>
+            <edomvd>Leaves, small twigs in constant motion [8-12 mph, 13-19 kph]</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <edom>
+            <edomv>4</edomv>
+            <edomvd>Dust rises; small branches move [13-18 mph, 20-29 Kph]</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <edom>
+            <edomv>5</edomv>
+            <edomvd>Small trees in leaf begin to sway [19-24 mph, 30-39 Kph]</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <edom>
+            <edomv>6</edomv>
+            <edomvd>Strong Breeze; Larger tree branches moving [25-31 mph, 40-50 kph]</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <edom>
+            <edomv>7</edomv>
+            <edomvd>Near gale; Whole trees in motion [32-38 mph, 51-61 kph]</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <edom>
+            <edomv>8</edomv>
+            <edomvd>Gale; Whole trees in motion [39-46 mph, 62-74 kph]</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <edom>
+            <edomv>9</edomv>
+            <edomvd>N/A - no data</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+      </attr>
+      <attr>
+        <attrlabl>EndWind</attrlabl>
+        <attrdef>Wind speed status at the end of the run, using Beaufort Scale wind speed indicators.</attrdef>
+        <attrdefs>Producer Defined</attrdefs>
+        <attrdomv>
+          <edom>
+            <edomv>9</edomv>
+            <edomvd>No Data</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <edom>
+            <edomv>0</edomv>
+            <edomvd>Smoke rises vertically [&lt;1 mph, &lt;2 kph]</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <edom>
+            <edomv>1</edomv>
+            <edomvd>Wind direction shown by smoke drift [1-3 mph, 2-5 kph]</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <edom>
+            <edomv>2</edomv>
+            <edomvd>Wind felt on face; leaves rustle [4-7 mph, 6-12 kph]</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <edom>
+            <edomv>3</edomv>
+            <edomvd>Leaves, small twigs in constant motion [8-12 mph, 13-19 kph]</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <edom>
+            <edomv>4</edomv>
+            <edomvd>Dust rises; small branches move [13-18 mph, 20-29 kph]</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <edom>
+            <edomv>5</edomv>
+            <edomvd>Small trees in leaf begin to sway [19-24 mph, 30-39 kph]</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <edom>
+            <edomv>6</edomv>
+            <edomvd>Strong Breeze; Larger tree branches moving [25-31 mph, 40-50 kph]</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <edom>
+            <edomv>7</edomv>
+            <edomvd>Near gale; Whole trees in motion [32-38 mph, 51-61 kph]</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <edom>
+            <edomv>8</edomv>
+            <edomvd>Gale; Whole trees in motion [39-46 mph, 62-74 kph]</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <edom>
+            <edomv>9</edomv>
+            <edomvd>N/A - no data</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+      </attr>
+      <attr>
+        <attrlabl>StartSky</attrlabl>
+        <attrdef>Sky conditions at the start of the run, using National Weather Service Codes.</attrdef>
+        <attrdefs>Producer Defined</attrdefs>
+        <attrdomv>
+          <edom>
+            <edomv>9</edomv>
+            <edomvd>No Data</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <edom>
+            <edomv>0</edomv>
+            <edomvd>Clear or few clouds</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <edom>
+            <edomv>1</edomv>
+            <edomvd>Partly cloudy (scattered) or variable sky</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <edom>
+            <edomv>2</edomv>
+            <edomvd>Cloudy (broken) or overcast</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <edom>
+            <edomv>4</edomv>
+            <edomvd>Fog or smoke</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <edom>
+            <edomv>5</edomv>
+            <edomvd>Drizzle</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <edom>
+            <edomv>7</edomv>
+            <edomvd>Snow</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <edom>
+            <edomv>8</edomv>
+            <edomvd>Showers</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <edom>
+            <edomv>9</edomv>
+            <edomvd>No Data</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+      </attr>
+      <attr>
+        <attrlabl>EndSky</attrlabl>
+        <attrdef>Sky conditions at the end of the run, using National Weather Service Codes.</attrdef>
+        <attrdefs>Producer Defined</attrdefs>
+        <attrdomv>
+          <edom>
+            <edomv>9</edomv>
+            <edomvd>No Data</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <edom>
+            <edomv>0</edomv>
+            <edomvd>Clear or few clouds</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <edom>
+            <edomv>1</edomv>
+            <edomvd>Partly cloudy (scattered) or variable sky</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <edom>
+            <edomv>2</edomv>
+            <edomvd>Cloudy (broken) or overcast</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <edom>
+            <edomv>4</edomv>
+            <edomvd>Fog or smoke</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <edom>
+            <edomv>5</edomv>
+            <edomvd>Drizzle</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <edom>
+            <edomv>7</edomv>
+            <edomvd>Snow</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <edom>
+            <edomv>8</edomv>
+            <edomvd>Showers</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <edom>
+            <edomv>9</edomv>
+            <edomvd>No Data</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+      </attr>
+      <attr>
+        <attrlabl>StartTime</attrlabl>
+        <attrdef>Time the run was started (recorded in 24-hour local time).</attrdef>
+        <attrdefs>Producer Defined</attrdefs>
+        <attrdomv>
+          <udom>Unformatted time values. For example, 537 = 5:37AM, 145 = 1:45AM, 1325 = 1:25PM.</udom>
+        </attrdomv>
+      </attr>
+      <attr>
+        <attrlabl>EndTime</attrlabl>
+        <attrdef>Time the run was ended (recorded in 24-hour local time).</attrdef>
+        <attrdefs>Producer Defined</attrdefs>
+        <attrdomv>
+          <udom>Unformatted time values. For example, 537 = 5:37AM, 145 = 1:45AM, 1325 = 1:25PM.</udom>
+        </attrdomv>
+      </attr>
+      <attr>
+        <attrlabl>Assistant</attrlabl>
+        <attrdef>Indicates if an assistant was used to record the data collected by the observer.</attrdef>
+        <attrdefs>Producer Defined</attrdefs>
+        <attrdomv>
+          <edom>
+            <edomv>NULL</edomv>
+            <edomvd>No Data</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <edom>
+            <edomv>0</edomv>
+            <edomvd>An assistant was not used to record the data collected by the observer.</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <edom>
+            <edomv>1</edomv>
+            <edomvd>An assistant was used to record the data collected by the observer.</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <edom>
+            <edomv>NULL</edomv>
+            <edomvd>No Data</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+      </attr>
+      <attr>
+        <attrlabl>QualityCurrentID</attrlabl>
+        <attrdef>Indicates whether the route sampling event (i.e., the run) took place under suitable weather conditions and met suitable time, date, and route completion criteria. See the file RunType.pdf for more information.
+
+Note: QualityCurrentID values are assigned during the year the data are processed, based on an evaluation at that time. While the criteria were used in earlier years to flag out of range values, the final code decisions prior to 1997 were based upon manual inspection; a subjective process. In 1997 an objective process was initiated for run evaluation based strictly on the criteria. Runs prior to 1997 have not been subjected to these criteria, to maintain historical consistency. Nonetheless, when data errors are identified after the data are released (for example, incorrect Endtime), QualityCurrentID codes are updated as needed to reflect these changes.</attrdef>
+        <attrdefs>Producer Defined</attrdefs>
+        <attrdomv>
+          <edom>
+            <edomv>1</edomv>
+            <edomvd>Data have been determined to meet all Quality Control criteria.</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <edom>
+            <edomv>0</edomv>
+            <edomvd>Data do not meet one or more Quality Control criterion.</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+      </attr>
+      <attr>
+        <attrlabl>RunType</attrlabl>
+        <attrdef>The RunType code identifies which data were collected consistent with all standard BBS criteria. See the file RunType.pdf for more information.</attrdef>
+        <attrdefs>Producer Defined</attrdefs>
+        <attrdomv>
+          <edom>
+            <edomv>1</edomv>
+            <edomvd>Meets all BBS criteria for RouteTypeDetailID, RPID, and QualityCurrentID.</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <edom>
+            <edomv>0</edomv>
+            <edomvd>Does not meet all BBS criteria for RouteTypeDetailID, RPID, and QualityCurrentID.</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+      </attr>
+    </detailed>
+    <detailed>
+      <enttyp>
+        <enttypl>States</enttypl>
+        <enttypd>These metadata describe the contents of 62 similar Comma Separated Value (CSV) data files provided in the zipped "States" folder (States.zip). There is one file for each state, province and territory in the U.S. and Canada (except Hawaii), and each file has identical fields. Each state file contains species-level avian count data summarized at 10-stop (10 point count) intervals, as well as 50-stop totals. In each file there is one record for every species detected on each run of a route in that particular state, province or territory.The 62 file names are full or abbreviated versions of the regions English name, as follows: Alabama.csv, Alaska.csv, Alberta.csv, Arizona.csv, Arkansa.csv, BritCol.csv, Califor.csv, Colorad.csv, Connect.csv, Delawar.csv, Florida.csv, Georgia.csv, Idaho.csv, Illinoi.csv, Indiana.csv, lowa.csv, Kansas.csv, Kentuck.csv, Louisia.csv, Maine.csv, Manitob.csv, Marylan.csv, Massach.csv, Michiga.csv, Minneso.csv, Mississ.csv, Missour.csv, Montana.csv, NBrunsw.csv, NCaroli.csv, NDakota.csv, Nebrask.csv, Nevada.csv, Newfoun.csv, NHampsh.csv, NJersey.csv, NMexico.csv, NovaSco.csv, Nunavut.csv, NWTerri.csv, NYork.csv, Ohio.csv, Oklahom.csv, Ontario.csv, Oregon.csv, PEl.csv, Pennsyl.csv, Quebec.csv, Rhodels.csv, Saskatc.csv, SCaroli.csv, SDakota.csv, Tenness.csv, Texas.csv, Utah.csv, Vermont.csv, Virgini.csv, W_Virgi.csv, Washing.csv, Wiscons.csv, Wyoming.csv, Yukon.csv.</enttypd>
+        <enttypds>Producer Defined</enttypds>
+      </enttyp>
+      <attr>
+        <attrlabl>RouteDataID</attrlabl>
+        <attrdef>Data identification number; unique for each combination of CountryNum, StateNum, Route, RPID, and Year</attrdef>
+        <attrdefs>Producer Defined</attrdefs>
+        <attrdomv>
+          <udom>Unique data record ID assigned when record created.</udom>
+        </attrdomv>
+      </attr>
+      <attr>
+        <attrlabl>CountryNum</attrlabl>
+        <attrdef>Three-digit identification code for country. Leading zeros may not appear in the spreadsheet.</attrdef>
+        <attrdefs>Producer Defined</attrdefs>
+        <attrdomv>
+          <edom>
+            <edomv>124</edomv>
+            <edomvd>Canada</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <edom>
+            <edomv>840</edomv>
+            <edomvd>Unites States</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+      </attr>
+      <attr>
+        <attrlabl>StateNum</attrlabl>
+        <attrdef>Two-digit numerical code that identifies the state, province or territory where the route is located. Leading zeros may not appear in the spreadsheet.</attrdef>
+        <attrdefs>Producer Defined</attrdefs>
+        <attrdomv>
+          <udom>02,Alabama; 03,Alaska; 04,Alberta; 06,Arizona; 07,Arkansas; 11,British Columbia; 14,California; 17,Colorado; 18,Connecticut; 21,Delaware; 25,Florida; 27,Georgia; 33,Idaho; 34,Illinois; 35,Indiana; 36,Iowa; 38,Kansas; 39,Kentucky; 42,Louisiana; 43,Northwest Territories; 44,Maine; 45,Manitoba; 46,Maryland; 47,Massachusetts; 49,Michigan; 50,Minnesota; 51,Mississippi; 52,Missouri; 53,Montana; 54,Nebraska; 55,Nevada; 56,New Brunswick; 57,Newfoundland and Labrador; 58,New Hampshire; 59,New Jersey; 60,New Mexico; 61,New York; 62,Nunavut; 63,North Carolina; 64,North Dakota; 65,Nova Scotia; 66,Ohio; 67,Oklahoma; 68,Ontario; 69,Oregon; 72,Pennsylvania; 75,Prince Edward Island; 76,Quebec; 77,Rhode Island; 79,Saskatchewan; 80,South Carolina; 81,South Dakota; 82,Tennessee; 83,Texas; 85,Utah; 87,Vermont; 88,Virginia; 89,Washington; 90,West Virginia; 91,Wisconsin; 92,Wyoming; 93,Yukon</udom>
+        </attrdomv>
+      </attr>
+      <attr>
+        <attrlabl>Route</attrlabl>
+        <attrdef>Three-digit code that identifies the route; unique within states. (Leading zeros may not appear in the spreadsheet).</attrdef>
+        <attrdefs>Producer Defined</attrdefs>
+        <attrdomv>
+          <rdom>
+            <rdommin>1</rdommin>
+            <rdommax>999</rdommax>
+          </rdom>
+        </attrdomv>
+      </attr>
+      <attr>
+        <attrlabl>RPID</attrlabl>
+        <attrdef>Three-digit run protocol ID (RPID) number.</attrdef>
+        <attrdefs>Producer Defined</attrdefs>
+        <attrdomv>
+          <edom>
+            <edomv>101</edomv>
+            <edomvd>Standard BBS Protocol: 3-minute counts, 1 observer, single run per year.</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <edom>
+            <edomv>102</edomv>
+            <edomvd>Standard BBS Protocol, Replicate 1: 3-minute counts, 1 observer (same or different person), second run in year.</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <edom>
+            <edomv>103</edomv>
+            <edomvd>Standard BBS Protocol, Replicate 2: 3-minute counts, 1 observer (same or different person), third run in year.</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <edom>
+            <edomv>104</edomv>
+            <edomvd>Standard BBS Protocol, Replicate 3: 3-minute counts, 1 observer (same or different person), fourth run in year.</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <edom>
+            <edomv>203</edomv>
+            <edomvd>Experimental Protocol: Double-Observer Independent: 3-minute counts, 2 observer method, single run per year, Secondary Observer.</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <edom>
+            <edomv>501</edomv>
+            <edomvd>Experimental Protocol: Distance and time-of-detection methods: Three 1-minute sample periods; two distance bands (0-50 m, &gt;50-400m). For more information regarding the purpose of and methods used to collect experimental 501 data see: J.R. Sauer, W.A. Link, D.J. Ziolkowski Jr, K.L. Pardieck, D.J. Twedt. Consistency counts: Modeling the effects of a change in protocol on Breeding Bird Survey counts. 2019. The Condor 121:1-12. https://doi.org/10.1093/condor/duz009   Twedt, D. J. 2015. Estimating regional landbird populations from enhanced North American Breeding Bird Surveys. Journal of Field Ornithology 86:352–358.</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <edom>
+            <edomv>502</edomv>
+            <edomvd>Experimental Protocol: Distance and time-of-detection methods, Rep1: Three 1-minute sample periods; two distance bands (0-50 m, &gt;50-400m), second run in year. For more information regarding the purpose of and methods used to collect experimental 502 data see:J.R. Sauer, W.A. Link, D.J. Ziolkowski Jr, K.L. Pardieck, D.J. Twedt. Consistency counts: Modeling the effects of a change in protocol on Breeding Bird Survey counts. 2019. The Condor 121:1-12, https://doi.org/10.1093/condor/duz009. Twedt, D. J. 2015. Estimating regional landbird populations from enhanced North American Breeding Bird Surveys. Journal of Field Ornithology 86:352–358.</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+      </attr>
+      <attr>
+        <attrlabl>Year</attrlabl>
+        <attrdef>Four-digit year of the survey.</attrdef>
+        <attrdefs>Producer Defined</attrdefs>
+        <attrdomv>
+          <rdom>
+            <rdommin>1966</rdommin>
+            <rdommax>2025</rdommax>
+          </rdom>
+        </attrdomv>
+      </attr>
+      <attr>
+        <attrlabl>AOU</attrlabl>
+        <attrdef>Five-digit species identification number. (Leading zeros may not appear in the 
+spreadsheet)</attrdef>
+        <attrdefs>Producer Defined</attrdefs>
+        <attrdomv>
+          <udom>See the file SpeciesList.csv for further information and the key.</udom>
+        </attrdomv>
+      </attr>
+      <attr>
+        <attrlabl>Count10</attrlabl>
+        <attrdef>Total individuals of the species recorded on stops 1-10.</attrdef>
+        <attrdefs>Producer Defined</attrdefs>
+        <attrdomv>
+          <rdom>
+            <rdommin>0</rdommin>
+            <rdommax>9999</rdommax>
+          </rdom>
+        </attrdomv>
+      </attr>
+      <attr>
+        <attrlabl>Count20</attrlabl>
+        <attrdef>Total individuals of the species recorded on stops 11-20.</attrdef>
+        <attrdefs>Producer Defined</attrdefs>
+        <attrdomv>
+          <rdom>
+            <rdommin>0</rdommin>
+            <rdommax>9999</rdommax>
+          </rdom>
+        </attrdomv>
+      </attr>
+      <attr>
+        <attrlabl>Count30</attrlabl>
+        <attrdef>Total individuals of the species recorded on stops 21-30</attrdef>
+        <attrdefs>Producer Defined</attrdefs>
+        <attrdomv>
+          <rdom>
+            <rdommin>0</rdommin>
+            <rdommax>9999</rdommax>
+          </rdom>
+        </attrdomv>
+      </attr>
+      <attr>
+        <attrlabl>Count40</attrlabl>
+        <attrdef>Total individuals of the species recorded on stops 31-40.</attrdef>
+        <attrdefs>Producer Defined</attrdefs>
+        <attrdomv>
+          <rdom>
+            <rdommin>0</rdommin>
+            <rdommax>9999</rdommax>
+          </rdom>
+        </attrdomv>
+      </attr>
+      <attr>
+        <attrlabl>Count50</attrlabl>
+        <attrdef>Total individuals of the species recorded on stops 41-50</attrdef>
+        <attrdefs>Producer Defined</attrdefs>
+        <attrdomv>
+          <rdom>
+            <rdommin>0</rdommin>
+            <rdommax>9999</rdommax>
+          </rdom>
+        </attrdomv>
+      </attr>
+      <attr>
+        <attrlabl>StopTotal</attrlabl>
+        <attrdef>Total number of stops (out of 50) on which the species was recorded.</attrdef>
+        <attrdefs>Producer Defined</attrdefs>
+        <attrdomv>
+          <rdom>
+            <rdommin>1</rdommin>
+            <rdommax>50</rdommax>
+          </rdom>
+        </attrdomv>
+      </attr>
+      <attr>
+        <attrlabl>SpeciesTotal</attrlabl>
+        <attrdef>Total individuals of the species recorded on that run of the route (sum of stops).</attrdef>
+        <attrdefs>Producer Defined</attrdefs>
+        <attrdomv>
+          <rdom>
+            <rdommin>1</rdommin>
+            <rdommax>9999</rdommax>
+          </rdom>
+        </attrdomv>
+      </attr>
+    </detailed>
+    <detailed>
+      <enttyp>
+        <enttypl>50-StopData</enttypl>
+        <enttypd>These metadata describe the contents of 10 Comma Separated Value (CSV) data files provided in the zipped folder "50-StopData". Note that the 50-stop dataset is complete only for the period from 1997 to present; most earlier data (1966-1996) are available only in the 10-stop summary files (found in the "States.zip" folder). Data from 62 states/provinces/territories in the U.S. and Canada are parsed among the 10 CSV files (sequentially named Fifty1.csv through Fifty10.csv), each of which has identical fields. The files contain species-level avian count data for each of the 50 point counts on each route, with one record for every species detected on each run of a route. The region distribution among the CSV files are as follows: Fifty1.csv - Alabama, Alaska, Alberta, Arizona, Arkansas; Fifty2.csv - British Columbia, California, Colorado, Connecticut, Delaware; Fifty3.csv - Florida, Georgia, Idaho, Illinois, Indiana, Iowa; Fifty4.csv - Kansas, Kentucky, Louisiana, Northwest Territories, Maine, Manitoba, Maryland, Massachusetts; Fifty5.csv - Michigan, Minnesota, Mississippi, Missouri, Montana, Nebraska, Nevada, New Brunswick, Newfoundland and Labrador; Fifty6.csv - New Hampshire, New Jersey, New Mexico, New York, North Carolina; Fifty7.csv - North Dakota, Nunavut, Nova Scotia, Ohio, Oklahoma, Ontario); Fifty8.csv - Oregon, Pennsylvania, Prince Edward Island, Quebec, Rhode Island, Saskatchewan, South Carolina; Fifty9.csv - South Dakota, Tennessee, Texas, Utah, Vermont; Fifty10.csv - Virginia, Washington, West Virginia, Wisconsin, Wyoming, Yukon Territories)</enttypd>
+        <enttypds>Producer Defined</enttypds>
+      </enttyp>
+      <attr>
+        <attrlabl>RouteDataID</attrlabl>
+        <attrdef>Data identification number; unique for each combination of CountryNum, StateNum, Route, RPID, and Year</attrdef>
+        <attrdefs>Producer Defined</attrdefs>
+        <attrdomv>
+          <udom>Unique data record ID assigned when record created.</udom>
+        </attrdomv>
+      </attr>
+      <attr>
+        <attrlabl>CountryNum</attrlabl>
+        <attrdef>Three-digit identification code for country. Leading zeros may not appear in the spreadsheet.</attrdef>
+        <attrdefs>Producer Defined</attrdefs>
+        <attrdomv>
+          <edom>
+            <edomv>124</edomv>
+            <edomvd>Canada</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <edom>
+            <edomv>840</edomv>
+            <edomvd>Unites States</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+      </attr>
+      <attr>
+        <attrlabl>StateNum</attrlabl>
+        <attrdef>Two-digit numerical code that identifies the state, province or territory where the route is located. Leading zeros may not appear in the spreadsheet.</attrdef>
+        <attrdefs>Producer Defined</attrdefs>
+        <attrdomv>
+          <udom>02,Alabama; 03,Alaska; 04,Alberta; 06,Arizona; 07,Arkansas; 11,British Columbia; 14,California; 17,Colorado; 18,Connecticut; 21,Delaware; 25,Florida; 27,Georgia; 33,Idaho; 34,Illinois; 35,Indiana; 36,Iowa; 38,Kansas; 39,Kentucky; 42,Louisiana; 43,Northwest Territories; 44,Maine; 45,Manitoba; 46,Maryland; 47,Massachusetts; 49,Michigan; 50,Minnesota; 51,Mississippi; 52,Missouri; 53,Montana; 54,Nebraska; 55,Nevada; 56,New Brunswick; 57,Newfoundland and Labrador; 58,New Hampshire; 59,New Jersey; 60,New Mexico; 61,New York; 62,Nunavut; 63,North Carolina; 64,North Dakota; 65,Nova Scotia; 66,Ohio; 67,Oklahoma; 68,Ontario; 69,Oregon; 72,Pennsylvania; 75,Prince Edward Island; 76,Quebec; 77,Rhode Island; 79,Saskatchewan; 80,South Carolina; 81,South Dakota; 82,Tennessee; 83,Texas; 85,Utah; 87,Vermont; 88,Virginia; 89,Washington; 90,West Virginia; 91,Wisconsin; 92,Wyoming; 93,Yukon</udom>
+        </attrdomv>
+      </attr>
+      <attr>
+        <attrlabl>Route</attrlabl>
+        <attrdef>Three-digit code that identifies the route; unique within states. (Leading zeros may not appear in the spreadsheet).</attrdef>
+        <attrdefs>Producer Defined</attrdefs>
+        <attrdomv>
+          <rdom>
+            <rdommin>1</rdommin>
+            <rdommax>999</rdommax>
+          </rdom>
+        </attrdomv>
+      </attr>
+      <attr>
+        <attrlabl>RPID</attrlabl>
+        <attrdef>Three-digit run protocol ID (RPID) number.</attrdef>
+        <attrdefs>Producer Defined</attrdefs>
+        <attrdomv>
+          <edom>
+            <edomv>101</edomv>
+            <edomvd>Standard BBS Protocol: 3-minute counts, 1 observer, single run per year.</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <edom>
+            <edomv>102</edomv>
+            <edomvd>Standard BBS Protocol, Replicate 1: 3-minute counts, 1 observer (same or different person), second run in year.</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <edom>
+            <edomv>103</edomv>
+            <edomvd>Standard BBS Protocol, Replicate 2: 3-minute counts, 1 observer (same or different person), third run in year.</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <edom>
+            <edomv>104</edomv>
+            <edomvd>Standard BBS Protocol, Replicate 3: 3-minute counts, 1 observer (same or different person), fourth run in year.</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <edom>
+            <edomv>203</edomv>
+            <edomvd>Experimental Protocol: Double-Observer Independent: 3-minute counts, 2 observer method, single run per year, Secondary Observer.</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <edom>
+            <edomv>501</edomv>
+            <edomvd>Experimental Protocol: Distance and time-of-detection methods: Three 1-minute sample periods; two distance bands (0-50 m, &gt;50-400m). For more information regarding the purpose of and methods used to collect experimental 501 data see: J.R. Sauer, W.A. Link, D.J. Ziolkowski Jr, K.L. Pardieck, D.J. Twedt. Consistency counts: Modeling the effects of a change in protocol on Breeding Bird Survey counts. 2019. The Condor 121:1-12. https://doi.org/10.1093/condor/duz009   Twedt, D. J. 2015. Estimating regional landbird populations from enhanced North American Breeding Bird Surveys. Journal of Field Ornithology 86:352–358.</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <edom>
+            <edomv>502</edomv>
+            <edomvd>Experimental Protocol: Distance and time-of-detection methods, Rep1: Three 1-minute sample periods; two distance bands (0-50 m, &gt;50-400m), second run in year. For more information regarding the purpose of and methods used to collect experimental 502 data see: J.R. Sauer, W.A. Link, D.J. Ziolkowski Jr, K.L. Pardieck, D.J. Twedt. Consistency counts: Modeling the effects of a change in protocol on Breeding Bird Survey counts. 2019. The Condor 121:1-12. https://doi.org/10.1093/condor/duz009   Twedt, D. J. 2015. Estimating regional landbird populations from enhanced North American Breeding Bird Surveys. Journal of Field Ornithology 86:352–358.</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+      </attr>
+      <attr>
+        <attrlabl>Year</attrlabl>
+        <attrdef>Four-digit year of the survey.</attrdef>
+        <attrdefs>Producer Defined</attrdefs>
+        <attrdomv>
+          <rdom>
+            <rdommin>1966</rdommin>
+            <rdommax>2025</rdommax>
+          </rdom>
+        </attrdomv>
+      </attr>
+      <attr>
+        <attrlabl>AOU</attrlabl>
+        <attrdef>Five-digit species identification number. (Leading zeros may not appear in the spreadsheet)</attrdef>
+        <attrdefs>Producer Defined</attrdefs>
+        <attrdomv>
+          <udom>See the file SpeciesList.csv for further information and the key.</udom>
+        </attrdomv>
+      </attr>
+      <attr>
+        <attrlabl>Stop1 through Stop50</attrlabl>
+        <attrdef>This column label does NOT refer to the contents of one column, but rather, it describes the information in 50 similar columns in the csv file, sequentially named "Stop1" through "Stop50". The data in each column represent the total number of individuals for a species recorded at that particular point count stop (i.e., at Stop1, Stop2, Stop3, . . ., Stop49, Stop50, respectively).</attrdef>
+        <attrdefs>Producer Defined</attrdefs>
+        <attrdomv>
+          <rdom>
+            <rdommin>0</rdommin>
+            <rdommax>9999</rdommax>
+          </rdom>
+        </attrdomv>
+      </attr>
+    </detailed>
+    <detailed>
+      <enttyp>
+        <enttypl>MigrantSummary.csv</enttypl>
+        <enttypd>A Comma Separated Value (CSV) data file provided in the zipped folder "MigrantNonBreeder.zip", containing species-level avian count data summarized at 10-stop intervals, and with 50-stop summaries. There is one record for every migrant, non-breeding, or vagrant species detected on each run of a route in that particular state, province or territory. [The file is structurally similar to breeding species files in the "States" folder.] Note: Migrant (a.k.a., migrant, vagrant or nonbreeding) species information has not been consistently collected or stored for most of the survey's history due to survey's focus on breeding species. Steps were taken in 1999 to preserve "Migrant" information prospectively; "Migrant" data can be more accurately identified as "NOT-breeder" since the migrant data set contains all data not fitting into the "Breeding" category regardless of data quality. Also note that this 10-stop summary file (MigrantSummary.csv) includes some records not present in the 50-stop version (mostly records from before 1997) because the data for these additional records were not available at the level of the individual stop.</enttypd>
+        <enttypds>Producer Defined</enttypds>
+      </enttyp>
+      <attr>
+        <attrlabl>RouteDataID</attrlabl>
+        <attrdef>Data identification number; unique for each combination of CountryNum, StateNum, Route, RPID, and Year</attrdef>
+        <attrdefs>Producer Defined</attrdefs>
+        <attrdomv>
+          <udom>Unique data record ID assigned when record created.</udom>
+        </attrdomv>
+      </attr>
+      <attr>
+        <attrlabl>CountryNum</attrlabl>
+        <attrdef>Three-digit identification code for country. Leading zeros may not appear in the spreadsheet.</attrdef>
+        <attrdefs>Producer Defined</attrdefs>
+        <attrdomv>
+          <edom>
+            <edomv>124</edomv>
+            <edomvd>Canada</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <edom>
+            <edomv>840</edomv>
+            <edomvd>Unites States</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+      </attr>
+      <attr>
+        <attrlabl>StateNum</attrlabl>
+        <attrdef>Two-digit numerical code that identifies the state, province or territory where the route is located. Leading zeros may not appear in the spreadsheet.</attrdef>
+        <attrdefs>Producer Defined</attrdefs>
+        <attrdomv>
+          <udom>02,Alabama; 03,Alaska; 04,Alberta; 06,Arizona; 07,Arkansas; 11,British Columbia; 14,California; 17,Colorado; 18,Connecticut; 21,Delaware; 25,Florida; 27,Georgia; 33,Idaho; 34,Illinois; 35,Indiana; 36,Iowa; 38,Kansas; 39,Kentucky; 42,Louisiana; 43,Northwest Territories; 44,Maine; 45,Manitoba; 46,Maryland; 47,Massachusetts; 49,Michigan; 50,Minnesota; 51,Mississippi; 52,Missouri; 53,Montana; 54,Nebraska; 55,Nevada; 56,New Brunswick; 57,Newfoundland and Labrador; 58,New Hampshire; 59,New Jersey; 60,New Mexico; 61,New York; 62,Nunavut; 63,North Carolina; 64,North Dakota; 65,Nova Scotia; 66,Ohio; 67,Oklahoma; 68,Ontario; 69,Oregon; 72,Pennsylvania; 75,Prince Edward Island; 76,Quebec; 77,Rhode Island; 79,Saskatchewan; 80,South Carolina; 81,South Dakota; 82,Tennessee; 83,Texas; 85,Utah; 87,Vermont; 88,Virginia; 89,Washington; 90,West Virginia; 91,Wisconsin; 92,Wyoming; 93,Yukon</udom>
+        </attrdomv>
+      </attr>
+      <attr>
+        <attrlabl>Route</attrlabl>
+        <attrdef>Three-digit code that identifies the route; unique within states. (Leading zeros may not appear in the spreadsheet).</attrdef>
+        <attrdefs>Producer Defined</attrdefs>
+        <attrdomv>
+          <rdom>
+            <rdommin>1</rdommin>
+            <rdommax>999</rdommax>
+          </rdom>
+        </attrdomv>
+      </attr>
+      <attr>
+        <attrlabl>RPID</attrlabl>
+        <attrdef>Three-digit run protocol ID (RPID) number.</attrdef>
+        <attrdefs>Producer Defined</attrdefs>
+        <attrdomv>
+          <edom>
+            <edomv>101</edomv>
+            <edomvd>Standard BBS Protocol: 3-minute counts, 1 observer, single run per year.</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <edom>
+            <edomv>102</edomv>
+            <edomvd>Standard BBS Protocol, Replicate 1: 3-minute counts, 1 observer (same or different person), second run in year.</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <edom>
+            <edomv>103</edomv>
+            <edomvd>Standard BBS Protocol, Replicate 2: 3-minute counts, 1 observer (same or different person), third run in year.</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <edom>
+            <edomv>104</edomv>
+            <edomvd>Standard BBS Protocol, Replicate 3: 3-minute counts, 1 observer (same or different person), fourth run in year.</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <edom>
+            <edomv>203</edomv>
+            <edomvd>Experimental Protocol: Double-Observer Independent: 3-minute counts, 2 observer method, single run per year, Secondary Observer.</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <edom>
+            <edomv>501</edomv>
+            <edomvd>Experimental Protocol: Distance and time-of-detection methods: Three 1-minute sample periods; two distance bands (0-50 m, &gt;50-400m). For more information regarding the purpose of and methods used to collect experimental 501 data see: J.R. Sauer, W.A. Link, D.J. Ziolkowski Jr, K.L. Pardieck, D.J. Twedt. Consistency counts: Modeling the effects of a change in protocol on Breeding Bird Survey counts. 2019. The Condor 121:1-12. https://doi.org/10.1093/condor/duz009   Twedt, D. J. 2015. Estimating regional landbird populations from enhanced North American Breeding Bird Surveys. Journal of Field Ornithology 86:352–358.</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <edom>
+            <edomv>502</edomv>
+            <edomvd>Experimental Protocol: Distance and time-of-detection methods, Rep1: Three 1-minute sample periods; two distance bands (0-50 m, &gt;50-400m), second run in year.For more information regarding the purpose of and methods used to collect experimental 502 data see:J.R. Sauer, W.A. Link, D.J. Ziolkowski Jr, K.L. Pardieck, D.J. Twedt. Consistency counts: Modeling the effects of a change in protocol on Breeding Bird Survey counts. 2019. The Condor 121:1-12. https://doi.org/10.1093/condor/duz009   Twedt, D. J. 2015. Estimating regional landbird populations from enhanced North American Breeding Bird Surveys. Journal of Field Ornithology 86:352–358.</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+      </attr>
+      <attr>
+        <attrlabl>Year</attrlabl>
+        <attrdef>Four-digit year of the survey.</attrdef>
+        <attrdefs>Producer Defined</attrdefs>
+        <attrdomv>
+          <rdom>
+            <rdommin>1966</rdommin>
+            <rdommax>2025</rdommax>
+          </rdom>
+        </attrdomv>
+      </attr>
+      <attr>
+        <attrlabl>AOU</attrlabl>
+        <attrdef>Five-digit species identification number. (Leading zeros may not appear in the 
+spreadsheet)</attrdef>
+        <attrdefs>Producer Defined</attrdefs>
+        <attrdomv>
+          <udom>See the file SpeciesList.csv for further information and the key.</udom>
+        </attrdomv>
+      </attr>
+      <attr>
+        <attrlabl>Count10</attrlabl>
+        <attrdef>Total individuals of the species recorded on stops 1-10.</attrdef>
+        <attrdefs>Producer Defined</attrdefs>
+        <attrdomv>
+          <rdom>
+            <rdommin>0</rdommin>
+            <rdommax>9999</rdommax>
+          </rdom>
+        </attrdomv>
+      </attr>
+      <attr>
+        <attrlabl>Count20</attrlabl>
+        <attrdef>Total individuals of the species recorded on stops 11-20.</attrdef>
+        <attrdefs>Producer Defined</attrdefs>
+        <attrdomv>
+          <rdom>
+            <rdommin>0</rdommin>
+            <rdommax>9999</rdommax>
+          </rdom>
+        </attrdomv>
+      </attr>
+      <attr>
+        <attrlabl>Count30</attrlabl>
+        <attrdef>Total individuals of the species recorded on stops 21-30</attrdef>
+        <attrdefs>Producer Defined</attrdefs>
+        <attrdomv>
+          <rdom>
+            <rdommin>0</rdommin>
+            <rdommax>9999</rdommax>
+          </rdom>
+        </attrdomv>
+      </attr>
+      <attr>
+        <attrlabl>Count40</attrlabl>
+        <attrdef>Total individuals of the species recorded on stops 31-40.</attrdef>
+        <attrdefs>Producer Defined</attrdefs>
+        <attrdomv>
+          <rdom>
+            <rdommin>0</rdommin>
+            <rdommax>9999</rdommax>
+          </rdom>
+        </attrdomv>
+      </attr>
+      <attr>
+        <attrlabl>Count50</attrlabl>
+        <attrdef>Total individuals of the species recorded on stops 41-50</attrdef>
+        <attrdefs>Producer Defined</attrdefs>
+        <attrdomv>
+          <rdom>
+            <rdommin>0</rdommin>
+            <rdommax>9999</rdommax>
+          </rdom>
+        </attrdomv>
+      </attr>
+      <attr>
+        <attrlabl>StopTotal</attrlabl>
+        <attrdef>Total number of stops (out of 50) on which the species was recorded.</attrdef>
+        <attrdefs>Producer Defined</attrdefs>
+        <attrdomv>
+          <rdom>
+            <rdommin>1</rdommin>
+            <rdommax>50</rdommax>
+          </rdom>
+        </attrdomv>
+      </attr>
+      <attr>
+        <attrlabl>SpeciesTotal</attrlabl>
+        <attrdef>Total individuals of the species recorded on that run of the route (sum of stops).</attrdef>
+        <attrdefs>Producer Defined</attrdefs>
+        <attrdomv>
+          <rdom>
+            <rdommin>1</rdommin>
+            <rdommax>9999</rdommax>
+          </rdom>
+        </attrdomv>
+      </attr>
+    </detailed>
+    <detailed>
+      <enttyp>
+        <enttypl>Migrants.csv</enttypl>
+        <enttypd>A Comma Separated Value (CSV) data file provided in the zipped folder "MigrantNonBreeder.zip", containing  species-level avian count data for each of 50 point counts (stops) on each route. There is one record for every migrant, non-breeding, or vagrant species detected on each run of a route. [The file is structurally similar to breeding species files in the "50-StopData" folder.] Note: Migrant (a.k.a., migrant, vagrant or nonbreeding) species information has not been consistently collected or stored for most of the survey's history due to survey's focus on breeding species. Steps were taken in 1999 to preserve "Migrant" information prospectively; "Migrant" data can be more accurately identified as "NOT-breeder" since the migrant data set contains all data not fitting into the "Breeding" category regardless of data quality. Also note that the 10-stop summary version of these data (MigrantSummary.csv) includes some records not present in this 50-stop version (mostly records from before 1997) because the data for these additional records were not available at the level of the individual stop.</enttypd>
+        <enttypds>Producer Defined</enttypds>
+      </enttyp>
+      <attr>
+        <attrlabl>RouteDataID</attrlabl>
+        <attrdef>Data identification number; unique for each combination of CountryNum, StateNum, Route, RPID, and Year</attrdef>
+        <attrdefs>Producer Defined</attrdefs>
+        <attrdomv>
+          <udom>Unique data record ID assigned when record created.</udom>
+        </attrdomv>
+      </attr>
+      <attr>
+        <attrlabl>CountryNum</attrlabl>
+        <attrdef>Three-digit identification code for country. Leading zeros may not appear in the spreadsheet.</attrdef>
+        <attrdefs>Producer Defined</attrdefs>
+        <attrdomv>
+          <edom>
+            <edomv>124</edomv>
+            <edomvd>Canada</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <edom>
+            <edomv>840</edomv>
+            <edomvd>Unites States</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+      </attr>
+      <attr>
+        <attrlabl>StateNum</attrlabl>
+        <attrdef>Two-digit numerical code that identifies the state, province or territory where the route is located. Leading zeros may not appear in the spreadsheet.</attrdef>
+        <attrdefs>Producer Defined</attrdefs>
+        <attrdomv>
+          <udom>02,Alabama; 03,Alaska; 04,Alberta; 06,Arizona; 07,Arkansas; 11,British Columbia; 14,California; 17,Colorado; 18,Connecticut; 21,Delaware; 25,Florida; 27,Georgia; 33,Idaho; 34,Illinois; 35,Indiana; 36,Iowa; 38,Kansas; 39,Kentucky; 42,Louisiana; 43,Northwest Territories; 44,Maine; 45,Manitoba; 46,Maryland; 47,Massachusetts; 49,Michigan; 50,Minnesota; 51,Mississippi; 52,Missouri; 53,Montana; 54,Nebraska; 55,Nevada; 56,New Brunswick; 57,Newfoundland and Labrador; 58,New Hampshire; 59,New Jersey; 60,New Mexico; 61,New York; 62,Nunavut; 63,North Carolina; 64,North Dakota; 65,Nova Scotia; 66,Ohio; 67,Oklahoma; 68,Ontario; 69,Oregon; 72,Pennsylvania; 75,Prince Edward Island; 76,Quebec; 77,Rhode Island; 79,Saskatchewan; 80,South Carolina; 81,South Dakota; 82,Tennessee; 83,Texas; 85,Utah; 87,Vermont; 88,Virginia; 89,Washington; 90,West Virginia; 91,Wisconsin; 92,Wyoming; 93,Yukon</udom>
+        </attrdomv>
+      </attr>
+      <attr>
+        <attrlabl>Route</attrlabl>
+        <attrdef>Three-digit code that identifies the route; unique within states. (Leading zeros may not appear in the spreadsheet).</attrdef>
+        <attrdefs>Producer Defined</attrdefs>
+        <attrdomv>
+          <rdom>
+            <rdommin>1</rdommin>
+            <rdommax>999</rdommax>
+          </rdom>
+        </attrdomv>
+      </attr>
+      <attr>
+        <attrlabl>RPID</attrlabl>
+        <attrdef>Three-digit run protocol ID (RPID) number.</attrdef>
+        <attrdefs>Producer Defined</attrdefs>
+        <attrdomv>
+          <edom>
+            <edomv>101</edomv>
+            <edomvd>Standard BBS Protocol: 3-minute counts, 1 observer, single run per year.</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <edom>
+            <edomv>102</edomv>
+            <edomvd>Standard BBS Protocol, Replicate 1: 3-minute counts, 1 observer (same or different person), second run in year.</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <edom>
+            <edomv>103</edomv>
+            <edomvd>Standard BBS Protocol, Replicate 2: 3-minute counts, 1 observer (same or different person), third run in year.</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <edom>
+            <edomv>104</edomv>
+            <edomvd>Standard BBS Protocol, Replicate 3: 3-minute counts, 1 observer (same or different person), fourth run in year.</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <edom>
+            <edomv>203</edomv>
+            <edomvd>Experimental Protocol: Double-Observer Independent: 3-minute counts, 2 observer method, single run per year, Secondary Observer.</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <edom>
+            <edomv>501</edomv>
+            <edomvd>Experimental Protocol: Distance and time-of-detection methods: Three 1-minute sample periods; two distance bands (0-50 m, &gt;50-400m). For more information regarding the purpose of and methods used to collect experimental 501 data see: J.R. Sauer, W.A. Link, D.J. Ziolkowski Jr, K.L. Pardieck, D.J. Twedt. Consistency counts: Modeling the effects of a change in protocol on Breeding Bird Survey counts. 2019. The Condor 121:1-12. https://doi.org/10.1093/condor/duz009   Twedt, D. J. 2015. Estimating regional landbird populations from enhanced North American Breeding Bird Surveys. Journal of Field Ornithology 86:352–358.</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <edom>
+            <edomv>502</edomv>
+            <edomvd>Experimental Protocol: Distance and time-of-detection methods, Rep1: Three 1-minute sample periods; two distance bands (0-50 m, &gt;50-400m), second run in year.For more information regarding the purpose of and methods used to collect experimental 502 data see:J.R. Sauer, W.A. Link, D.J. Ziolkowski Jr, K.L. Pardieck, D.J. Twedt. Consistency counts: Modeling the effects of a change in protocol on Breeding Bird Survey counts. 2019. The Condor 121:1-12. https://doi.org/10.1093/condor/duz009   Twedt, D. J. 2015. Estimating regional landbird populations from enhanced North American Breeding Bird Surveys. Journal of Field Ornithology 86:352–358.</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+      </attr>
+      <attr>
+        <attrlabl>Year</attrlabl>
+        <attrdef>Four-digit year of the survey.</attrdef>
+        <attrdefs>Producer Defined</attrdefs>
+        <attrdomv>
+          <rdom>
+            <rdommin>1966</rdommin>
+            <rdommax>2025</rdommax>
+          </rdom>
+        </attrdomv>
+      </attr>
+      <attr>
+        <attrlabl>AOU</attrlabl>
+        <attrdef>Five-digit species identification number. (Leading zeros may not appear in the 
+spreadsheet)</attrdef>
+        <attrdefs>Producer Defined</attrdefs>
+        <attrdomv>
+          <udom>See the file SpeciesList.csv for further information and the key.</udom>
+        </attrdomv>
+      </attr>
+      <attr>
+        <attrlabl>Stop1 through Stop50</attrlabl>
+        <attrdef>This column label does NOT refer to the contents of one column, but rather, it describes the information in 50 similar columns in the csv file, sequentially named "Stop1" through "Stop50". The data in each column represent the total number of individuals for a species recorded at that particular point count stop (i.e., at Stop1, Stop2, Stop3, . . ., Stop49, Stop50, respectively).</attrdef>
+        <attrdefs>Producer Defined</attrdefs>
+        <attrdomv>
+          <rdom>
+            <rdommin>0</rdommin>
+            <rdommax>9999</rdommax>
+          </rdom>
+        </attrdomv>
+      </attr>
+    </detailed>
+    <detailed>
+      <enttyp>
+        <enttypl>VehicleData.csv</enttypl>
+        <enttypd>A Comma Separated Value (CSV) data file containing tallies of vehicles passing survey points during each 3-minute count, as well as reports of unrelated excessive noise at each point (i.e. noise from sources other than passing vehicles). Data are presented at the level of the individual stop (50-stops per route). The first year that vehicle count data were systematically collected was 1997, although the “RecordedCar” field (indicating that vehicles were recorded consistently along the entire route) was not in use until 1998. Likewise, excessive noise data were not collected until 1998.</enttypd>
+        <enttypds>Producer Defined</enttypds>
+      </enttyp>
+      <attr>
+        <attrlabl>RouteDataID</attrlabl>
+        <attrdef>Data identification number; unique for each combination of CountryNum, StateNum, Route, RPID, and Year</attrdef>
+        <attrdefs>Producer Defined</attrdefs>
+        <attrdomv>
+          <udom>Unique data record ID assigned when record created.</udom>
+        </attrdomv>
+      </attr>
+      <attr>
+        <attrlabl>CountryNum</attrlabl>
+        <attrdef>Three-digit identification code for country. Leading zeros may not appear in the spreadsheet.</attrdef>
+        <attrdefs>Producer Defined</attrdefs>
+        <attrdomv>
+          <edom>
+            <edomv>124</edomv>
+            <edomvd>Canada</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <edom>
+            <edomv>840</edomv>
+            <edomvd>United States</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+      </attr>
+      <attr>
+        <attrlabl>StateNum</attrlabl>
+        <attrdef>Two-digit numerical code that identifies the state, province or territory where the route is located. Leading zeros may not appear in the spreadsheet.</attrdef>
+        <attrdefs>Producer Defined</attrdefs>
+        <attrdomv>
+          <udom>02,Alabama; 03,Alaska; 04,Alberta; 06,Arizona; 07,Arkansas; 11,British Columbia; 14,California; 17,Colorado; 18,Connecticut; 21,Delaware; 25,Florida; 27,Georgia; 33,Idaho; 34,Illinois; 35,Indiana; 36,Iowa; 38,Kansas; 39,Kentucky; 42,Louisiana; 43,Northwest Territories; 44,Maine; 45,Manitoba; 46,Maryland; 47,Massachusetts; 49,Michigan; 50,Minnesota; 51,Mississippi; 52,Missouri; 53,Montana; 54,Nebraska; 55,Nevada; 56,New Brunswick; 57,Newfoundland and Labrador; 58,New Hampshire; 59,New Jersey; 60,New Mexico; 61,New York; 62,Nunavut; 63,North Carolina; 64,North Dakota; 65,Nova Scotia; 66,Ohio; 67,Oklahoma; 68,Ontario; 69,Oregon; 72,Pennsylvania; 75,Prince Edward Island; 76,Quebec; 77,Rhode Island; 79,Saskatchewan; 80,South Carolina; 81,South Dakota; 82,Tennessee; 83,Texas; 85,Utah; 87,Vermont; 88,Virginia; 89,Washington; 90,West Virginia; 91,Wisconsin; 92,Wyoming; 93,Yukon</udom>
+        </attrdomv>
+      </attr>
+      <attr>
+        <attrlabl>Route</attrlabl>
+        <attrdef>Three-digit code that identifies the route; unique within states. (Leading zeros may not appear in the spreadsheet).</attrdef>
+        <attrdefs>Producer Defined</attrdefs>
+        <attrdomv>
+          <rdom>
+            <rdommin>1</rdommin>
+            <rdommax>999</rdommax>
+          </rdom>
+        </attrdomv>
+      </attr>
+      <attr>
+        <attrlabl>RPID</attrlabl>
+        <attrdef>Three-digit run protocol ID (RPID) number.</attrdef>
+        <attrdefs>Producer Defined</attrdefs>
+        <attrdomv>
+          <edom>
+            <edomv>101</edomv>
+            <edomvd>Standard BBS Protocol: 3-minute counts, 1 observer, single run per year.</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <edom>
+            <edomv>102</edomv>
+            <edomvd>Standard BBS Protocol, Replicate 1: 3-minute counts, 1 observer (same or different person), second run in year.</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <edom>
+            <edomv>103</edomv>
+            <edomvd>Standard BBS Protocol, Replicate 2: 3-minute counts, 1 observer (same or different person), third run in year.</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <edom>
+            <edomv>104</edomv>
+            <edomvd>Standard BBS Protocol, Replicate 3: 3-minute counts, 1 observer (same or different person), fourth run in year.</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <edom>
+            <edomv>203</edomv>
+            <edomvd>Experimental Protocol: Double-Observer Independent: 3-minute counts, 2 observer method, single run per year, Secondary Observer.</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <edom>
+            <edomv>501</edomv>
+            <edomvd>Experimental Protocol: Distance and time-of-detection methods: Three 1-minute sample periods; two distance bands (0-50 m, &gt;50-400m). For more information regarding the purpose of and methods used to collect experimental 501 data see: J.R. Sauer, W.A. Link, D.J. Ziolkowski Jr, K.L. Pardieck, D.J. Twedt. Consistency counts: Modeling the effects of a change in protocol on Breeding Bird Survey counts. 2019. The Condor 121:1-12. https://doi.org/10.1093/condor/duz009   Twedt, D. J. 2015. Estimating regional landbird populations from enhanced North American Breeding Bird Surveys. Journal of Field Ornithology 86:352–358.</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <edom>
+            <edomv>502</edomv>
+            <edomvd>Experimental Protocol: Distance and time-of-detection methods, Rep1: Three 1-minute sample periods; two distance bands (0-50 m, &gt;50-400m), second run in year. For more information regarding the purpose of and methods used to collect experimental 502 data see: J.R. Sauer, W.A. Link, D.J. Ziolkowski Jr, K.L. Pardieck, D.J. Twedt. Consistency counts: Modeling the effects of a change in protocol on Breeding Bird Survey counts. 2019. The Condor 121:1-12. https://doi.org/10.1093/condor/duz009   Twedt, D. J. 2015. Estimating regional landbird populations from enhanced North American Breeding Bird Surveys. Journal of Field Ornithology 86:352–358.</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+      </attr>
+      <attr>
+        <attrlabl>Year</attrlabl>
+        <attrdef>Four-digit year of the survey.</attrdef>
+        <attrdefs>Producer Defined</attrdefs>
+        <attrdomv>
+          <rdom>
+            <rdommin>1966</rdommin>
+            <rdommax>2025</rdommax>
+          </rdom>
+        </attrdomv>
+      </attr>
+      <attr>
+        <attrlabl>RecordedCar</attrlabl>
+        <attrdef>Indicates whether the observer consistently recorded the number of passing vehicles (i.e. at all sampled stops) while sampling the route.</attrdef>
+        <attrdefs>Producer Defined</attrdefs>
+        <attrdomv>
+          <edom>
+            <edomv>NULL</edomv>
+            <edomvd>No Data</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <edom>
+            <edomv>0</edomv>
+            <edomvd>Vehicle counts were not consistently recorded.</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <edom>
+            <edomv>1</edomv>
+            <edomvd>Vehicle counts were consistently recorded (i.e. recorded at all sampled stops).</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <edom>
+            <edomv>NULL</edomv>
+            <edomvd>No Data - Uncertain if vehicle counts were consistently recorded.</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+      </attr>
+      <attr>
+        <attrlabl>Car1 through Car50</attrlabl>
+        <attrdef>This column label does NOT refer to the contents of one column, but rather, it describes the information in 50 similar columns in the csv file, sequentially named "Car1" through "Car50". The data in each column represent the total number of motorized vehicles passing that particular point count stop (i.e., at  stop 1, stop 2, stop 3, . . ., stop 49, stop 50, respectively) during the 3-minute count period.</attrdef>
+        <attrdefs>Producer Defined</attrdefs>
+        <attrdomv>
+          <rdom>
+            <rdommin>0</rdommin>
+            <rdommax>9999</rdommax>
+          </rdom>
+        </attrdomv>
+      </attr>
+      <attr>
+        <attrlabl>Noise1 through Noise50</attrlabl>
+        <attrdef>This column label does NOT refer to the contents of one column, but rather, it describes the information in 50 similar columns in the csv file, sequentially named "Noise1" through "Noise50". The data in each column represent the presence/absence of excessive noise, defined as noise from sources other than vehicles passing the survey point (e.g. from streams, construction work, vehicles on nearby roads, etc.) lasting &gt; 45 seconds that significantly interferes with observer's ability to hear birds at the stop during the 3-minute count period. Few noise data available prior to 1998.</attrdef>
+        <attrdefs>Producer Defined</attrdefs>
+        <attrdomv>
+          <edom>
+            <edomv>0</edomv>
+            <edomvd>No excessive noise reported</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+        <attrdomv>
+          <edom>
+            <edomv>1</edomv>
+            <edomvd>Excessive noise reported</edomvd>
+            <edomvds>Producer defined</edomvds>
+          </edom>
+        </attrdomv>
+      </attr>
+    </detailed>
+    <overview>
+      <eaover>Data files and fields are described and defined here, with additional information in two supplementary files: RunType.pdf (describes the field "RunType") and SpeciesList.csv (A list of bird species and associated AOU code found in this data set). All data are stored in self-extracting zip files that contain comma separated values (.csv) text files. The first line of each data file contains the column headers.</eaover>
+      <eadetcit>Ziolkowski Jr., D.J., Lutmerding, M., Skalos, S.M., English, W.B. and Hudson, M-A.R., 2025, North American Breeding Bird Survey Dataset 1966 - 2025: U.S. Geological Survey data release, https://doi.org/10.5066/P144YU3S.</eadetcit>
+    </overview>
+  </eainfo>
+  <distinfo>
+    <distrib>
+      <cntinfo>
+        <cntorgp>
+          <cntorg>U.S. Geological Survey - ScienceBase</cntorg>
+        </cntorgp>
+        <cntaddr>
+          <addrtype>mailing address</addrtype>
+          <address>Denver Federal Center</address>
+          <address>Building 810</address>
+          <address>Mail Stop 302</address>
+          <city>Denver</city>
+          <state>CO</state>
+          <postal>80225</postal>
+        </cntaddr>
+        <cntvoice>1-888-275-8747</cntvoice>
+        <cntemail>sciencebase@usgs.gov</cntemail>
+      </cntinfo>
+    </distrib>
+    <distliab>This database, identified as the North American Breeding Bird Survey Dataset, has been approved for release and publication by the U.S. Geological Survey (USGS) and the Canadian Wildlife Service of Environment and Climate Change Canada (ECCC). Although this database has been subjected to rigorous review and is substantially complete, the USGS and ECCC reserve the right to revise the data pursuant to further analysis and review. Furthermore, it is released on the condition that the USGS, the U.S. Government, the ECCC, and the Canadian Government may not be held liable for any damages resulting from its authorized or unauthorized use.</distliab>
+    <stdorder>
+      <digform>
+        <digtinfo>
+          <formname>Digital Data</formname>
+        </digtinfo>
+        <digtopt>
+          <onlinopt>
+            <computer>
+              <networka>
+                <networkr>https://doi.org/10.5066/P144YU3S</networkr>
+              </networka>
+            </computer>
+          </onlinopt>
+        </digtopt>
+      </digform>
+      <fees>$0</fees>
+    </stdorder>
+  </distinfo>
+  <metainfo>
+    <metd>20260928</metd>
+    <metc>
+      <cntinfo>
+        <cntorgp>
+          <cntorg>Eastern Ecological Science Center</cntorg>
+        </cntorgp>
+        <cntaddr>
+          <addrtype>mailing and physical</addrtype>
+          <address>11649 Leetown Road</address>
+          <city>Kearneysville</city>
+          <state>WV</state>
+          <postal>25430</postal>
+          <country>USA</country>
+        </cntaddr>
+        <cntvoice>Contact by email below</cntvoice>
+        <cntemail>GS_EESC_Data_Management_Team@usgs.gov</cntemail>
+      </cntinfo>
+    </metc>
+    <metstdn>FGDC Biological Data Profile of the Content Standard for Digital Geospatial Metadata</metstdn>
+    <metstdv>FGDC-STD-001.1-1999</metstdv>
+  </metainfo>
+</metadata>

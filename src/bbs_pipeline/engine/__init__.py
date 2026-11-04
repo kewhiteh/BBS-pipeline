@@ -1,21 +1,5 @@
-"""Polars Ecological Engine package for BBS-Pipeline v3."""
+"""Pipeline engine: runs the stages in ``bbs_pipeline.stages`` in order."""
 
-from bbs_pipeline.engine.ecology import (
-    EcologicalEngineResult,
-    compute_observer_tenure,
-    filter_target_species,
-    harmonize_observations,
-    historical_species_pool,
-    normalize_canonical_keys,
-    run_ecological_engine,
-)
+from bbs_pipeline.engine.ecology import EcologicalEngineResult, run_ecological_engine
 
-__all__ = [
-    "EcologicalEngineResult",
-    "compute_observer_tenure",
-    "filter_target_species",
-    "harmonize_observations",
-    "historical_species_pool",
-    "normalize_canonical_keys",
-    "run_ecological_engine",
-]
+__all__ = ["EcologicalEngineResult", "run_ecological_engine"]

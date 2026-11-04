@@ -11,11 +11,12 @@ from typing import Any
 import bbs_pipeline
 from bbs_pipeline.config import RunProfile
 from bbs_pipeline.contracts import PipelineConfigBundle, PipelineExecutionResult
-from bbs_pipeline.engine.ecology import normalize_canonical_keys, run_ecological_engine
+from bbs_pipeline.engine import run_ecological_engine
 from bbs_pipeline.guilds import GuildTable, read_guild_csv, resolve_guilds
 from bbs_pipeline.shape import to_wide
 from bbs_pipeline.sources.loader import SourceResult, load_sources
 from bbs_pipeline.spatial.exporter import write_output
+from bbs_pipeline.stages.common import normalize_canonical_keys
 from bbs_pipeline.taxonomy import with_species_names
 
 
