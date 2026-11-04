@@ -8,7 +8,7 @@ import pytest
 from bbs_pipeline.config import ProfileError, profile_from_data
 from bbs_pipeline.contracts import DEFAULT_JOINS, ProtocolConfigContract, SpeciesSelectionContract
 from bbs_pipeline.engine import run_ecological_engine
-from bbs_pipeline.engine.joins import JoinSource, apply_joins, vehicle_source
+from bbs_pipeline.stages.enrich import JoinSource, apply_joins, vehicle_source
 
 BASE_COLUMNS = [
     "RouteDataID",

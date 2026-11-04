@@ -11,7 +11,8 @@ from bbs_pipeline.contracts import (
     StopAggregationMode,
     TemporalRoutingMode,
 )
-from bbs_pipeline.engine import harmonize_observations, run_ecological_engine
+from bbs_pipeline.engine import run_ecological_engine
+from bbs_pipeline.stages.observations import harmonize_observations
 
 NO_GUILD = SpeciesSelectionContract()
 

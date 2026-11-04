@@ -171,6 +171,8 @@ These corrupt numbers today, so they come before the refactor. Write a failing t
 ### Phase 7 — Split `run_ecological_engine` into `stages/*`
 - Move code into `stages/` without changing behaviour. The golden test must pass before and after. The goal is `pipeline.py` ≈ 100 lines that just call the stages in order.
 
+- **Done:** `bbs_pipeline/stages/` holds `common`, `routes`, `runs`, `species`, `observations`, and `enrich`; `engine/ecology.py` (142 lines) only runs them in order. Golden outputs (Phase 8's real-data slice, added first) are byte-identical before and after, as are two larger real-data runs (NC hybrid wide with guilds; BCRs 27-29 long, 421,623 rows).
+
 ### Phase 8 — Tests that would have caught V1
 - **Column-contract test:** profile → exact output column set.
 - **Filter-propagation test:** a run excluded by RunType or by tenure must not contribute counts or rows, with zero-fill on and off. This is the generalized V1 probe.
@@ -207,6 +209,6 @@ These corrupt numbers today, so they come before the refactor. Write a failing t
 | D9 | ~~Project profiles~~ **Decided:** `examples/wood_thrush_story_map.toml` (12 NC routes, 1995-2025, no quality filters, wide CSV) and `examples/ghy5812_guilds.toml` (BCRs 27-29, RunType 1, continuity 0.8, years open, long CSV). Output shape long/wide and an N-year rolling mean are profile options | Phase 4 |
 | D13 | ~~Subspecies lumping~~ **Decided:** derive from the release's scientific names (forms, within-species hybrids, and within-species "unid." entries count under the species-level entry); replaces the 7-entry hand-typed table, which missed 18 of 28 form/hybrid entries | Phase 5 follow-up |
 | D12 | Guild filters AND the `[species]` lists (chosen in Phase 5, flagged to Kyle; change if he prefers otherwise) | Phase 5 |
-| D10 | Real-data slice for the golden test | Phase 8 |
+| D10 | ~~Golden slice~~ **Decided:** the 12 story-map NC routes, all years in the fixture; profiles use 2015-2024 with RunType 1, QualityCurrentID 1, and min_continuity 0.8 | Phase 7/8 |
 
 Settled: Python ≥ 3.11, so `tomllib` (original decision 4).
