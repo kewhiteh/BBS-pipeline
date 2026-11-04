@@ -245,9 +245,7 @@ def render_workbench() -> None:
             updated_guilds.save_json(guilds_path)
         else:
             # Determine if the user switched active_guild without modifying the old profile's fields
-            fields_match_old = (
-                edited_profile == old_active_profile and target_key == default_active
-            )
+            fields_match_old = edited_profile == old_active_profile and target_key == default_active
             if ui_active_guild != default_active and fields_match_old and not btn_save_guild:
                 updated_guilds = GuildRegistryContract(
                     active_guild=ui_active_guild,
@@ -255,7 +253,11 @@ def render_workbench() -> None:
                 )
             else:
                 existing_profiles[target_key] = edited_profile
-                new_active = target_key if (btn_save_guild or target_key != default_active) else ui_active_guild
+                new_active = (
+                    target_key
+                    if (btn_save_guild or target_key != default_active)
+                    else ui_active_guild
+                )
                 updated_guilds = GuildRegistryContract(
                     active_guild=new_active,
                     profiles=existing_profiles,

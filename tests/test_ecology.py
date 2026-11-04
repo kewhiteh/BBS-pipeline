@@ -126,7 +126,9 @@ def _build_two_species_guilds() -> GuildRegistryContract:
 
 
 def test_normalize_canonical_keys() -> None:
-    raw = pl.DataFrame({"StateNum": [6, 63], "Route": [7, 12], "AOU": [7550, 6740], "Year": ["2019", "2021"]})
+    raw = pl.DataFrame(
+        {"StateNum": [6, 63], "Route": [7, 12], "AOU": [7550, 6740], "Year": ["2019", "2021"]}
+    )
     norm = normalize_canonical_keys(raw)
     assert norm["route_id"].to_list() == ["06_007", "63_012"]
     assert norm["AOU"].to_list() == ["07550", "06740"]

@@ -58,9 +58,7 @@ def run_spatial_export(
             con.unregister("_obs_view")
             if guild_rollup_df is not None:
                 con.register("_guild_view", guild_rollup_df)
-                con.execute(
-                    "CREATE OR REPLACE TABLE bbs_guild_rollup AS SELECT * FROM _guild_view"
-                )
+                con.execute("CREATE OR REPLACE TABLE bbs_guild_rollup AS SELECT * FROM _guild_view")
                 con.unregister("_guild_view")
         exported_paths.append(duckdb_path)
 

@@ -295,7 +295,9 @@ class ThreeTierIngressGate:
         except ImportError:
             logger.info("intake_engine package not installed; using built-in Polars sanitizer.")
         except Exception as exc:
-            logger.warning("IntakeEngine execution raised %s; falling back to Polars sanitizer.", exc)
+            logger.warning(
+                "IntakeEngine execution raised %s; falling back to Polars sanitizer.", exc
+            )
 
         # Ensure Parquet files and intake_manifest.json exist (handles both fallback & mocked IntakeEngine)
         if not self.is_cache_valid(cache_dir):
@@ -373,7 +375,9 @@ class ThreeTierIngressGate:
 
         try:
             resp = self._request_with_retries(client, catalog_url)
-            payload = resp.json() if callable(getattr(resp, "json", None)) else json.loads(resp.text)
+            payload = (
+                resp.json() if callable(getattr(resp, "json", None)) else json.loads(resp.text)
+            )
             items = payload.get("items", [])
             if not items:
                 raise RuntimeError(f"No ScienceBase catalog items returned for DOI '{doi}'.")
@@ -387,7 +391,9 @@ class ThreeTierIngressGate:
                             file_entries.extend(facet.get("files", []) or [])
 
             if not file_entries:
-                raise RuntimeError(f"No downloadable files listed in ScienceBase item for DOI '{doi}'.")
+                raise RuntimeError(
+                    f"No downloadable files listed in ScienceBase item for DOI '{doi}'."
+                )
 
             downloaded = 0
             for idx, f_meta in enumerate(file_entries):
@@ -408,7 +414,9 @@ class ThreeTierIngressGate:
                 downloaded += 1
 
             if downloaded == 0:
-                raise RuntimeError(f"Failed to download any files from ScienceBase for DOI '{doi}'.")
+                raise RuntimeError(
+                    f"Failed to download any files from ScienceBase for DOI '{doi}'."
+                )
         finally:
             if owns_client and hasattr(client, "close"):
                 client.close()

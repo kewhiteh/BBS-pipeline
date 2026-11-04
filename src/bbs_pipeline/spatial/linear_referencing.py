@@ -55,7 +55,9 @@ def _load_geodataframe(path: Path) -> gpd.GeoDataFrame:
     return gdf
 
 
-def _ensure_linestring(geom: shapely.Geometry | None, lon: float = 0.0, lat: float = 0.0) -> LineString:
+def _ensure_linestring(
+    geom: shapely.Geometry | None, lon: float = 0.0, lat: float = 0.0
+) -> LineString:
     """Ensure a geometry is a single LineString suitable for normalized linear referencing."""
     if geom is None or geom.is_empty:
         return LineString([(lon, lat), (lon + 0.36, lat + 0.36)])
@@ -165,17 +167,21 @@ def _apply_stop_linear_referencing(
         present_bins = [c for c in TEN_STOP_BIN_COLS if c in df.columns]
         if len(present_bins) == 5:
             index_cols = [c for c in df.columns if c not in present_bins]
-            unpivoted = df.unpivot(
-                on=present_bins,
-                index=index_cols,
-                variable_name="_raw_bin",
-                value_name="bin_abundance",
-            ).with_columns(
-                pl.col("_raw_bin").replace(TEN_STOP_BIN_LABELS).alias("stop_bin"),
-                pl.col("_raw_bin")
-                .replace_strict(TEN_STOP_BIN_INDICES, return_dtype=pl.Int64)
-                .alias("bin_index"),
-            ).drop("_raw_bin")
+            unpivoted = (
+                df.unpivot(
+                    on=present_bins,
+                    index=index_cols,
+                    variable_name="_raw_bin",
+                    value_name="bin_abundance",
+                )
+                .with_columns(
+                    pl.col("_raw_bin").replace(TEN_STOP_BIN_LABELS).alias("stop_bin"),
+                    pl.col("_raw_bin")
+                    .replace_strict(TEN_STOP_BIN_INDICES, return_dtype=pl.Int64)
+                    .alias("bin_index"),
+                )
+                .drop("_raw_bin")
+            )
             df = unpivoted
         elif "stop_bin" in df.columns and "bin_index" not in df.columns:
             df = df.with_columns(
@@ -200,14 +206,18 @@ def _apply_stop_linear_referencing(
         present_stops = [c for c in RAW_50_STOP_COLS if c in df.columns]
         if len(present_stops) == 50:
             index_cols = [c for c in df.columns if c not in present_stops]
-            unpivoted = df.unpivot(
-                on=present_stops,
-                index=index_cols,
-                variable_name="_raw_stop",
-                value_name="stop_abundance",
-            ).with_columns(
-                pl.col("_raw_stop").str.strip_prefix("Stop").cast(pl.Int64).alias("stop_number")
-            ).drop("_raw_stop")
+            unpivoted = (
+                df.unpivot(
+                    on=present_stops,
+                    index=index_cols,
+                    variable_name="_raw_stop",
+                    value_name="stop_abundance",
+                )
+                .with_columns(
+                    pl.col("_raw_stop").str.strip_prefix("Stop").cast(pl.Int64).alias("stop_number")
+                )
+                .drop("_raw_stop")
+            )
             df = unpivoted
 
         if "stop_number" in df.columns:
@@ -259,7 +269,9 @@ def assign_custom_overlays(
             for c in ("name", "Name", "NAME", "id", "ID", "basin", "BASIN", "BCR", "bcr")
             if c in non_geom_cols
         ]
-        attr_col = preferred_cols[0] if preferred_cols else (non_geom_cols[0] if non_geom_cols else None)
+        attr_col = (
+            preferred_cols[0] if preferred_cols else (non_geom_cols[0] if non_geom_cols else None)
+        )
 
         if attr_col is not None:
             attr_values = overlay_gdf[attr_col].astype(str).to_numpy()

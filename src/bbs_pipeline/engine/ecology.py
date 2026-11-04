@@ -111,13 +111,7 @@ def normalize_canonical_keys[FrameT: (pl.DataFrame, pl.LazyFrame)](
         exprs.append(pl.col("route_id").cast(pl.String).str.strip_chars().alias("route_id"))
 
     if "AOU" in schema_names:
-        exprs.append(
-            pl.col("AOU")
-            .cast(pl.String)
-            .str.strip_chars()
-            .str.zfill(5)
-            .alias("AOU")
-        )
+        exprs.append(pl.col("AOU").cast(pl.String).str.strip_chars().str.zfill(5).alias("AOU"))
 
     if "Year" in schema_names:
         exprs.append(pl.col("Year").cast(pl.Int64).alias("Year"))
@@ -148,11 +142,7 @@ def compute_observer_tenure[FrameT: (pl.DataFrame, pl.LazyFrame)](
             .over(["route_id", "ObsN"])
             .cast(pl.Int64)
             .alias("route_obs_year_rank"),
-            pl.col("Year")
-            .n_unique()
-            .over("ObsN")
-            .cast(pl.Int64)
-            .alias("obs_total_years"),
+            pl.col("Year").n_unique().over("ObsN").cast(pl.Int64).alias("obs_total_years"),
         ]
     ).with_columns(
         [
@@ -222,16 +212,12 @@ def _prepare_50_stop_frame(
     # Fill missing Stop columns with 0 if raw 50 stops are needed
     if need_raw_stops:
         missing_stop_exprs = [
-            pl.lit(0, dtype=pl.Int64).alias(c)
-            for c in all_stop_names
-            if c not in schema_names
+            pl.lit(0, dtype=pl.Int64).alias(c) for c in all_stop_names if c not in schema_names
         ]
         if missing_stop_exprs:
             lf = lf.with_columns(missing_stop_exprs)
 
-    cast_stop_exprs = [
-        pl.col(c).fill_null(0).cast(pl.Int64).alias(c) for c in present_stops
-    ]
+    cast_stop_exprs = [pl.col(c).fill_null(0).cast(pl.Int64).alias(c) for c in present_stops]
     if cast_stop_exprs:
         lf = lf.with_columns(cast_stop_exprs)
 
@@ -246,9 +232,7 @@ def _prepare_50_stop_frame(
             ]
             if stop_slice:
                 bin_exprs.append(
-                    pl.sum_horizontal([pl.col(c) for c in stop_slice])
-                    .cast(pl.Int64)
-                    .alias(bin_col)
+                    pl.sum_horizontal([pl.col(c) for c in stop_slice]).cast(pl.Int64).alias(bin_col)
                 )
             elif bin_col in schema_names:
                 bin_exprs.append(pl.col(bin_col).fill_null(0).cast(pl.Int64).alias(bin_col))
@@ -265,13 +249,9 @@ def _prepare_50_stop_frame(
             .alias("route_total")
         )
     elif "route_total" in schema_names:
-        lf = lf.with_columns(
-            pl.col("route_total").fill_null(0).cast(pl.Int64).alias("route_total")
-        )
+        lf = lf.with_columns(pl.col("route_total").fill_null(0).cast(pl.Int64).alias("route_total"))
     elif "StopTotal" in schema_names:
-        lf = lf.with_columns(
-            pl.col("StopTotal").fill_null(0).cast(pl.Int64).alias("route_total")
-        )
+        lf = lf.with_columns(pl.col("StopTotal").fill_null(0).cast(pl.Int64).alias("route_total"))
     else:
         lf = lf.with_columns(
             pl.sum_horizontal([pl.col(f"Count{b * 10}") for b in range(1, 6)])
@@ -297,18 +277,12 @@ def _prepare_10_stop_frame(ten_stop: pl.LazyFrame) -> pl.LazyFrame:
     lf = lf.with_columns(bin_exprs)
 
     if "StopTotal" in schema_names:
-        lf = lf.with_columns(
-            pl.col("StopTotal").fill_null(0).cast(pl.Int64).alias("route_total")
-        )
+        lf = lf.with_columns(pl.col("StopTotal").fill_null(0).cast(pl.Int64).alias("route_total"))
     elif "route_total" in schema_names:
-        lf = lf.with_columns(
-            pl.col("route_total").fill_null(0).cast(pl.Int64).alias("route_total")
-        )
+        lf = lf.with_columns(pl.col("route_total").fill_null(0).cast(pl.Int64).alias("route_total"))
     else:
         lf = lf.with_columns(
-            pl.sum_horizontal([pl.col(c) for c in bin_cols])
-            .cast(pl.Int64)
-            .alias("route_total")
+            pl.sum_horizontal([pl.col(c) for c in bin_cols]).cast(pl.Int64).alias("route_total")
         )
 
     return lf
@@ -330,9 +304,7 @@ def _apply_subspecies_lumping(
             .str.zfill(5)
             .alias("AOU")
         )
-    lf = lf.with_columns(
-        pl.col("AOU").replace(SUBSPECIES_PARENT_AOU_MAP).alias("AOU")
-    )
+    lf = lf.with_columns(pl.col("AOU").replace(SUBSPECIES_PARENT_AOU_MAP).alias("AOU"))
     return lf
 
 
@@ -454,9 +426,7 @@ def harmonize_observations(
     if agg_mode == StopAggregationMode.RAW_50_STOPS:
         return deduped.with_columns(
             [pl.lit(0, dtype=pl.Int64).alias(f"Stop{i}") for i in range(1, 51)]
-        ).select(
-            ["route_id", "Year", "AOU", *[f"Stop{i}" for i in range(1, 51)], "route_total"]
-        )
+        ).select(["route_id", "Year", "AOU", *[f"Stop{i}" for i in range(1, 51)], "route_total"])
     return deduped.select(["route_id", "Year", "AOU", *bin_val_cols])
 
 
@@ -494,7 +464,9 @@ def apply_covid_2020_policy[FrameT: (pl.DataFrame, pl.LazyFrame)](
             )
             .select(schema_names)
         )
-        out_lf = pl.concat([base_no_2020.select(schema_names), imputed_2020], how="vertical_relaxed")
+        out_lf = pl.concat(
+            [base_no_2020.select(schema_names), imputed_2020], how="vertical_relaxed"
+        )
         return _match_return_type(out_lf, matrix)
 
     if mode == Covid2020Mode.INTERPOLATE_2019_2021:
@@ -530,7 +502,9 @@ def apply_covid_2020_policy[FrameT: (pl.DataFrame, pl.LazyFrame)](
             .with_columns([*avg_exprs, *meta_exprs])
             .select(schema_names)
         )
-        out_lf = pl.concat([base_no_2020.select(schema_names), imputed_2020], how="vertical_relaxed")
+        out_lf = pl.concat(
+            [base_no_2020.select(schema_names), imputed_2020], how="vertical_relaxed"
+        )
         return _match_return_type(out_lf, matrix)
 
     return _match_return_type(lf, matrix)
@@ -551,12 +525,8 @@ def run_ecological_engine(
     weather_raw_lf = normalize_canonical_keys(_to_lazy(tables["weather"]))
     species_raw_lf = normalize_canonical_keys(_to_lazy(tables["species"]))
 
-    total_routes_raw = int(
-        routes_lf.select(pl.col("route_id").n_unique()).collect().item()
-    )
-    total_sampling_events_raw = int(
-        weather_raw_lf.select(pl.len()).collect().item()
-    )
+    total_routes_raw = int(routes_lf.select(pl.col("route_id").n_unique()).collect().item())
+    total_sampling_events_raw = int(weather_raw_lf.select(pl.len()).collect().item())
 
     # Step 3: Compute observer tenure across weather and apply tenure mode filter
     weather_tenure_lf = compute_observer_tenure(weather_raw_lf, protocol)
@@ -567,26 +537,30 @@ def run_ecological_engine(
 
     route_meta_cols = [
         c
-        for c in ("route_id", "CountryNum", "StateNum", "Route", "RouteName", "Latitude", "Longitude", "Stratum", "BCR")
+        for c in (
+            "route_id",
+            "CountryNum",
+            "StateNum",
+            "Route",
+            "RouteName",
+            "Latitude",
+            "Longitude",
+            "Stratum",
+            "BCR",
+        )
         if c in routes_schema
     ]
-    routes_dedup_lf = routes_lf.select(route_meta_cols).unique(
-        subset=["route_id"], keep="first"
-    )
+    routes_dedup_lf = routes_lf.select(route_meta_cols).unique(subset=["route_id"], keep="first")
 
     # Avoid duplicate non-key columns during weather + routes join
-    overlap_cols = [
-        c for c in route_meta_cols if c != "route_id" and c in weather_schema
-    ]
+    overlap_cols = [c for c in route_meta_cols if c != "route_id" and c in weather_schema]
     events_lf = weather_tenure_lf.drop(overlap_cols).join(
         routes_dedup_lf, on="route_id", how="inner"
     )
     events_schema = set(events_lf.collect_schema().names())
 
     start_yr, end_yr = protocol.year_range
-    predicates: list[pl.Expr] = [
-        (pl.col("Year") >= start_yr) & (pl.col("Year") <= end_yr)
-    ]
+    predicates: list[pl.Expr] = [(pl.col("Year") >= start_yr) & (pl.col("Year") <= end_yr)]
     if protocol.covid_2020_mode == Covid2020Mode.EXCLUDE_GAP:
         predicates.append(pl.col("Year") != 2020)
     if protocol.run_types and "RunType" in events_schema:
@@ -609,31 +583,24 @@ def run_ecological_engine(
         combined_pred = combined_pred & p
 
     filtered_events_lf = events_lf.filter(combined_pred)
-    protocol_filtered_events = int(
-        filtered_events_lf.select(pl.len()).collect().item()
-    )
+    protocol_filtered_events = int(filtered_events_lf.select(pl.len()).collect().item())
 
     # Route Continuity Ratio
     expected_years = protocol.expected_active_years()
     denom = float(max(1, len(expected_years)))
 
     events_with_continuity_lf = filtered_events_lf.with_columns(
-        (
-            pl.col("Year").n_unique().over("route_id").cast(pl.Float64) / pl.lit(denom)
-        ).alias("route_continuity_ratio")
+        (pl.col("Year").n_unique().over("route_id").cast(pl.Float64) / pl.lit(denom)).alias(
+            "route_continuity_ratio"
+        )
     ).filter(pl.col("route_continuity_ratio") >= protocol.min_route_continuity_ratio)
 
-    valid_sampling_events_lf = (
-        events_with_continuity_lf.select(
-            ["route_id", "Year", "route_continuity_ratio"]
-        )
-        .unique(subset=["route_id", "Year"], keep="first")
-    )
+    valid_sampling_events_lf = events_with_continuity_lf.select(
+        ["route_id", "Year", "route_continuity_ratio"]
+    ).unique(subset=["route_id", "Year"], keep="first")
 
     continuity_filtered_routes = int(
-        valid_sampling_events_lf.select(pl.col("route_id").n_unique())
-        .collect()
-        .item()
+        valid_sampling_events_lf.select(pl.col("route_id").n_unique()).collect().item()
     )
 
     # Step 5: Target Species Resolution
@@ -654,15 +621,11 @@ def run_ecological_engine(
         lump_subspecies_and_hybrids=lump_flag,
     )
     obs_schema_names = list(harmonized_obs_lf.collect_schema().names())
-    count_cols = [
-        c for c in obs_schema_names if c not in ("route_id", "Year", "AOU")
-    ]
+    count_cols = [c for c in obs_schema_names if c not in ("route_id", "Year", "AOU")]
 
     # Step 7: Extirpation-Aware Zero-Filling
     if protocol.enable_extirpation_zero_fill:
-        skeleton_lf = valid_sampling_events_lf.join(
-            target_aous_df.lazy(), how="cross"
-        )
+        skeleton_lf = valid_sampling_events_lf.join(target_aous_df.lazy(), how="cross")
         matrix_lf = (
             skeleton_lf.join(
                 harmonized_obs_lf,
@@ -696,10 +659,7 @@ def run_ecological_engine(
             [
                 pl.lit(guild_key_str).alias("guild_key"),
                 pl.col("route_total").sum().alias("guild_total_abundance"),
-                (pl.col("route_total") > 0)
-                .cast(pl.Int64)
-                .sum()
-                .alias("species_richness"),
+                (pl.col("route_total") > 0).cast(pl.Int64).sum().alias("species_richness"),
                 pl.lit(n_target_species, dtype=pl.Int64).alias("target_species_count"),
             ]
         )
@@ -715,10 +675,7 @@ def run_ecological_engine(
 
     # Step 9b: Rolling Window Smoothing
     final_lf = covid_handled_lf.sort(["route_id", "AOU", "Year"])
-    if (
-        protocol.rolling_window_years is not None
-        and protocol.rolling_window_years > 1
-    ):
+    if protocol.rolling_window_years is not None and protocol.rolling_window_years > 1:
         final_lf = final_lf.with_columns(
             pl.col("route_total")
             .cast(pl.Float64)
@@ -746,9 +703,7 @@ def run_ecological_engine(
 
     route_cols_to_join: list[str] = []
     if JoinDimension.ROUTES in requested_joins:
-        route_cols_to_join.extend(
-            [c for c in ROUTES_JOIN_COLS if c in routes_schema]
-        )
+        route_cols_to_join.extend([c for c in ROUTES_JOIN_COLS if c in routes_schema])
         active_joins.append(JoinDimension.ROUTES.value)
 
     if JoinDimension.BCR in requested_joins:
@@ -765,12 +720,10 @@ def run_ecological_engine(
         wx_schema = set(weather_tenure_lf.collect_schema().names())
         wx_cols = [c for c in WEATHER_JOIN_COLS if c in wx_schema]
         if wx_cols:
-            wx_join_lf = weather_tenure_lf.select(
-                ["route_id", "Year", *wx_cols]
-            ).unique(subset=["route_id", "Year"], keep="first")
-            final_lf = final_lf.join(
-                wx_join_lf, on=["route_id", "Year"], how="left"
+            wx_join_lf = weather_tenure_lf.select(["route_id", "Year", *wx_cols]).unique(
+                subset=["route_id", "Year"], keep="first"
             )
+            final_lf = final_lf.join(wx_join_lf, on=["route_id", "Year"], how="left")
         active_joins.append(JoinDimension.WEATHER.value)
 
     observations_df = final_lf.sort(["route_id", "Year", "AOU"]).collect()

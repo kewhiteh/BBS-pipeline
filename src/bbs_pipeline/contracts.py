@@ -169,7 +169,11 @@ class GuildRegistryContract(BaseModel):
 
     @model_validator(mode="after")
     def _validate_active_guild(self) -> GuildRegistryContract:
-        if self.active_guild is not None and self.profiles and self.active_guild not in self.profiles:
+        if (
+            self.active_guild is not None
+            and self.profiles
+            and self.active_guild not in self.profiles
+        ):
             raise ValueError(
                 f"active_guild '{self.active_guild}' not found in profiles: {list(self.profiles.keys())}"
             )

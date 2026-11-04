@@ -233,7 +233,9 @@ def test_end_to_end_pipeline_covid_modes_zerofill_and_multicrs(tmp_path: Path) -
         PipelineConfigBundle(guilds=guilds, protocol=protocol_exclude, spatial=spatial_cfg)
     )
     assert res1.funnel_metrics.ingress_tier_used == "tier2_local_raw"
-    assert res1.funnel_metrics.continuity_filtered_routes == 1  # Only route 63_001 has 100% continuity
+    assert (
+        res1.funnel_metrics.continuity_filtered_routes == 1
+    )  # Only route 63_001 has 100% continuity
     assert res1.funnel_metrics.target_species_count == 2  # 07550 & 06740
     # 1 route * 4 active years (2018, 2019, 2021, 2022) * 2 species = 8 rows!
     assert res1.funnel_metrics.zero_filled_matrix_rows == 8
