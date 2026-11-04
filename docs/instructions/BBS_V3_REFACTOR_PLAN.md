@@ -166,7 +166,7 @@ These corrupt numbers today, so they come before the refactor. Write a failing t
 - Geometry is built once per route (V9) and joined at export.
 - Manifest sidecar: resolved profile, package version + git SHA, `release.json` contents, per-stage counts, ingress tier used, and unmatched guild species.
 
-- **Done:** `[joins]` has one list per table (routes, weather, observer, vehicle, species, guilds) in `engine/joins.py`; unknown columns raise with the valid list; a right side with duplicate keys raises, and the engine asserts the row count is unchanged after all joins. `vehicle` adds derived `CarTotal`/`NoiseTotal`. The wide pivot takes its index from the joined route/species columns. Not done: building geometry once per route (V9) — output geometry is still one point per row, which is what the file needs.
+- **Done:** `[joins]` has one list per table (routes, weather, observer, vehicle, species, guilds) in `engine/joins.py`; unknown columns raise with the valid list; a right side with duplicate keys raises, and the engine asserts the row count is unchanged after all joins. `vehicle` adds derived `CarTotal`/`NoiseTotal`. The wide pivot takes its index from the joined route/species columns. Geometry is built once per route and joined onto the rows (V9, done with Phase 9).
 
 ### Phase 7 — Split `run_ecological_engine` into `stages/*`
 - Move code into `stages/` without changing behaviour. The golden test must pass before and after. The goal is `pipeline.py` ≈ 100 lines that just call the stages in order.
