@@ -189,3 +189,10 @@ def test_raw_stops_from_ten_stop_source_raises() -> None:
 
     with pytest.raises(ValueError, match="only the 50-stop data has"):
         harmonize_observations({}, protocol)
+
+
+def test_user_run_filters_are_not_overridden() -> None:
+    protocol = ProtocolConfigContract(run_types=[0, 1], quality_current_ids=[])
+
+    assert protocol.run_types == [0, 1]
+    assert protocol.quality_current_ids == []
