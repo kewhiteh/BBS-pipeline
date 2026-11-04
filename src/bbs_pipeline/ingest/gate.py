@@ -1,13 +1,12 @@
-"""Three-Tier Ingress Gate with IntakeEngine Handshake & ScienceBase Streamer.
+"""Three-Tier Ingress Gate with built-in Polars sanitization & ScienceBase Streamer.
 
 Implements the resilient Three-Tier Ingress pattern for BBS-Pipeline v3:
 - Tier 1 (``tier1_cache``): Fast-path Polars LazyFrame scan from ``sanitized_cache_dir``
   containing ``intake_manifest.json`` and ``.parquet`` tables.
 - Tier 2 (``tier2_local_raw``): Unpacks local ``.zip``/``.csv``/``.txt`` raw archives
   (including nested 50-stop state chunks and fixed-width ``SpeciesList.txt``),
-  executes the ``IntakeEngine.assess()`` + ``IntakeEngine.execute_pipeline()``
-  quarantine/sanitization handshake (or built-in Polars sanitization fallback),
-  and populates ``sanitized_cache_dir``.
+  sanitizes them with the built-in Polars sanitizer, and rewrites
+  ``sanitized_cache_dir``.
 - Tier 3 (``tier3_sciencebase_stream``): Queries the USGS ScienceBase Catalog API
   by DOI with exponential backoff, streams remote archives into a staging
   directory and sanitizes into ``sanitized_cache_dir``. Download failures raise;
@@ -17,7 +16,6 @@ Implements the resilient Three-Tier Ingress pattern for BBS-Pipeline v3:
 from __future__ import annotations
 
 import json
-import logging
 import shutil
 import tempfile
 import time
@@ -36,8 +34,6 @@ from bbs_pipeline.ingest.role_resolver import (
     resolve_table_roles,
 )
 from bbs_pipeline.ingest.species_normalizer import normalize_species_list_file
-
-logger = logging.getLogger(__name__)
 
 
 class IngressResult(BaseModel):
@@ -141,7 +137,7 @@ class ThreeTierIngressGate:
         source_raw_dir: Path,
         tier_label: str = "tier2_local_raw",
     ) -> IngressResult:
-        """Tier 2: Unpack raw archives, normalize species/chunks, run IntakeEngine handshake."""
+        """Tier 2: Unpack raw archives, normalize species/chunks, and rebuild the cache."""
         cache_dir = self.protocol.sanitized_cache_dir
         cache_dir.mkdir(parents=True, exist_ok=True)
 
@@ -154,7 +150,7 @@ class ThreeTierIngressGate:
 
             self._unpack_raw_directory(source_raw_dir, unpacked_dir)
             self._stage_and_consolidate_files(unpacked_dir, staged_dir)
-            self._run_intake_or_polars_sanitization(staged_dir, cache_dir)
+            self._builtin_polars_sanitize(staged_dir, cache_dir)
 
         manifest_path = cache_dir / "intake_manifest.json"
         manifest_data = json.loads(manifest_path.read_text(encoding="utf-8"))
@@ -264,35 +260,16 @@ class ThreeTierIngressGate:
             dest = staged_dir / f"extra_{idx}_{extra_csv.name}"
             shutil.copy2(extra_csv, dest)
 
-    def _run_intake_or_polars_sanitization(self, staged_dir: Path, cache_dir: Path) -> None:
-        """Invoke IntakeEngine handshake if available, with built-in Polars sanitization."""
-        engine_used = "polars_builtin_fallback"
-        try:
-            from intake_engine import IntakeEngine  # type: ignore[import-not-found]
-
-            IntakeEngine.assess(staged_dir, cache_dir, target_format="parquet")
-            IntakeEngine.execute_pipeline(
-                staged_dir,
-                cache_dir,
-                target_format="parquet",
-                quarantine=True,
-            )
-            engine_used = "intake_engine"
-        except ImportError:
-            logger.info("intake_engine package not installed; using built-in Polars sanitizer.")
-
-        # Ensure Parquet files and intake_manifest.json exist (handles both fallback & mocked IntakeEngine)
-        if not self.is_cache_valid(cache_dir):
-            self._builtin_polars_sanitize(staged_dir, cache_dir, engine_name=engine_used)
-
     @staticmethod
-    def _builtin_polars_sanitize(
-        staged_dir: Path,
-        cache_dir: Path,
-        engine_name: str = "polars_builtin_fallback",
-    ) -> None:
-        """Convert staged CSVs to Parquet and write intake_manifest.json."""
+    def _builtin_polars_sanitize(staged_dir: Path, cache_dir: Path) -> None:
+        """Rewrite the cache: convert staged CSVs to Parquet and write intake_manifest.json.
+
+        Parquet files from a previous build are removed first, so tables from an older
+        release can never be picked up alongside the new ones.
+        """
         cache_dir.mkdir(parents=True, exist_ok=True)
+        for stale in cache_dir.glob("*.parquet"):
+            stale.unlink()
         tables_manifest: list[dict[str, Any]] = []
 
         for csv_path in sorted(staged_dir.glob("*.csv")):
@@ -315,7 +292,7 @@ class ThreeTierIngressGate:
             )
 
         manifest = {
-            "engine": engine_name,
+            "engine": "polars_builtin",
             "status": "healthy",
             "quarantine_enabled": True,
             "tables": tables_manifest,
