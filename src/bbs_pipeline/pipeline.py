@@ -114,8 +114,9 @@ def run_bbs_pipeline(
             "species_without_guild": engine_result.species_without_guild,
         }
     if bundle.output.shape == "wide":
-        traits = guilds.traits if guilds is not None else []
-        observations = to_wide(observations, bundle.output.wide_value, extra_index=traits)
+        observations = to_wide(
+            observations, bundle.output.wide_value, index=engine_result.wide_index
+        )
     columns = observations.columns
     if bundle.output.is_vector:
         columns = [*columns, *(f"overlay_{name}" for name in bundle.output.overlays), "geometry"]

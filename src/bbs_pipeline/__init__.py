@@ -4,7 +4,6 @@ from bbs_pipeline.config import ProfileError, RunProfile, load_profile
 from bbs_pipeline.contracts import (
     ExportFormat,
     FunnelAuditMetrics,
-    JoinDimension,
     ObserverTenureMode,
     OutputContract,
     PipelineConfigBundle,
@@ -18,7 +17,6 @@ from bbs_pipeline.contracts import (
 __all__ = [
     "ExportFormat",
     "FunnelAuditMetrics",
-    "JoinDimension",
     "ObserverTenureMode",
     "OutputContract",
     "PipelineConfigBundle",

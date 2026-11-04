@@ -162,7 +162,7 @@ def _profile(tmp_path: Path, guild_csv: str, **sections: dict) -> object:
         "source": {"release": TEST_DOI, "raw_dir": str(raw), "cache_dir": str(tmp_path / "c")},
         "runs": {"start_year": 2021, "end_year": 2022},
         "guilds": {"file": str(_csv(tmp_path, guild_csv))},
-        "joins": {"tables": ["species", "guilds"]},
+        "joins": {"routes": [], "weather": [], "observer": [], "guilds": ["*"]},
         "output": {"path": str(tmp_path / "out" / "o.csv")},
     }
     for key, value in sections.items():
@@ -230,7 +230,7 @@ def test_wide_output_keeps_trait_columns(tmp_path: Path) -> None:
 
 def test_guild_settings_need_a_file() -> None:
     with pytest.raises(ProfileError, match="need guilds.file"):
-        profile_from_data({"joins": {"tables": ["guilds"]}})
+        profile_from_data({"joins": {"guilds": ["forest_guild"]}})
     with pytest.raises(ProfileError, match="need guilds.file"):
         profile_from_data({"guilds": {"filters": {"forest_guild": ["interior"]}}})
 
@@ -238,5 +238,7 @@ def test_guild_settings_need_a_file() -> None:
 def test_trait_column_clashing_with_output_column_raises(tmp_path: Path) -> None:
     profile = _profile(tmp_path, "aou,Family\n07550,x\n")
 
-    with pytest.raises(ValueError, match=r"clash with output columns: \['Family'\]"):
+    with pytest.raises(
+        ValueError, match="'Family' is requested from both joins.species and joins.guilds"
+    ):
         run_profile(profile, export=False)

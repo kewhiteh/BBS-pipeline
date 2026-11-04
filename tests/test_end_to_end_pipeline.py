@@ -106,7 +106,8 @@ stops = "ten_stop_bins"
 aous = ["07550", "06740"]
 
 [joins]
-tables = ["species", "routes"]   # weather excluded
+weather = []    # weather excluded
+observer = []
 
 [output]
 path = "{output}"

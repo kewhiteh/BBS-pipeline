@@ -79,6 +79,9 @@ def test_group_without_a_species_level_entry_raises() -> None:
         lump_map(forms_only)
 
 
+SPECIES_ONLY = {"species": ["English_Common_Name"]}
+
+
 def _tables() -> dict[str, pl.DataFrame]:
     stops = {f"Stop{i}": [0, 0] for i in range(1, 51)}
     stops["Stop1"] = [3, 2]
@@ -115,7 +118,9 @@ def _tables() -> dict[str, pl.DataFrame]:
 
 def test_engine_counts_all_forms_under_the_species() -> None:
     df = run_ecological_engine(
-        _tables(), SpeciesSelectionContract(), ProtocolConfigContract(year_range=(2021, 2021))
+        _tables(),
+        SpeciesSelectionContract(),
+        ProtocolConfigContract(year_range=(2021, 2021), join_columns=SPECIES_ONLY),
     ).observations_df
 
     junco = df.filter(pl.col("AOU") == "05677").row(0, named=True)
@@ -128,7 +133,7 @@ def test_selecting_a_form_selects_its_species() -> None:
     df = run_ecological_engine(
         _tables(),
         SpeciesSelectionContract(aous=["05690"]),
-        ProtocolConfigContract(year_range=(2021, 2021)),
+        ProtocolConfigContract(year_range=(2021, 2021), join_columns=SPECIES_ONLY),
     ).observations_df
 
     assert df["AOU"].to_list() == ["05677"]
@@ -139,7 +144,9 @@ def test_without_lumping_forms_stay_separate() -> None:
     df = run_ecological_engine(
         _tables(),
         SpeciesSelectionContract(),
-        ProtocolConfigContract(year_range=(2021, 2021), lump_subspecies_and_hybrids=False),
+        ProtocolConfigContract(
+            year_range=(2021, 2021), lump_subspecies_and_hybrids=False, join_columns=SPECIES_ONLY
+        ),
     ).observations_df
 
     assert sorted(df["AOU"].to_list()) == ["05670", "05690"]

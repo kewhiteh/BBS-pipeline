@@ -14,55 +14,29 @@ import polars as pl
 
 from bbs_pipeline.contracts import (
     FunnelAuditMetrics,
-    JoinDimension,
     ObserverTenureMode,
     ProtocolConfigContract,
     SpeciesSelectionContract,
     StopAggregationMode,
     TemporalRoutingMode,
 )
+from bbs_pipeline.engine.joins import (
+    ROUTE_LEVEL_TABLES,
+    SPECIES_LEVEL_TABLES,
+    JoinSource,
+    apply_joins,
+    vehicle_source,
+)
 from bbs_pipeline.guilds import GuildTable, guild_filter_aous
 from bbs_pipeline.sources.regions import resolve_states
 from bbs_pipeline.spatial.selection import routes_within_boundary
 from bbs_pipeline.taxonomy import lump_map, lumped_species
-
-SPECIES_JOIN_COLS: tuple[str, ...] = (
-    "English_Common_Name",
-    "Order",
-    "Family",
-    "Genus",
-    "Species",
-)
-
-ROUTES_JOIN_COLS: tuple[str, ...] = (
-    "StateNum",
-    "Route",
-    "RouteName",
-    "Latitude",
-    "Longitude",
-    "Stratum",
-)
-
-BCR_JOIN_COLS: tuple[str, ...] = ("BCR",)
 
 # First year with 50-stop (per-stop) counts
 FIFTY_STOP_FIRST_YEAR = 1997
 
 # One harmonized observation row per survey run (RouteDataID) and species
 OBSERVATION_KEYS: tuple[str, ...] = ("RouteDataID", "route_id", "Year", "AOU")
-
-WEATHER_JOIN_COLS: tuple[str, ...] = (
-    "RouteDataID",
-    "ObsN",
-    "RunType",
-    "QualityCurrentID",
-    "StartTemp",
-    "EndTemp",
-    "StartWind",
-    "EndWind",
-    "is_first_year",
-    "tenure_tier",
-)
 
 
 @dataclass(frozen=True)
@@ -72,6 +46,8 @@ class EcologicalEngineResult:
     observations_df: pl.DataFrame
     funnel_metrics: FunnelAuditMetrics
     active_joins: list[str]
+    # Output columns constant per route or per species (kept by a wide pivot)
+    wide_index: list[str] = field(default_factory=list)
     # Species recorded on surviving runs that have no guild row (when a guild file is used)
     species_without_guild: list[dict[str, str]] = field(default_factory=list)
 
@@ -771,54 +747,48 @@ def run_ecological_engine(
     if protocol.rolling_window_years:
         final_lf = add_rolling_mean(final_lf, protocol.rolling_window_years)
 
-    # Step 8: A-La-Carte Joins
-    active_joins: list[str] = []
-    requested_joins = set(protocol.include_joins)
-
-    if JoinDimension.SPECIES in requested_joins:
-        sp_schema = set(target_species_lf.collect_schema().names())
-        sp_cols = [c for c in SPECIES_JOIN_COLS if c in sp_schema]
-        if sp_cols:
-            sp_join_lf = target_species_lf.select(["AOU", *sp_cols]).unique(
-                subset=["AOU"], keep="first"
-            )
-            final_lf = final_lf.join(sp_join_lf, on="AOU", how="left")
-        active_joins.append(JoinDimension.SPECIES.value)
-
-    route_cols_to_join: list[str] = []
-    if JoinDimension.ROUTES in requested_joins:
-        route_cols_to_join.extend([c for c in ROUTES_JOIN_COLS if c in routes_schema])
-        active_joins.append(JoinDimension.ROUTES.value)
-
-    if JoinDimension.BCR in requested_joins:
-        for c in BCR_JOIN_COLS:
-            if c in routes_schema and c not in route_cols_to_join:
-                route_cols_to_join.append(c)
-        active_joins.append(JoinDimension.BCR.value)
-
-    if route_cols_to_join:
-        rt_join_lf = routes_dedup_lf.select(["route_id", *route_cols_to_join])
-        final_lf = final_lf.join(rt_join_lf, on="route_id", how="left")
-
-    if JoinDimension.WEATHER in requested_joins:
-        wx_schema = set(weather_tenure_lf.collect_schema().names())
-        wx_cols = [c for c in WEATHER_JOIN_COLS if c in wx_schema and c != "RouteDataID"]
-        if wx_cols:
-            wx_join_lf = weather_tenure_lf.select([pl.col("RouteDataID").cast(pl.Int64), *wx_cols])
-            final_lf = final_lf.join(wx_join_lf, on="RouteDataID", how="left")
-        active_joins.append(JoinDimension.WEATHER.value)
-
-    if JoinDimension.GUILDS in requested_joins:
-        if guild_join_df is None:
-            raise ValueError("joins.tables includes 'guilds' but no guild file was given.")
-        clashes = sorted(set(guilds.traits) & set(final_lf.collect_schema().names()))
-        if clashes:
-            raise ValueError(f"Guild trait columns clash with output columns: {clashes}")
-        final_lf = final_lf.join(guild_join_df.lazy(), on="AOU", how="left")
-        active_joins.append(JoinDimension.GUILDS.value)
+    # Step 8: Configurable joins (one column list per table)
+    run_keys = {"RouteDataID", "route_id", "CountryNum", "StateNum", "Route", "Year"}
+    tenure_cols = ["ObsN", "obs_total_years", "is_first_year", "tenure_tier"]
+    weather_wide = weather_tenure_lf.with_columns(pl.col("RouteDataID").cast(pl.Int64))
+    weather_cols = [
+        c
+        for c in weather_wide.collect_schema().names()
+        if c not in run_keys and c not in tenure_cols and c != "route_obs_year_rank"
+    ]
+    routes_cols = [c for c in routes_lf.collect_schema().names() if c != "route_id"]
+    species_cols = [c for c in target_species_lf.collect_schema().names() if c != "AOU"]
+    sources: dict[str, JoinSource | None] = {
+        "routes": JoinSource(routes_lf, "route_id", routes_cols),
+        "weather": JoinSource(weather_wide, "RouteDataID", ["ObsN", *weather_cols]),
+        "observer": JoinSource(weather_wide, "RouteDataID", tenure_cols),
+        "vehicle": vehicle_source(_to_lazy(tables["vehicle"])) if "vehicle" in tables else None,
+        "species": JoinSource(target_species_lf, "AOU", species_cols),
+        "guilds": (
+            JoinSource(guild_join_df.lazy(), "AOU", list(guilds.traits))
+            if guilds is not None and guild_join_df is not None
+            else None
+        ),
+    }
+    spec = dict(protocol.join_columns)
+    if sources["guilds"] is None and spec.get("guilds") == ["*"]:
+        spec["guilds"] = []  # the default: guild traits when a guild file is given
+    final_lf, joined = apply_joins(final_lf, sources, spec)
+    active_joins = list(joined)
+    wide_index = [
+        "route_id",
+        *(c for t in ROUTE_LEVEL_TABLES for c in joined.get(t, [])),
+        "route_continuity_ratio",
+        "AOU",
+        *(c for t in ("species", "guilds") if t in SPECIES_LEVEL_TABLES for c in joined.get(t, [])),
+    ]
 
     observations_df = final_lf.sort(["route_id", "Year", "AOU"]).collect()
     final_output_rows = int(observations_df.height)
+    if final_output_rows != zero_filled_matrix_rows:
+        raise AssertionError(
+            f"Joins changed the row count ({zero_filled_matrix_rows} -> {final_output_rows})."
+        )
 
     funnel_metrics = FunnelAuditMetrics(
         data_source=data_source,
@@ -838,4 +808,5 @@ def run_ecological_engine(
         funnel_metrics=funnel_metrics,
         active_joins=active_joins,
         species_without_guild=species_without_guild,
+        wide_index=wide_index,
     )

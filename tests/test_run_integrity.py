@@ -44,7 +44,18 @@ def _tables(
     )
     weather = pl.DataFrame(
         [
-            {"CountryNum": 840, "StateNum": 63, "Route": 1, "QualityCurrentID": 1, **r}
+            {
+                "CountryNum": 840,
+                "StateNum": 63,
+                "Route": 1,
+                "QualityCurrentID": 1,
+                # default weather join columns
+                "StartTemp": 60,
+                "EndTemp": 70,
+                "StartWind": 1,
+                "EndWind": 2,
+                **r,
+            }
             for r in weather_rows
         ]
     )

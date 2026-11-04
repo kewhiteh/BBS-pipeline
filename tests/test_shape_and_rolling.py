@@ -27,6 +27,9 @@ from tests.release_fixtures import (
 EXAMPLES = Path(__file__).resolve().parents[1] / "examples"
 
 
+INDEX = ["route_id", "RouteName", "route_continuity_ratio", "AOU", "English_Common_Name"]
+
+
 def _long() -> pl.DataFrame:
     return pl.DataFrame(
         {
@@ -44,7 +47,7 @@ def _long() -> pl.DataFrame:
 
 
 def test_wide_has_one_row_per_route_and_species_and_a_column_per_year() -> None:
-    wide = to_wide(_long(), "route_total")
+    wide = to_wide(_long(), "route_total", index=INDEX)
 
     assert wide.columns == [
         "route_id",
@@ -64,7 +67,7 @@ def test_wide_has_one_row_per_route_and_species_and_a_column_per_year() -> None:
 
 def test_wide_value_must_be_an_output_column() -> None:
     with pytest.raises(KeyError, match="rolling_mean"):
-        to_wide(_long(), "rolling_mean")
+        to_wide(_long(), "rolling_mean", index=INDEX)
 
 
 def test_rolling_mean_uses_calendar_years_not_rows() -> None:
@@ -127,7 +130,7 @@ def test_profile_runs_wide_with_rolling_mean(tmp_path: Path) -> None:
             "source": {"release": TEST_DOI, "raw_dir": str(raw), "cache_dir": str(tmp_path / "c")},
             "runs": {"start_year": 1995, "end_year": 2021},
             "observations": {"source": "10_stop", "rolling_years": 3},
-            "joins": {"tables": []},
+            "joins": {"routes": [], "weather": [], "observer": [], "species": []},
             "output": {"path": str(out), "shape": "wide", "wide_value": "rolling_mean"},
         }
     )

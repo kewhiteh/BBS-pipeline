@@ -12,6 +12,26 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
+JOIN_TABLES: tuple[str, ...] = ("routes", "weather", "observer", "vehicle", "species", "guilds")
+
+# Defaults reproduce the columns the pipeline joined before per-table lists existed
+DEFAULT_JOINS: dict[str, list[str]] = {
+    "routes": ["StateNum", "Route", "RouteName", "Latitude", "Longitude", "Stratum"],
+    "weather": [
+        "ObsN",
+        "RunType",
+        "QualityCurrentID",
+        "StartTemp",
+        "EndTemp",
+        "StartWind",
+        "EndWind",
+    ],
+    "observer": ["is_first_year", "tenure_tier"],
+    "vehicle": [],
+    "species": ["English_Common_Name", "Order", "Family", "Genus", "Species"],
+    "guilds": ["*"],
+}
+
 # The 2020 survey was cancelled (COVID-19); the release has no 2020 runs
 CANCELLED_SURVEY_YEARS: frozenset[int] = frozenset({2020})
 
@@ -39,16 +59,6 @@ class StopAggregationMode(StrEnum):
     ROUTE_TOTAL = "route_total"
     TEN_STOP_BINS = "ten_stop_bins"
     RAW_50_STOPS = "raw_50_stops"
-
-
-class JoinDimension(StrEnum):
-    """Optional dimension tables to join a-la-carte onto observations."""
-
-    SPECIES = "species"
-    ROUTES = "routes"
-    WEATHER = "weather"
-    BCR = "bcr"
-    GUILDS = "guilds"
 
 
 class ExportFormat(StrEnum):
@@ -237,14 +247,18 @@ class ProtocolConfigContract(BaseModel):
         default=True,
         description="Cross-join valid sampling events x target species and zero-fill missing observations.",
     )
-    include_joins: list[JoinDimension] = Field(
-        default_factory=lambda: [
-            JoinDimension.SPECIES,
-            JoinDimension.ROUTES,
-            JoinDimension.WEATHER,
-        ],
-        description="Dimension tables to stitch a-la-carte onto observations.",
+    join_columns: dict[str, list[str]] = Field(
+        default_factory=lambda: {k: list(v) for k, v in DEFAULT_JOINS.items()},
+        description='Columns to join per table ([] = none, ["*"] = all); see engine.joins.',
     )
+
+    @field_validator("join_columns")
+    @classmethod
+    def _join_tables(cls, v: dict[str, list[str]]) -> dict[str, list[str]]:
+        unknown = sorted(set(v) - set(JOIN_TABLES))
+        if unknown:
+            raise ValueError(f"unknown join table(s) {unknown}; tables are {list(JOIN_TABLES)}")
+        return {**{t: [] for t in JOIN_TABLES}, **v}
 
     @field_validator("rolling_window_years")
     @classmethod
