@@ -18,16 +18,17 @@ WIDE_INDEX_COLUMNS: tuple[str, ...] = (
 )
 
 
-def to_wide(df: pl.DataFrame, value: str) -> pl.DataFrame:
+def to_wide(df: pl.DataFrame, value: str, extra_index: list[str] | None = None) -> pl.DataFrame:
     """Pivot to one row per route and species with a ``{value}_{year}`` column per year.
 
     Only years with at least one surveyed run get a column. A blank cell means the route
     was not surveyed that year (or the run did not survive the filters); 0 means surveyed
-    and not detected.
+    and not detected. ``extra_index`` adds species-level columns such as guild traits.
     """
     if value not in df.columns:
         raise KeyError(f"output.wide_value '{value}' is not an output column.")
-    index = [c for c in WIDE_INDEX_COLUMNS if c in df.columns]
+    wanted = [*WIDE_INDEX_COLUMNS, *(extra_index or [])]
+    index = [c for c in dict.fromkeys(wanted) if c in df.columns]
     if df.is_empty():
         return df.select(index)
     wide = df.sort("Year").pivot(on="Year", index=index, values=value, aggregate_function=None)

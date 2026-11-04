@@ -48,6 +48,7 @@ class JoinDimension(StrEnum):
     ROUTES = "routes"
     WEATHER = "weather"
     BCR = "bcr"
+    GUILDS = "guilds"
 
 
 class ExportFormat(StrEnum):
@@ -278,6 +279,16 @@ class ProtocolConfigContract(BaseModel):
         return [y for y in range(start, end + 1) if y not in CANCELLED_SURVEY_YEARS]
 
 
+class GuildSettingsContract(BaseModel):
+    """Guild CSV and trait filters (OR within a trait, AND across traits)."""
+
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    file: Path | None = None
+    filters: dict[str, list[str]] = Field(default_factory=dict)
+    unmatched: Literal["report", "error"] = "report"
+
+
 class OutputContract(BaseModel):
     """One output file; its format comes from the file extension."""
 
@@ -350,6 +361,7 @@ class PipelineExecutionResult(BaseModel):
     exported_files: list[Path] = Field(default_factory=list)
     active_joins: list[str] = Field(default_factory=list)
     preview_records: list[dict[str, Any]] = Field(default_factory=list)
+    guild_report: dict[str, Any] | None = None
 
 
 class PipelineConfigBundle(BaseModel):
@@ -358,5 +370,6 @@ class PipelineConfigBundle(BaseModel):
     model_config = ConfigDict(frozen=True, extra="forbid")
 
     species: SpeciesSelectionContract = Field(default_factory=SpeciesSelectionContract)
+    guilds: GuildSettingsContract = Field(default_factory=GuildSettingsContract)
     protocol: ProtocolConfigContract = Field(default_factory=ProtocolConfigContract)
     output: OutputContract = Field(default_factory=OutputContract)

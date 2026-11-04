@@ -12,6 +12,7 @@ import bbs_pipeline
 from bbs_pipeline.config import RunProfile
 from bbs_pipeline.contracts import PipelineConfigBundle, PipelineExecutionResult
 from bbs_pipeline.engine.ecology import normalize_canonical_keys, run_ecological_engine
+from bbs_pipeline.guilds import GuildTable, read_guild_csv, resolve_guilds
 from bbs_pipeline.shape import to_wide
 from bbs_pipeline.sources.loader import SourceResult, load_sources
 from bbs_pipeline.spatial.exporter import write_output
@@ -55,11 +56,28 @@ def _write_manifest(
         "release": sources.manifest.get("release"),
         "cache": {"dir": str(sources.cache_dir), "built_at": sources.manifest.get("built_at")},
         "stage_counts": result.funnel_metrics.model_dump(mode="json"),
+        "guilds": result.guild_report,
         "profile": profile.model_dump(mode="json") if profile is not None else None,
     }
     manifest_path = output_path.with_name(output_path.name + ".manifest.json")
     manifest_path.write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
     return manifest_path
+
+
+def _load_guilds(bundle: PipelineConfigBundle, sources: SourceResult) -> GuildTable | None:
+    """Read and resolve the guild file against the release's species list."""
+    settings = bundle.guilds
+    if settings.file is None:
+        return None
+    species = normalize_canonical_keys(sources.tables["species"]).collect()
+    guilds = resolve_guilds(read_guild_csv(Path(settings.file)), species, Path(settings.file))
+    if guilds.unmatched_rows and settings.unmatched == "error":
+        listed = "\n  ".join(str(r) for r in guilds.unmatched_rows)
+        raise ValueError(
+            f"{len(guilds.unmatched_rows)} guild row(s) match no BBS species "
+            f"(guilds.unmatched = 'error'):\n  {listed}"
+        )
+    return guilds
 
 
 def run_bbs_pipeline(
@@ -74,16 +92,27 @@ def run_bbs_pipeline(
     columns, and no files written.
     """
     sources = load_sources(bundle.protocol)
+    guilds = _load_guilds(bundle, sources)
 
     engine_result = run_ecological_engine(
         tables=sources.tables,
         species=bundle.species,
         protocol=bundle.protocol,
         data_source=sources.source,
+        guilds=guilds,
+        guild_filters=bundle.guilds.filters,
     )
     observations = engine_result.observations_df
+    guild_report = None
+    if guilds is not None:
+        guild_report = {
+            **guilds.report(),
+            "filters": bundle.guilds.filters,
+            "species_without_guild": engine_result.species_without_guild,
+        }
     if bundle.output.shape == "wide":
-        observations = to_wide(observations, bundle.output.wide_value)
+        traits = guilds.traits if guilds is not None else []
+        observations = to_wide(observations, bundle.output.wide_value, extra_index=traits)
     columns = observations.columns
     if bundle.output.is_vector:
         columns = [*columns, *(f"overlay_{name}" for name in bundle.output.overlays), "geometry"]
@@ -94,6 +123,7 @@ def run_bbs_pipeline(
         output_rows=observations.height,
         active_joins=engine_result.active_joins,
         preview_records=observations.head(50).to_dicts(),
+        guild_report=guild_report,
     )
     if not export:
         return result

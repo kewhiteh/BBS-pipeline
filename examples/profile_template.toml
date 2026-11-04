@@ -50,8 +50,16 @@ common_names = []         # e.g. ["Wood Thrush"] (case-insensitive)
 families = []             # e.g. ["Parulidae"]
 orders = []               # e.g. ["Passeriformes"]
 
+[guilds]
+# One CSV row per species with aou / scientific_name / common_name and any trait columns.
+# See docs/guild_file.md and examples/guilds_example.csv.
+file = ""                 # "" = no guild file
+filters = {}              # e.g. { forest_guild = ["interior", "interior_edge"] }: OR within a
+                          # trait, AND across traits, AND with the [species] lists
+unmatched = "report"      # report | error: guild rows that match no BBS species
+
 [joins]
-tables = ["species", "routes", "weather"]   # any of: species, routes, weather, bcr
+tables = ["species", "routes", "weather"]   # any of: species, routes, weather, bcr, guilds
 
 [output]
 path = "output/bbs_observations.parquet"    # .parquet .csv .geoparquet .gpkg .fgb .geojson

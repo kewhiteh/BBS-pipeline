@@ -51,6 +51,18 @@ def _overlays(raw: str) -> dict[str, str]:
     return out
 
 
+def _filters(raw: str) -> dict[str, list[str]]:
+    """'trait=value1, value2' per line -> {trait: [values]}."""
+    out: dict[str, list[str]] = {}
+    for line in raw.splitlines():
+        if line.strip():
+            trait, sep, values = line.partition("=")
+            if not sep:
+                raise ProfileError(f"Guild filter line must be trait=values, got '{line.strip()}'")
+            out[trait.strip()] = _csv_list(values)
+    return out
+
+
 def render_editor() -> None:
     st.set_page_config(page_title="BBS Run Profile", layout="wide")
     profile_path = Path(os.environ.get("BBS_PROFILE", "profile.toml"))
@@ -156,6 +168,21 @@ def render_editor() -> None:
             st.text_input("Families", _joined(sp["families"]), key="ui_families")
         )
         sp["orders"] = _csv_list(st.text_input("Orders", _joined(sp["orders"]), key="ui_orders"))
+        g = p["guilds"]
+        g["file"] = st.text_input(
+            "Guild file (CSV; see docs/guild_file.md)", g["file"] or "", key="ui_guild_file"
+        )
+        g["filters"] = _filters(
+            st.text_area(
+                "Guild filters (trait=value1, value2 per line)",
+                "\n".join(f"{k}={', '.join(v)}" for k, v in g["filters"].items()),
+                key="ui_guild_filters",
+            )
+        )
+        units = ["report", "error"]
+        g["unmatched"] = st.selectbox(
+            "Unmatched guild rows", units, units.index(g["unmatched"]), key="ui_guild_unmatched"
+        )
 
     with tab_output:
         out = p["output"]
