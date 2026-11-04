@@ -24,17 +24,7 @@ from bbs_pipeline.contracts import (
 from bbs_pipeline.guilds import GuildTable, guild_filter_aous
 from bbs_pipeline.sources.regions import resolve_states
 from bbs_pipeline.spatial.selection import routes_within_boundary
-
-# Canonical BBS subspecies/unidentified/hybrid AOU to parent AOU mappings
-SUBSPECIES_PARENT_AOU_MAP: dict[str, str] = {
-    "04123": "04120",  # Yellow-shafted Flicker -> Northern Flicker
-    "04130": "04120",  # Red-shafted Flicker -> Northern Flicker
-    "05660": "05670",  # White-winged Junco -> Dark-eyed Junco
-    "05671": "05670",  # Oregon Junco -> Dark-eyed Junco
-    "05677": "05670",  # Slate-colored Junco -> Dark-eyed Junco
-    "06556": "06550",  # Myrtle Warbler -> Yellow-rumped Warbler
-    "06560": "06550",  # Audubon's Warbler -> Yellow-rumped Warbler
-}
+from bbs_pipeline.taxonomy import lump_map, lumped_species
 
 SPECIES_JOIN_COLS: tuple[str, ...] = (
     "English_Common_Name",
@@ -346,24 +336,22 @@ def _prepare_10_stop_frame(ten_stop: pl.LazyFrame) -> pl.LazyFrame:
     return lf
 
 
-def _apply_subspecies_lumping(
-    lf: pl.LazyFrame,
-    lump: bool,
-) -> pl.LazyFrame:
-    """Map subspecies/hybrid AOUs to parent AOUs when enabled."""
+def subspecies_lump_map(
+    tables: dict[str, pl.LazyFrame | pl.DataFrame], lump: bool
+) -> dict[str, str]:
+    """Form AOU -> species AOU, derived from the release's species list (empty when off)."""
     if not lump:
+        return {}
+    if "species" not in tables:
+        raise KeyError("Lumping subspecies needs the 'species' table (scientific names).")
+    return lump_map(normalize_canonical_keys(_to_lazy(tables["species"])).collect())
+
+
+def _apply_subspecies_lumping(lf: pl.LazyFrame, mapping: dict[str, str]) -> pl.LazyFrame:
+    """Replace form AOUs with their species AOU."""
+    if not mapping:
         return lf
-    schema_names = set(lf.collect_schema().names())
-    if "Parent_AOU" in schema_names:
-        lf = lf.with_columns(
-            pl.coalesce([pl.col("Parent_AOU"), pl.col("AOU")])
-            .cast(pl.String)
-            .str.strip_chars()
-            .str.zfill(5)
-            .alias("AOU")
-        )
-    lf = lf.with_columns(pl.col("AOU").replace(SUBSPECIES_PARENT_AOU_MAP).alias("AOU"))
-    return lf
+    return lf.with_columns(pl.col("AOU").replace(mapping).alias("AOU"))
 
 
 def harmonize_observations(
@@ -392,6 +380,7 @@ def harmonize_observations(
         or routing == TemporalRoutingMode.HYBRID_HARMONIZED_10_STOP
     )
     need_raw_stops = agg_mode == StopAggregationMode.RAW_50_STOPS
+    mapping = subspecies_lump_map(tables, lump_subspecies_and_hybrids)
 
     if routing == TemporalRoutingMode.FIFTY_STOP_1997_PLUS:
         if "fifty_stop" not in tables:
@@ -402,7 +391,7 @@ def harmonize_observations(
             need_raw_stops=need_raw_stops,
         )
         _require_run_id(lf, "fifty_stop")
-        lf = _apply_subspecies_lumping(lf, lump_subspecies_and_hybrids)
+        lf = _apply_subspecies_lumping(lf, mapping)
 
         if agg_mode == StopAggregationMode.RAW_50_STOPS:
             val_cols = [*[f"Stop{i}" for i in range(1, 51)], "route_total"]
@@ -418,7 +407,7 @@ def harmonize_observations(
             raise KeyError("Table 'ten_stop' is required for TEN_STOP_1966_PLUS mode.")
         lf = _prepare_10_stop_frame(_to_lazy(tables["ten_stop"]))
         _require_run_id(lf, "ten_stop")
-        lf = _apply_subspecies_lumping(lf, lump_subspecies_and_hybrids)
+        lf = _apply_subspecies_lumping(lf, mapping)
 
         if agg_mode == StopAggregationMode.TEN_STOP_BINS:
             val_cols = [*[f"Count{b * 10}" for b in range(1, 6)], "route_total"]
@@ -438,7 +427,7 @@ def harmonize_observations(
             need_raw_stops=False,
         )
         _require_run_id(fifty_lf, "fifty_stop")
-        fifty_lf = _apply_subspecies_lumping(fifty_lf, lump_subspecies_and_hybrids)
+        fifty_lf = _apply_subspecies_lumping(fifty_lf, mapping)
         fifty_agg = _aggregate_per_run(fifty_lf, bin_val_cols).with_columns(
             pl.when(pl.col("Year") >= 1997)
             .then(pl.lit(1, dtype=pl.Int64))
@@ -450,7 +439,7 @@ def harmonize_observations(
     if "ten_stop" in tables:
         ten_lf = _prepare_10_stop_frame(_to_lazy(tables["ten_stop"]))
         _require_run_id(ten_lf, "ten_stop")
-        ten_lf = _apply_subspecies_lumping(ten_lf, lump_subspecies_and_hybrids)
+        ten_lf = _apply_subspecies_lumping(ten_lf, mapping)
         ten_agg = _aggregate_per_run(ten_lf, bin_val_cols).with_columns(
             pl.when(pl.col("Year") < 1997)
             .then(pl.lit(1, dtype=pl.Int64))
@@ -514,8 +503,9 @@ def historical_species_pool(
     if not frames:
         raise KeyError("No observation table ('fifty_stop' or 'ten_stop') to build history from.")
 
+    mapping = subspecies_lump_map(tables, lump_subspecies_and_hybrids)
     pools = [
-        _apply_subspecies_lumping(f, lump_subspecies_and_hybrids)
+        _apply_subspecies_lumping(f, mapping)
         .filter(pl.col("route_total") > 0)
         .select(["route_id", "AOU"])
         for f in frames
@@ -682,13 +672,21 @@ def run_ecological_engine(
     )
 
     # Step 5: Target Species Resolution
+    lump_flag = protocol.lump_subspecies_and_hybrids
+    mapping = subspecies_lump_map(tables, lump_flag)
     target_species_lf = filter_target_species(species_raw_lf, species)
+    if mapping:
+        # Selecting a form selects its species; species rows carry the species name
+        target_aous_lf = target_species_lf.select(pl.col("AOU").replace(mapping)).unique()
+        target_species_lf = (
+            lumped_species(species_raw_lf.collect())
+            .lazy()
+            .join(target_aous_lf, on="AOU", how="semi")
+        )
     target_aous_df = (
         target_species_lf.select(["AOU"]).unique(subset=["AOU"], keep="first").collect()
     )
     n_target_species = int(target_aous_df.height)
-
-    lump_flag = protocol.lump_subspecies_and_hybrids
 
     # Step 6: 10-Stop vs 50-Stop Temporal Harmonization
     harmonized_obs_lf = harmonize_observations(
@@ -706,9 +704,7 @@ def run_ecological_engine(
     if guilds is not None:
         guild_join_df = guilds.table
         if lump_flag:
-            guild_join_df = guild_join_df.with_columns(
-                pl.col("AOU").replace(SUBSPECIES_PARENT_AOU_MAP)
-            )
+            guild_join_df = guild_join_df.with_columns(pl.col("AOU").replace(mapping))
             collapsed = guild_join_df.filter(pl.col("AOU").is_duplicated())["AOU"].unique()
             if collapsed.len():
                 raise ValueError(
@@ -723,7 +719,7 @@ def run_ecological_engine(
             .join(target_aous_df.lazy(), on="AOU", how="inner")
             .join(guild_join_df.lazy().select("AOU"), on="AOU", how="anti")
             .join(
-                species_raw_lf.select(["AOU", "English_Common_Name"]).unique(subset=["AOU"]),
+                target_species_lf.select(["AOU", "English_Common_Name"]).unique(subset=["AOU"]),
                 on="AOU",
                 how="left",
             )

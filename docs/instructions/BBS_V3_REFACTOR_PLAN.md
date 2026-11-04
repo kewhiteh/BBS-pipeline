@@ -203,6 +203,7 @@ These corrupt numbers today, so they come before the refactor. Write a failing t
 | D8 | ~~Selector combination~~ **Decided:** union (any selector matches); a selector value that matches no species raises | Phase 4 |
 | D11 | ~~Minimum stops per run~~ **Decided:** use BBS's own criterion. QualityCurrentID = 1 (part of RunType = 1) requires >= 45 of 50 stops completed; the release has no per-run stop count, so there is no separate stop filter. "80% completion" means `runs.min_continuity = 0.8` | Phase 4 follow-up |
 | D9 | ~~Project profiles~~ **Decided:** `examples/wood_thrush_story_map.toml` (12 NC routes, 1995-2025, no quality filters, wide CSV) and `examples/ghy5812_guilds.toml` (BCRs 27-29, RunType 1, continuity 0.8, years open, long CSV). Output shape long/wide and an N-year rolling mean are profile options | Phase 4 |
+| D13 | ~~Subspecies lumping~~ **Decided:** derive from the release's scientific names (forms, within-species hybrids, and within-species "unid." entries count under the species-level entry); replaces the 7-entry hand-typed table, which missed 18 of 28 form/hybrid entries | Phase 5 follow-up |
 | D12 | Guild filters AND the `[species]` lists (chosen in Phase 5, flagged to Kyle; change if he prefers otherwise) | Phase 5 |
 | D10 | Real-data slice for the golden test | Phase 8 |
 

@@ -39,7 +39,8 @@ veteran_min_years = 5         # at least this many survey years = veteran
 source = "50_stop"        # 50_stop (1997+ only) | 10_stop (1966+) | hybrid (10-stop before 1997, 50-stop after)
 stops = "route_total"     # route_total | ten_stop_bins | stops (Stop1..Stop50; 50_stop only)
 zero_fill = true          # zeros for every species ever recorded on the route
-lump_subspecies = true    # count subspecies/hybrid forms under the parent species
+lump_subspecies = true    # count every subspecies/form/within-species hybrid under its species,
+                          # derived from the release's scientific names
 rolling_years = 0         # 0 = off; N >= 2 adds rolling_mean over the N calendar years ending
                           # at each Year (surveyed years only) and rolling_n_years (needs zero_fill)
 

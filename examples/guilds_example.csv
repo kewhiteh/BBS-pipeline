@@ -1,0 +1,9 @@
+aou,common_name,scientific_name,habitat,forest_guild,notes
+07550,Wood Thrush,Hylocichla mustelina,woodland,interior,all three identifiers
+06740,,,woodland,interior,AOU only (Ovenbird)
+,,Setophaga citrina,woodland,interior,scientific name only (Hooded Warbler)
+,Scarlet Tanager,,woodland,interior,common name only
+06240,Red-eyed Vireo,,woodland,interior_edge,
+05930,Northern Cardinal,Cardinalis cardinalis,woodland,interior_edge,
+05980,Indigo Bunting,Passerina cyanea,scrub,edge,
+07610,American Robin,Turdus migratorius,urban,generalist,

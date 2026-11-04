@@ -16,6 +16,7 @@ from bbs_pipeline.guilds import GuildTable, read_guild_csv, resolve_guilds
 from bbs_pipeline.shape import to_wide
 from bbs_pipeline.sources.loader import SourceResult, load_sources
 from bbs_pipeline.spatial.exporter import write_output
+from bbs_pipeline.taxonomy import with_species_names
 
 
 def _git_sha() -> str | None:
@@ -70,7 +71,9 @@ def _load_guilds(bundle: PipelineConfigBundle, sources: SourceResult) -> GuildTa
     if settings.file is None:
         return None
     species = normalize_canonical_keys(sources.tables["species"]).collect()
-    guilds = resolve_guilds(read_guild_csv(Path(settings.file)), species, Path(settings.file))
+    guilds = resolve_guilds(
+        read_guild_csv(Path(settings.file)), with_species_names(species), Path(settings.file)
+    )
     if guilds.unmatched_rows and settings.unmatched == "error":
         listed = "\n  ".join(str(r) for r in guilds.unmatched_rows)
         raise ValueError(
