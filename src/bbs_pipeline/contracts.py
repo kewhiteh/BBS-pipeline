@@ -234,17 +234,13 @@ class ProtocolConfigContract(BaseModel):
         default=False,
         description="Force IntakeEngine.assess() and IntakeEngine.execute_pipeline() rebuild.",
     )
-    golden_protocol_preset: bool = Field(
-        default=True,
-        description="Master toggle enforcing run_types == [1] and quality_current_ids == [1].",
-    )
     run_types: list[int] = Field(
         default_factory=lambda: [1],
-        description="Permitted USGS RunType codes.",
+        description="Permitted USGS RunType codes (default [1] = acceptable runs; empty = all).",
     )
     quality_current_ids: list[int] = Field(
         default_factory=lambda: [1],
-        description="Permitted USGS QualityCurrentID codes.",
+        description="Permitted USGS QualityCurrentID codes (default [1]; empty = all).",
     )
     year_range: tuple[int, int] = Field(
         default=(1997, 2024),
@@ -315,17 +311,6 @@ class ProtocolConfigContract(BaseModel):
         ],
         description="Dimension tables to stitch a-la-carte onto observations.",
     )
-
-    @model_validator(mode="before")
-    @classmethod
-    def _apply_golden_preset(cls, data: Any) -> Any:
-        if isinstance(data, dict):
-            copied = dict(data)
-            if copied.get("golden_protocol_preset", True):
-                copied["run_types"] = [1]
-                copied["quality_current_ids"] = [1]
-            return copied
-        return data
 
     @model_validator(mode="after")
     def _validate_year_range(self) -> ProtocolConfigContract:

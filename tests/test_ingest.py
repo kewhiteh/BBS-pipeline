@@ -336,8 +336,8 @@ def test_tier2_local_raw_nested_zips_and_intake_handshake(
     assert "07550" in species_df["AOU"].to_list()
 
 
-def test_tier3_sciencebase_stream_and_resilient_fallback(tmp_path: Path) -> None:
-    """Verify Tier 3 ScienceBase streamer and resilient fallback to Tier 2 / Tier 1 on HTTP error."""
+def test_tier3_sciencebase_stream_and_failure_raises(tmp_path: Path) -> None:
+    """Verify the Tier 3 ScienceBase streamer, and that a download failure raises."""
     cache_dir = tmp_path / "sb_cache"
     raw_dir = tmp_path / "empty_raw"
 
@@ -412,12 +412,38 @@ def test_tier3_sciencebase_stream_and_resilient_fallback(tmp_path: Path) -> None
     assert len(fake_client.calls) == 5
     assert {"fifty_stop", "weather", "routes", "species"}.issubset(set(res.tables.keys()))
 
-    # Now simulate an HTTP failure in SCIENCEBASE_STREAM mode and verify fallback to Tier 1 cache
+    # A network failure in SCIENCEBASE_STREAM mode raises; it never falls back to the
+    # cache written above, which may be from an older release
     class FailingHttpClient:
         def get(self, url: str) -> Any:
             raise ConnectionError(f"Simulated network outage for {url}")
 
-    fallback_gate = ThreeTierIngressGate(protocol, http_client=FailingHttpClient())
-    fallback_res = fallback_gate.execute()
-    assert fallback_res.tier_used == "tier1_cache"
-    assert "fifty_stop" in fallback_res.tables
+    failing_gate = ThreeTierIngressGate(protocol, http_client=FailingHttpClient())
+    with pytest.raises(ConnectionError, match="Simulated network outage"):
+        failing_gate.execute()
+
+
+def test_malformed_cache_manifest_raises(tmp_path: Path) -> None:
+    (tmp_path / "intake_manifest.json").write_text("{not json", encoding="utf-8")
+
+    with pytest.raises(ValueError, match="Malformed cache manifest"):
+        resolve_table_roles(tmp_path)
+
+
+def test_intake_engine_failure_raises(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """A failing IntakeEngine must not be silently replaced by the built-in sanitizer."""
+    raw_dir = tmp_path / "raw"
+    _populate_raw_nested_archives(raw_dir)
+    mock_intake_cls = MagicMock()
+    mock_intake_cls.execute_pipeline.side_effect = RuntimeError("quarantine overflow")
+    fake_module = types.ModuleType("intake_engine")
+    fake_module.IntakeEngine = mock_intake_cls  # type: ignore[attr-defined]
+    monkeypatch.setitem(sys.modules, "intake_engine", fake_module)
+    protocol = ProtocolConfigContract(
+        ingress_mode=IngressMode.LOCAL_RAW_VIA_INTAKE,
+        sanitized_cache_dir=tmp_path / "cache",
+        raw_data_dir=raw_dir,
+    )
+
+    with pytest.raises(RuntimeError, match="quarantine overflow"):
+        ThreeTierIngressGate(protocol).execute()

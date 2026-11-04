@@ -54,6 +54,9 @@ ROUTES_JOIN_COLS: tuple[str, ...] = (
 
 BCR_JOIN_COLS: tuple[str, ...] = ("BCR",)
 
+# One harmonized observation row per survey run (RouteDataID) and species
+OBSERVATION_KEYS: tuple[str, ...] = ("RouteDataID", "route_id", "Year", "AOU")
+
 WEATHER_JOIN_COLS: tuple[str, ...] = (
     "RouteDataID",
     "ObsN",
@@ -197,27 +200,67 @@ def filter_target_species[FrameT: (pl.DataFrame, pl.LazyFrame)](
     return _match_return_type(lf, species)
 
 
+def _null_aware_sum_horizontal(cols: list[str]) -> pl.Expr:
+    """Sum across columns, ignoring NULLs, but stay NULL when every input is NULL."""
+    exprs = [pl.col(c) for c in cols]
+    return (
+        pl.when(pl.all_horizontal([e.is_null() for e in exprs]))
+        .then(pl.lit(None, dtype=pl.Int64))
+        .otherwise(pl.sum_horizontal(exprs).cast(pl.Int64))
+    )
+
+
+def _null_aware_sum(col: str) -> pl.Expr:
+    """Group sum that stays NULL when every value in the group is NULL."""
+    return (
+        pl.when(pl.col(col).is_null().all())
+        .then(pl.lit(None, dtype=pl.Int64))
+        .otherwise(pl.col(col).sum())
+        .alias(col)
+    )
+
+
+def _require_run_id(lf: pl.LazyFrame, table_name: str) -> None:
+    if "RouteDataID" not in lf.collect_schema().names():
+        raise KeyError(
+            f"Table '{table_name}' has no 'RouteDataID' column; observations must be keyed "
+            "to individual survey runs."
+        )
+
+
+def _aggregate_per_run(lf: pl.LazyFrame, val_cols: list[str]) -> pl.LazyFrame:
+    """Sum counts per (run, species), so subspecies lumped into a parent AOU combine."""
+    return (
+        lf.with_columns(pl.col("RouteDataID").cast(pl.Int64))
+        .group_by(list(OBSERVATION_KEYS))
+        .agg([_null_aware_sum(c) for c in val_cols])
+        .select([*OBSERVATION_KEYS, *val_cols])
+    )
+
+
 def _prepare_50_stop_frame(
     fifty_stop: pl.LazyFrame,
     need_bins: bool,
     need_raw_stops: bool,
 ) -> pl.LazyFrame:
-    """Normalize a 50-stop LazyFrame to compute 10-stop bins and `route_total`."""
+    """Normalize a 50-stop LazyFrame to compute 10-stop bins and `route_total`.
+
+    Stop values that are missing stay NULL; they are never treated as zero counts.
+    """
     lf = normalize_canonical_keys(fifty_stop)
     schema_names = set(lf.collect_schema().names())
 
     all_stop_names = [f"Stop{i}" for i in range(1, 51)]
     present_stops = [c for c in all_stop_names if c in schema_names]
 
-    # Fill missing Stop columns with 0 if raw 50 stops are needed
     if need_raw_stops:
         missing_stop_exprs = [
-            pl.lit(0, dtype=pl.Int64).alias(c) for c in all_stop_names if c not in schema_names
+            pl.lit(None, dtype=pl.Int64).alias(c) for c in all_stop_names if c not in schema_names
         ]
         if missing_stop_exprs:
             lf = lf.with_columns(missing_stop_exprs)
 
-    cast_stop_exprs = [pl.col(c).fill_null(0).cast(pl.Int64).alias(c) for c in present_stops]
+    cast_stop_exprs = [pl.col(c).cast(pl.Int64).alias(c) for c in present_stops]
     if cast_stop_exprs:
         lf = lf.with_columns(cast_stop_exprs)
 
@@ -231,32 +274,24 @@ def _prepare_50_stop_frame(
                 if f"Stop{i}" in schema_names
             ]
             if stop_slice:
-                bin_exprs.append(
-                    pl.sum_horizontal([pl.col(c) for c in stop_slice]).cast(pl.Int64).alias(bin_col)
-                )
+                bin_exprs.append(_null_aware_sum_horizontal(stop_slice).alias(bin_col))
             elif bin_col in schema_names:
-                bin_exprs.append(pl.col(bin_col).fill_null(0).cast(pl.Int64).alias(bin_col))
+                bin_exprs.append(pl.col(bin_col).cast(pl.Int64).alias(bin_col))
             else:
-                bin_exprs.append(pl.lit(0, dtype=pl.Int64).alias(bin_col))
+                bin_exprs.append(pl.lit(None, dtype=pl.Int64).alias(bin_col))
         if bin_exprs:
             lf = lf.with_columns(bin_exprs)
 
     # Compute route_total
     if present_stops:
-        lf = lf.with_columns(
-            pl.sum_horizontal([pl.col(c) for c in present_stops])
-            .cast(pl.Int64)
-            .alias("route_total")
-        )
+        lf = lf.with_columns(_null_aware_sum_horizontal(present_stops).alias("route_total"))
     elif "route_total" in schema_names:
-        lf = lf.with_columns(pl.col("route_total").fill_null(0).cast(pl.Int64).alias("route_total"))
+        lf = lf.with_columns(pl.col("route_total").cast(pl.Int64).alias("route_total"))
     elif "StopTotal" in schema_names:
-        lf = lf.with_columns(pl.col("StopTotal").fill_null(0).cast(pl.Int64).alias("route_total"))
+        lf = lf.with_columns(pl.col("StopTotal").cast(pl.Int64).alias("route_total"))
     else:
         lf = lf.with_columns(
-            pl.sum_horizontal([pl.col(f"Count{b * 10}") for b in range(1, 6)])
-            .cast(pl.Int64)
-            .alias("route_total")
+            _null_aware_sum_horizontal([f"Count{b * 10}" for b in range(1, 6)]).alias("route_total")
         )
 
     return lf
@@ -271,19 +306,17 @@ def _prepare_10_stop_frame(ten_stop: pl.LazyFrame) -> pl.LazyFrame:
     bin_exprs: list[pl.Expr] = []
     for c in bin_cols:
         if c in schema_names:
-            bin_exprs.append(pl.col(c).fill_null(0).cast(pl.Int64).alias(c))
+            bin_exprs.append(pl.col(c).cast(pl.Int64).alias(c))
         else:
-            bin_exprs.append(pl.lit(0, dtype=pl.Int64).alias(c))
+            bin_exprs.append(pl.lit(None, dtype=pl.Int64).alias(c))
     lf = lf.with_columns(bin_exprs)
 
     if "StopTotal" in schema_names:
-        lf = lf.with_columns(pl.col("StopTotal").fill_null(0).cast(pl.Int64).alias("route_total"))
+        lf = lf.with_columns(pl.col("StopTotal").cast(pl.Int64).alias("route_total"))
     elif "route_total" in schema_names:
-        lf = lf.with_columns(pl.col("route_total").fill_null(0).cast(pl.Int64).alias("route_total"))
+        lf = lf.with_columns(pl.col("route_total").cast(pl.Int64).alias("route_total"))
     else:
-        lf = lf.with_columns(
-            pl.sum_horizontal([pl.col(c) for c in bin_cols]).cast(pl.Int64).alias("route_total")
-        )
+        lf = lf.with_columns(_null_aware_sum_horizontal(bin_cols).alias("route_total"))
 
     return lf
 
@@ -313,9 +346,21 @@ def harmonize_observations(
     protocol: ProtocolConfigContract,
     lump_subspecies_and_hybrids: bool = True,
 ) -> pl.LazyFrame:
-    """Harmonize 10-stop and/or 50-stop tables according to temporal and stop modes."""
+    """Harmonize 10-stop and/or 50-stop tables to one row per (run, species).
+
+    Output is keyed on ``OBSERVATION_KEYS`` (``RouteDataID``, ``route_id``, ``Year``,
+    ``AOU``). Counts from different runs in the same route-year are never combined.
+    """
     routing = protocol.temporal_routing_mode
     agg_mode = protocol.stop_aggregation
+
+    if agg_mode == StopAggregationMode.RAW_50_STOPS and routing != (
+        TemporalRoutingMode.FIFTY_STOP_1997_PLUS
+    ):
+        raise ValueError(
+            f"stop_aggregation '{agg_mode.value}' needs per-stop counts, which only the "
+            f"50-stop data has; temporal_routing_mode '{routing.value}' cannot provide them."
+        )
 
     need_bins = (
         agg_mode == StopAggregationMode.TEN_STOP_BINS
@@ -331,6 +376,7 @@ def harmonize_observations(
             need_bins=need_bins,
             need_raw_stops=need_raw_stops,
         )
+        _require_run_id(lf, "fifty_stop")
         lf = _apply_subspecies_lumping(lf, lump_subspecies_and_hybrids)
 
         if agg_mode == StopAggregationMode.RAW_50_STOPS:
@@ -340,34 +386,21 @@ def harmonize_observations(
         else:
             val_cols = ["route_total"]
 
-        return (
-            lf.group_by(["route_id", "Year", "AOU"])
-            .agg([pl.col(c).sum().alias(c) for c in val_cols])
-            .select(["route_id", "Year", "AOU", *val_cols])
-        )
+        return _aggregate_per_run(lf, val_cols)
 
     if routing == TemporalRoutingMode.TEN_STOP_1966_PLUS:
         if "ten_stop" not in tables:
             raise KeyError("Table 'ten_stop' is required for TEN_STOP_1966_PLUS mode.")
         lf = _prepare_10_stop_frame(_to_lazy(tables["ten_stop"]))
+        _require_run_id(lf, "ten_stop")
         lf = _apply_subspecies_lumping(lf, lump_subspecies_and_hybrids)
 
         if agg_mode == StopAggregationMode.TEN_STOP_BINS:
             val_cols = [*[f"Count{b * 10}" for b in range(1, 6)], "route_total"]
-        elif agg_mode == StopAggregationMode.RAW_50_STOPS:
-            # Synthesize zero-filled raw stops if requested on 10-stop source
-            lf = lf.with_columns(
-                [pl.lit(0, dtype=pl.Int64).alias(f"Stop{i}") for i in range(1, 51)]
-            )
-            val_cols = [*[f"Stop{i}" for i in range(1, 51)], "route_total"]
         else:
             val_cols = ["route_total"]
 
-        return (
-            lf.group_by(["route_id", "Year", "AOU"])
-            .agg([pl.col(c).sum().alias(c) for c in val_cols])
-            .select(["route_id", "Year", "AOU", *val_cols])
-        )
+        return _aggregate_per_run(lf, val_cols)
 
     # HYBRID_HARMONIZED_10_STOP
     bin_val_cols = [*[f"Count{b * 10}" for b in range(1, 6)], "route_total"]
@@ -379,33 +412,25 @@ def harmonize_observations(
             need_bins=True,
             need_raw_stops=False,
         )
+        _require_run_id(fifty_lf, "fifty_stop")
         fifty_lf = _apply_subspecies_lumping(fifty_lf, lump_subspecies_and_hybrids)
-        fifty_agg = (
-            fifty_lf.group_by(["route_id", "Year", "AOU"])
-            .agg([pl.col(c).sum().alias(c) for c in bin_val_cols])
-            .select(["route_id", "Year", "AOU", *bin_val_cols])
-            .with_columns(
-                pl.when(pl.col("Year") >= 1997)
-                .then(pl.lit(1, dtype=pl.Int64))
-                .otherwise(pl.lit(2, dtype=pl.Int64))
-                .alias("_source_priority")
-            )
+        fifty_agg = _aggregate_per_run(fifty_lf, bin_val_cols).with_columns(
+            pl.when(pl.col("Year") >= 1997)
+            .then(pl.lit(1, dtype=pl.Int64))
+            .otherwise(pl.lit(2, dtype=pl.Int64))
+            .alias("_source_priority")
         )
         frames.append(fifty_agg)
 
     if "ten_stop" in tables:
         ten_lf = _prepare_10_stop_frame(_to_lazy(tables["ten_stop"]))
+        _require_run_id(ten_lf, "ten_stop")
         ten_lf = _apply_subspecies_lumping(ten_lf, lump_subspecies_and_hybrids)
-        ten_agg = (
-            ten_lf.group_by(["route_id", "Year", "AOU"])
-            .agg([pl.col(c).sum().alias(c) for c in bin_val_cols])
-            .select(["route_id", "Year", "AOU", *bin_val_cols])
-            .with_columns(
-                pl.when(pl.col("Year") < 1997)
-                .then(pl.lit(1, dtype=pl.Int64))
-                .otherwise(pl.lit(2, dtype=pl.Int64))
-                .alias("_source_priority")
-            )
+        ten_agg = _aggregate_per_run(ten_lf, bin_val_cols).with_columns(
+            pl.when(pl.col("Year") < 1997)
+            .then(pl.lit(1, dtype=pl.Int64))
+            .otherwise(pl.lit(2, dtype=pl.Int64))
+            .alias("_source_priority")
         )
         frames.append(ten_agg)
 
@@ -416,18 +441,14 @@ def harmonize_observations(
 
     combined = pl.concat(frames, how="vertical")
     deduped = (
-        combined.sort(["route_id", "Year", "AOU", "_source_priority"])
-        .unique(subset=["route_id", "Year", "AOU"], keep="first", maintain_order=True)
+        combined.sort([*OBSERVATION_KEYS, "_source_priority"])
+        .unique(subset=["RouteDataID", "AOU"], keep="first", maintain_order=True)
         .drop("_source_priority")
     )
 
     if agg_mode == StopAggregationMode.ROUTE_TOTAL:
-        return deduped.select(["route_id", "Year", "AOU", "route_total"])
-    if agg_mode == StopAggregationMode.RAW_50_STOPS:
-        return deduped.with_columns(
-            [pl.lit(0, dtype=pl.Int64).alias(f"Stop{i}") for i in range(1, 51)]
-        ).select(["route_id", "Year", "AOU", *[f"Stop{i}" for i in range(1, 51)], "route_total"])
-    return deduped.select(["route_id", "Year", "AOU", *bin_val_cols])
+        return deduped.select([*OBSERVATION_KEYS, "route_total"])
+    return deduped.select([*OBSERVATION_KEYS, *bin_val_cols])
 
 
 def apply_covid_2020_policy[FrameT: (pl.DataFrame, pl.LazyFrame)](
@@ -449,6 +470,10 @@ def apply_covid_2020_policy[FrameT: (pl.DataFrame, pl.LazyFrame)](
 
     mode = protocol.covid_2020_mode
     base_no_2020 = lf.filter(pl.col("Year") != 2020)
+    # Imputed 2020 rows were never surveyed, so they carry no run ID
+    imputed_run_exprs: list[pl.Expr] = (
+        [pl.lit(None, dtype=pl.Int64).alias("RouteDataID")] if "RouteDataID" in schema_names else []
+    )
 
     if mode == Covid2020Mode.EXCLUDE_GAP:
         return _match_return_type(base_no_2020, matrix)
@@ -460,6 +485,7 @@ def apply_covid_2020_policy[FrameT: (pl.DataFrame, pl.LazyFrame)](
                 [
                     pl.lit(2020, dtype=pl.Int64).alias("Year"),
                     pl.lit(True).alias("is_covid_imputed"),
+                    *imputed_run_exprs,
                 ]
             )
             .select(schema_names)
@@ -493,6 +519,7 @@ def apply_covid_2020_policy[FrameT: (pl.DataFrame, pl.LazyFrame)](
         meta_exprs: list[pl.Expr] = [
             pl.lit(2020, dtype=pl.Int64).alias("Year"),
             pl.lit(True).alias("is_covid_imputed"),
+            *imputed_run_exprs,
         ]
         if "is_zero_filled" in schema_names:
             meta_exprs.append(pl.lit(False).alias("is_zero_filled"))
@@ -508,6 +535,55 @@ def apply_covid_2020_policy[FrameT: (pl.DataFrame, pl.LazyFrame)](
         return _match_return_type(out_lf, matrix)
 
     return _match_return_type(lf, matrix)
+
+
+def historical_species_pool(
+    tables: dict[str, pl.LazyFrame | pl.DataFrame],
+    lump_subspecies_and_hybrids: bool = True,
+) -> pl.LazyFrame:
+    """Return every (route_id, AOU) ever recorded with a positive count, over all years.
+
+    Draws on both the 50-stop and 10-stop tables when present, so species last seen
+    before the 50-stop era (1997) still count as part of the route's history.
+    """
+    frames: list[pl.LazyFrame] = []
+    if "fifty_stop" in tables:
+        lf = _prepare_50_stop_frame(
+            _to_lazy(tables["fifty_stop"]), need_bins=False, need_raw_stops=False
+        )
+        frames.append(lf)
+    if "ten_stop" in tables:
+        frames.append(_prepare_10_stop_frame(_to_lazy(tables["ten_stop"])))
+    if not frames:
+        raise KeyError("No observation table ('fifty_stop' or 'ten_stop') to build history from.")
+
+    pools = [
+        _apply_subspecies_lumping(f, lump_subspecies_and_hybrids)
+        .filter(pl.col("route_total") > 0)
+        .select(["route_id", "AOU"])
+        for f in frames
+    ]
+    return pl.concat(pools, how="vertical").unique()
+
+
+def _assert_one_run_per_route_year(runs_lf: pl.LazyFrame) -> None:
+    """Raise if more than one run survives the filters for any route-year."""
+    dupes = (
+        runs_lf.group_by(["route_id", "Year"])
+        .agg(pl.col("RouteDataID").sort().alias("RouteDataIDs"))
+        .filter(pl.col("RouteDataIDs").list.len() > 1)
+        .sort(["route_id", "Year"])
+        .collect()
+    )
+    if dupes.height:
+        examples = "; ".join(
+            f"{r['route_id']} {r['Year']}: {r['RouteDataIDs']}"
+            for r in dupes.head(5).iter_rows(named=True)
+        )
+        raise ValueError(
+            f"{dupes.height} route-year(s) have more than one run after filtering "
+            f"(e.g. {examples}). Narrow run_types/quality_current_ids so one run remains."
+        )
 
 
 def run_ecological_engine(
@@ -595,9 +671,17 @@ def run_ecological_engine(
         )
     ).filter(pl.col("route_continuity_ratio") >= protocol.min_route_continuity_ratio)
 
+    if "RouteDataID" not in events_schema:
+        raise KeyError("Table 'weather' has no 'RouteDataID' column; runs cannot be identified.")
     valid_sampling_events_lf = events_with_continuity_lf.select(
-        ["route_id", "Year", "route_continuity_ratio"]
-    ).unique(subset=["route_id", "Year"], keep="first")
+        [
+            pl.col("RouteDataID").cast(pl.Int64),
+            "route_id",
+            "Year",
+            "route_continuity_ratio",
+        ]
+    )
+    _assert_one_run_per_route_year(valid_sampling_events_lf)
 
     continuity_filtered_routes = int(
         valid_sampling_events_lf.select(pl.col("route_id").n_unique()).collect().item()
@@ -621,27 +705,30 @@ def run_ecological_engine(
         lump_subspecies_and_hybrids=lump_flag,
     )
     obs_schema_names = list(harmonized_obs_lf.collect_schema().names())
-    count_cols = [c for c in obs_schema_names if c not in ("route_id", "Year", "AOU")]
+    count_cols = [c for c in obs_schema_names if c not in OBSERVATION_KEYS]
+    run_obs_lf = harmonized_obs_lf.select(["RouteDataID", "AOU", *count_cols])
 
-    # Step 7: Extirpation-Aware Zero-Filling
+    # Step 7: Extirpation-Aware Zero-Filling over each route's historical species pool.
+    # Observations attach to surviving runs by RouteDataID, so a run removed by any
+    # filter contributes nothing on either path.
     if protocol.enable_extirpation_zero_fill:
-        skeleton_lf = valid_sampling_events_lf.join(target_aous_df.lazy(), how="cross")
+        pool_lf = historical_species_pool(tables, lump_subspecies_and_hybrids=lump_flag).join(
+            target_aous_df.lazy(), on="AOU", how="inner"
+        )
+        skeleton_lf = valid_sampling_events_lf.join(pool_lf, on="route_id", how="inner")
         matrix_lf = (
-            skeleton_lf.join(
-                harmonized_obs_lf,
-                on=["route_id", "Year", "AOU"],
-                how="left",
-            )
+            skeleton_lf.join(run_obs_lf, on=["RouteDataID", "AOU"], how="left")
             .with_columns(pl.col("route_total").is_null().alias("is_zero_filled"))
-            .with_columns([pl.col(c).fill_null(0) for c in count_cols])
+            .with_columns(
+                [
+                    pl.when(pl.col("is_zero_filled")).then(0).otherwise(pl.col(c)).alias(c)
+                    for c in count_cols
+                ]
+            )
         )
     else:
         matrix_lf = (
-            valid_sampling_events_lf.join(
-                harmonized_obs_lf,
-                on=["route_id", "Year"],
-                how="inner",
-            )
+            valid_sampling_events_lf.join(run_obs_lf, on="RouteDataID", how="inner")
             .join(target_aous_df.lazy(), on="AOU", how="inner")
             .with_columns(pl.lit(False).alias("is_zero_filled"))
         )
@@ -718,12 +805,10 @@ def run_ecological_engine(
 
     if JoinDimension.WEATHER in requested_joins:
         wx_schema = set(weather_tenure_lf.collect_schema().names())
-        wx_cols = [c for c in WEATHER_JOIN_COLS if c in wx_schema]
+        wx_cols = [c for c in WEATHER_JOIN_COLS if c in wx_schema and c != "RouteDataID"]
         if wx_cols:
-            wx_join_lf = weather_tenure_lf.select(["route_id", "Year", *wx_cols]).unique(
-                subset=["route_id", "Year"], keep="first"
-            )
-            final_lf = final_lf.join(wx_join_lf, on=["route_id", "Year"], how="left")
+            wx_join_lf = weather_tenure_lf.select([pl.col("RouteDataID").cast(pl.Int64), *wx_cols])
+            final_lf = final_lf.join(wx_join_lf, on="RouteDataID", how="left")
         active_joins.append(JoinDimension.WEATHER.value)
 
     observations_df = final_lf.sort(["route_id", "Year", "AOU"]).collect()

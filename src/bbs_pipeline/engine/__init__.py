@@ -6,6 +6,7 @@ from bbs_pipeline.engine.ecology import (
     compute_observer_tenure,
     filter_target_species,
     harmonize_observations,
+    historical_species_pool,
     normalize_canonical_keys,
     run_ecological_engine,
 )
@@ -16,6 +17,7 @@ __all__ = [
     "compute_observer_tenure",
     "filter_target_species",
     "harmonize_observations",
+    "historical_species_pool",
     "normalize_canonical_keys",
     "run_ecological_engine",
 ]

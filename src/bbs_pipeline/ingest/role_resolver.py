@@ -116,29 +116,26 @@ class TableRoleResolver:
         if manifest_path.is_file():
             try:
                 manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
-                tables_meta = manifest.get("tables", [])
-                if isinstance(tables_meta, list):
-                    for entry in tables_meta:
-                        if not isinstance(entry, dict):
-                            continue
-                        fname = entry.get("filename") or entry.get("path")
-                        cols = entry.get("columns")
-                        if not fname:
-                            continue
-                        candidate_path = target_dir / str(fname)
-                        if not candidate_path.is_file():
-                            continue
-                        if isinstance(cols, list) and cols:
-                            role = identify_role_from_columns(cols)
-                        else:
-                            role = identify_role_from_columns(
-                                self._read_file_columns(candidate_path)
-                            )
-                        if role and role not in resolved:
-                            resolved[role] = candidate_path
-            except Exception:
-                # Fall through to direct schema inspection if manifest is malformed
-                pass
+            except json.JSONDecodeError as exc:
+                raise ValueError(f"Malformed cache manifest '{manifest_path}': {exc}") from exc
+            tables_meta = manifest.get("tables", [])
+            if isinstance(tables_meta, list):
+                for entry in tables_meta:
+                    if not isinstance(entry, dict):
+                        continue
+                    fname = entry.get("filename") or entry.get("path")
+                    cols = entry.get("columns")
+                    if not fname:
+                        continue
+                    candidate_path = target_dir / str(fname)
+                    if not candidate_path.is_file():
+                        continue
+                    if isinstance(cols, list) and cols:
+                        role = identify_role_from_columns(cols)
+                    else:
+                        role = identify_role_from_columns(self._read_file_columns(candidate_path))
+                    if role and role not in resolved:
+                        resolved[role] = candidate_path
 
         # Step 2: Inspect all .parquet files (preferred) and .csv files (fallback)
         candidates = sorted(target_dir.glob("*.parquet")) + sorted(target_dir.glob("*.csv"))
@@ -149,8 +146,8 @@ class TableRoleResolver:
                 continue
             try:
                 cols = self._read_file_columns(file_path)
-            except Exception:
-                continue
+            except pl.exceptions.PolarsError as exc:
+                raise ValueError(f"Cannot read the columns of '{file_path}': {exc}") from exc
             role = identify_role_from_columns(cols)
             if role and role not in resolved:
                 resolved[role] = file_path

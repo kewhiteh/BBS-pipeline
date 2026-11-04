@@ -269,21 +269,12 @@ def render_workbench() -> None:
     # -------------------------------------------------------------------------
     with tab3:
         st.subheader("Survey Protocol, Spatiotemporal Filters & Join Matrix")
-        btn_golden_preset = st.button(
-            "Apply Golden Protocol Preset",
-            key="btn_golden_preset",
-        )
-        ui_golden_preset = st.checkbox(
-            "Golden Protocol Preset",
-            value=True if btn_golden_preset else bundle.protocol.golden_protocol_preset,
-            key="ui_golden_preset",
-        )
-
         run_type_options = sorted({0, 1, 2, 3, *bundle.protocol.run_types})
         ui_run_types = st.multiselect(
             "Permitted RunType Codes",
             options=run_type_options,
-            default=[1] if (btn_golden_preset or ui_golden_preset) else bundle.protocol.run_types,
+            default=bundle.protocol.run_types,
+            help="Empty means no RunType filter.",
             key="ui_run_types",
         )
 
@@ -291,9 +282,8 @@ def render_workbench() -> None:
         ui_quality_ids = st.multiselect(
             "Permitted QualityCurrentID Codes",
             options=quality_options,
-            default=[1]
-            if (btn_golden_preset or ui_golden_preset)
-            else bundle.protocol.quality_current_ids,
+            default=bundle.protocol.quality_current_ids,
+            help="Empty means no QualityCurrentID filter.",
             key="ui_quality_ids",
         )
 
@@ -436,7 +426,6 @@ def render_workbench() -> None:
         if ui_join_bcr:
             selected_joins.append(JoinDimension.BCR)
 
-        effective_golden = True if btn_golden_preset else bool(ui_golden_preset)
         effective_force_resanitize = True if btn_force_resanitize else bool(ui_force_resanitize)
 
         updated_protocol = ProtocolConfigContract(
@@ -448,9 +437,8 @@ def render_workbench() -> None:
             http_backoff_seconds=bundle.protocol.http_backoff_seconds,
             http_timeout_seconds=bundle.protocol.http_timeout_seconds,
             force_resanitize=effective_force_resanitize,
-            golden_protocol_preset=effective_golden,
-            run_types=[int(x) for x in ui_run_types] if ui_run_types else [1],
-            quality_current_ids=[int(x) for x in ui_quality_ids] if ui_quality_ids else [1],
+            run_types=[int(x) for x in ui_run_types],
+            quality_current_ids=[int(x) for x in ui_quality_ids],
             year_range=(int(ui_year_range[0]), int(ui_year_range[1])),
             states=_parse_csv_ints(ui_states),
             bcrs=_parse_csv_ints(ui_bcrs),
