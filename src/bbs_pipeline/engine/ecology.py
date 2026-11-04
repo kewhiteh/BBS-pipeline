@@ -54,6 +54,9 @@ ROUTES_JOIN_COLS: tuple[str, ...] = (
 
 BCR_JOIN_COLS: tuple[str, ...] = ("BCR",)
 
+# First year with 50-stop (per-stop) counts
+FIFTY_STOP_FIRST_YEAR = 1997
+
 # One harmonized observation row per survey run (RouteDataID) and species
 OBSERVATION_KEYS: tuple[str, ...] = ("RouteDataID", "route_id", "Year", "AOU")
 
@@ -470,6 +473,24 @@ def harmonize_observations(
     return deduped.select([*OBSERVATION_KEYS, *bin_val_cols])
 
 
+def add_rolling_mean(lf: pl.LazyFrame, years: int) -> pl.LazyFrame:
+    """Add rolling_mean and rolling_n_years over the ``years`` calendar years ending at Year.
+
+    The window is calendar years, not rows: a route surveyed in 2010 and 2014 has a
+    2014 window of 2010-2014 (5 years) holding 2 surveyed years.
+    """
+    rolled = (
+        lf.select(["route_id", "AOU", "Year", "route_total"])
+        .sort("Year")
+        .rolling(index_column="Year", period=f"{years}i", group_by=["route_id", "AOU"])
+        .agg(
+            pl.col("route_total").cast(pl.Float64).mean().alias("rolling_mean"),
+            pl.col("route_total").count().cast(pl.Int64).alias("rolling_n_years"),
+        )
+    )
+    return lf.join(rolled, on=["route_id", "AOU", "Year"], how="left")
+
+
 def historical_species_pool(
     tables: dict[str, pl.LazyFrame | pl.DataFrame],
     lump_subspecies_and_hybrids: bool = True,
@@ -526,6 +547,15 @@ def run_ecological_engine(
     data_source: str = "cache",
 ) -> EcologicalEngineResult:
     """Execute the end-to-end Polars Ecological Engine pipeline."""
+    if (
+        protocol.temporal_routing_mode == TemporalRoutingMode.FIFTY_STOP_1997_PLUS
+        and protocol.year_range[0] < FIFTY_STOP_FIRST_YEAR
+    ):
+        # Runs before 1997 exist but have no 50-stop rows, so zero-fill would invent zeros
+        raise ValueError(
+            f"50-stop data starts in {FIFTY_STOP_FIRST_YEAR}; years from "
+            f"{protocol.year_range[0]} need the 10-stop or hybrid source."
+        )
     for req_table in ("routes", "weather", "species"):
         if req_table not in tables:
             raise KeyError(f"Required table '{req_table}' missing from input tables dict.")
@@ -688,6 +718,8 @@ def run_ecological_engine(
     zero_filled_matrix_rows = int(matrix_lf.select(pl.len()).collect().item())
 
     final_lf = matrix_lf
+    if protocol.rolling_window_years:
+        final_lf = add_rolling_mean(final_lf, protocol.rolling_window_years)
 
     # Step 8: A-La-Carte Joins
     active_joins: list[str] = []

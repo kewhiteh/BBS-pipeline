@@ -1,0 +1,32 @@
+# Wood Thrush story map: the 12 NC routes from the original story map, every surveyed year
+# 1995-2025, with no run-quality or completeness filters (as the story map was first run).
+# Wide CSV: one row per route, one count column per year. A blank cell means the route was
+# not surveyed that year (2020 has no column: no surveys); 0 means surveyed, not detected.
+
+[routes]
+# Matched to BBS routes by name. The original story-map CSV used other numbers
+# (e.g. "63-006" for LINVILLE, which is BBS route 63_031).
+route_ids = [
+  "63_101", "63_207", "63_224", "63_311",   # BCR 27: SUPPLY, HAMLET, DORTCHES, JONES CORNER
+  "63_031", "63_228", "63_906", "63_910",   # BCR 28: LINVILLE, TODD, WATERVILLE, HIGHLANDS
+  "63_012", "63_024", "63_027", "63_225",   # BCR 29: JORDAN, ARCOLA, COPELAND, DURHAM
+]
+
+[runs]
+start_year = 1995
+end_year = 2025
+run_types = []             # no RunType filter
+quality_current_ids = []   # no QualityCurrentID filter
+
+[observations]
+source = "10_stop"         # covers 1995-1996, before the 50-stop data begins
+
+[species]
+aous = ["07550"]           # Wood Thrush
+
+[joins]
+tables = ["routes", "bcr"]
+
+[output]
+path = "output/wood_thrush_story_map.csv"
+shape = "wide"
