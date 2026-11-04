@@ -156,7 +156,7 @@ These corrupt numbers today, so they come before the refactor. Write a failing t
 - `match_on`: `AOU` | `common_name` | `scientific_name`. Matching is case- and whitespace-insensitive. Unmatched rows on both sides go to `inspect` and the manifest.
 - Filters: OR within a trait, AND across traits, over any column. Species selectors (`aous`, `common_names`, `families`, `orders`) combine per **DECISION D8** (union vs intersection). This replaces the `if/elif` precedence (V4).
 - Migrant/non-breeder exclusion from `MigrantNonBreeder`.
-- Convert `config/guilds.json` into `examples/guilds_example.csv` as a format reference only.
+- Convert the old `config/guilds.json` (removed in Phase 4; see git history) into `examples/guilds_example.csv` as a format reference only.
 
 ### Phase 6 — Joins, columns, manifest
 - `[joins]` per table (routes, weather, vehicle, observer, species, guilds): `[]` | `["*"]` | an explicit list. Validate names against the source table and fail with the list of valid names. Replaces `JoinDimension`, `*_JOIN_COLS`, and the separate BCR dimension (B1).
@@ -191,14 +191,14 @@ These corrupt numbers today, so they come before the refactor. Write a failing t
 ## 5. Open decisions for Kyle
 | # | Decision | Needed by |
 |---|---|---|
-| D1 | One TOML profile replacing the three JSON contracts? | Phase 4 |
+| D1 | ~~TOML profile~~ **Decided:** one TOML profile replaces the three JSON files; layout approved (source, routes, runs, observations, species, joins, output); one output file per run, format from the extension | Phase 4 |
 | D2 | ~~Git remote~~ **Decided:** replace `kewhiteh/BBS-pipeline`, one PR per phase | Phase 0 |
 | D3 | ~~Multiple runs per route-year~~ **Resolved by data:** guard that raises | Phase 1 |
 | D4 | ~~Spatial selection~~ **Decided:** route start points only; no polylines | Phase 2 |
 | D5 | ~~v3 extras~~ **Decided:** keep 10-stop/hybrid (pre-1997 years are needed) and the 2020 exclusion; drop COVID imputation, rolling mean, guild rollup, DuckDB, AGOL. intake_engine is Kyle's in-progress project: hook removed for now (see Phase 3) | Phase 2 |
 | D6 | ~~Zero-fill semantics~~ **Decided:** historical species pool per route; NULL beyond TotalStops | Phase 1 |
 | D7 | Guild file format and match key; guild source per project | Phase 5 |
-| D8 | Species selector combination: union vs intersection | Phase 5 |
+| D8 | ~~Selector combination~~ **Decided:** union (any selector matches); a selector value that matches no species raises | Phase 4 |
 | D9 | Values for the two project profiles; default output shape/format | Phase 4 |
 | D10 | Real-data slice for the golden test | Phase 8 |
 

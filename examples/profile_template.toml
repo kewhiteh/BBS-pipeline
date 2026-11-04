@@ -1,0 +1,58 @@
+# BBS run profile: one file per project. Every key is optional; the values below are
+# the defaults. Unknown keys are errors. Relative paths are resolved against the
+# directory you run `bbs` from.
+#
+#   bbs fetch    --config examples/profile_template.toml     # once: download the release
+#   bbs validate --config examples/profile_template.toml     # check; print with defaults
+#   bbs inspect  --config examples/profile_template.toml     # counts per stage + columns
+#   bbs run      --config examples/profile_template.toml --set runs.start_year=2000
+
+[source]
+release = "10.5066/P144YU3S"        # DOI or ScienceBase item id (2026 release, 1966-2025)
+raw_dir = "data/raw"                # release files + release.json (from `bbs fetch`)
+cache_dir = "data/sanitized_cache"  # typed parquet cache, rebuilt when the release changes
+offline = false                     # true: never download; fail if not fetched
+rebuild_cache = false
+http_timeout_seconds = 30.0
+http_retries = 3
+http_backoff_seconds = 1.0
+
+[routes]
+states = []        # StateNum, name, or postal abbreviation: [63], ["North Carolina"], ["NC"]
+bcrs = []          # Bird Conservation Regions
+strata = []        # physiographic strata
+route_ids = []     # "StateNum_Route", e.g. ["63_001"]
+boundary = ""      # polygon file; keeps routes whose start point is inside ("" = none)
+
+[runs]
+start_year = 1997
+end_year = 2024
+run_types = [1]               # [] = no RunType filter
+quality_current_ids = [1]     # [] = no QualityCurrentID filter
+min_continuity = 0.0          # share of non-cancelled years a route must be surveyed (2020 never counts)
+observer_tenure = "include_all"  # include_all | drop_first_year_on_route | drop_novice_observers | veteran_only
+observer_min_years = 2        # fewer survey years than this = novice
+veteran_min_years = 5         # at least this many survey years = veteran
+
+[observations]
+source = "50_stop"        # 50_stop (1997+) | 10_stop (1966+) | hybrid (10-stop before 1997, 50-stop after)
+stops = "route_total"     # route_total | ten_stop_bins | stops (Stop1..Stop50; 50_stop only)
+zero_fill = true          # zeros for every species ever recorded on the route
+lump_subspecies = true    # count subspecies/hybrid forms under the parent species
+
+[species]
+# A species is kept if it matches ANY list below (union). All empty = every species.
+aous = []                 # e.g. ["07550", "06740"]
+common_names = []         # e.g. ["Wood Thrush"] (case-insensitive)
+families = []             # e.g. ["Parulidae"]
+orders = []               # e.g. ["Passeriformes"]
+
+[joins]
+tables = ["species", "routes", "weather"]   # any of: species, routes, weather, bcr
+
+[output]
+path = "output/bbs_observations.parquet"    # .parquet .csv .geoparquet .gpkg .fgb .geojson
+crs = "EPSG:4326"                           # used by vector formats
+layer_name = "bbs_observations"             # GeoPackage layer
+overlays = {}                               # e.g. { watershed = "data/huc8.gpkg" } (vector only)
+manifest = true                             # writes <path>.manifest.json

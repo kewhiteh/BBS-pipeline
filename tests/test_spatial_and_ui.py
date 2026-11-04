@@ -1,7 +1,8 @@
-"""Unit and Headless Streamlit AppTest Suite for Spatial Exporter, Pipeline, CLI & UI."""
+"""Spatial geometry and exporter tests, and the Streamlit profile editor."""
 
 from __future__ import annotations
 
+import tomllib
 from pathlib import Path
 
 import geopandas as gpd
@@ -10,25 +11,10 @@ import pytest
 from shapely.geometry import Point, Polygon
 from streamlit.testing.v1 import AppTest
 
-from bbs_pipeline.cli import main as cli_main
-from bbs_pipeline.contracts import (
-    ExportFormat,
-    ObserverTenureMode,
-    PipelineConfigBundle,
-    ProtocolConfigContract,
-    SpatialExportConfigContract,
-)
-from bbs_pipeline.pipeline import run_bbs_pipeline_from_dir
-from bbs_pipeline.spatial.exporter import run_spatial_export
+from bbs_pipeline.config import RunProfile, load_profile, save_profile
+from bbs_pipeline.contracts import ObserverTenureMode, OutputContract
+from bbs_pipeline.spatial.exporter import write_output
 from bbs_pipeline.spatial.geometry import build_spatial_geodataframe
-from tests.release_fixtures import (
-    TEST_DOI,
-    fifty_frame,
-    routes_frame,
-    species_frame,
-    weather_frame,
-    write_release,
-)
 
 
 def _make_sample_observations() -> pl.DataFrame:
@@ -53,9 +39,8 @@ def _make_sample_observations() -> pl.DataFrame:
 
 def test_build_spatial_geodataframe_start_points() -> None:
     obs_df = _make_sample_observations()
-    spatial = SpatialExportConfigContract(enable_spatial_join=True)
 
-    gdf = build_spatial_geodataframe(obs_df, None, spatial)
+    gdf = build_spatial_geodataframe(obs_df, None)
 
     assert len(gdf) == 2
     assert gdf.crs.to_string() == "EPSG:4326"
@@ -80,12 +65,7 @@ def test_strtree_custom_polygon_overlays(tmp_path: Path) -> None:
     basins_path = tmp_path / "nc_basins.parquet"
     basins_gdf.to_parquet(basins_path)
 
-    spatial = SpatialExportConfigContract(
-        enable_spatial_join=True,
-        custom_overlay_paths={"watershed": basins_path},
-    )
-
-    gdf = build_spatial_geodataframe(obs_df, None, spatial)
+    gdf = build_spatial_geodataframe(obs_df, None, overlays={"watershed": basins_path})
     assert "overlay_watershed" in gdf.columns
     r1_basin = gdf.loc[gdf["route_id"] == "63_001", "overlay_watershed"].iloc[0]
     r2_basin = gdf.loc[gdf["route_id"] == "63_002", "overlay_watershed"].iloc[0]
@@ -93,133 +73,84 @@ def test_strtree_custom_polygon_overlays(tmp_path: Path) -> None:
     assert r2_basin == "Cape_Fear_Basin"
 
 
-def test_multi_crs_and_all_six_export_formats(tmp_path: Path) -> None:
-    obs_df = _make_sample_observations()
+@pytest.mark.parametrize(
+    "name", ["o.parquet", "o.csv", "o.geoparquet", "o.gpkg", "o.fgb", "o.geojson"]
+)
+def test_each_format_writes_one_file(tmp_path: Path, name: str) -> None:
+    output = OutputContract(path=tmp_path / name, crs="EPSG:5070", layer_name="birds")
 
-    out_dir = tmp_path / "exports"
-    spatial = SpatialExportConfigContract(
-        enable_spatial_join=True,
-        target_crs_list=["EPSG:4326", "EPSG:5070", "EPSG:32119"],
-        export_formats=[
-            ExportFormat.GEOPARQUET,
-            ExportFormat.GPKG,
-            ExportFormat.FLATGEOBUF,
-            ExportFormat.GEOJSON,
-            ExportFormat.PARQUET,
-            ExportFormat.CSV,
-        ],
-        output_dir=out_dir,
-    )
+    path = write_output(_make_sample_observations(), None, output)
 
-    exported = run_spatial_export(
-        observations_df=obs_df,
-        routes_df=None,
-        spatial=spatial,
-    )
-
-    # 2 tabular + (3 CRS * 4 vector formats) = 14 files
-    assert len(exported) == 14
-    for p in exported:
-        assert p.exists() and p.stat().st_size > 0
-
-    # Verify CRS reprojection on EPSG:5070 and EPSG:32119 GeoParquet
-    gdf_5070 = gpd.read_parquet(out_dir / "bbs_observations_epsg_5070.geoparquet")
-    assert gdf_5070.crs.to_epsg() == 5070
-
-    gdf_32119 = gpd.read_parquet(out_dir / "bbs_observations_epsg_32119.geoparquet")
-    assert gdf_32119.crs.to_epsg() == 32119
+    assert sorted(p.name for p in tmp_path.iterdir()) == [name]
+    if output.is_vector:
+        gdf = (
+            gpd.read_parquet(path)
+            if name.endswith(".geoparquet")
+            else gpd.read_file(path, layer="birds" if name.endswith(".gpkg") else None)
+        )
+        assert gdf.crs.to_epsg() == 5070
+        assert list(gdf.columns)[-1] == "geometry"
 
 
-def test_pipeline_orchestrator_and_cli(tmp_path: Path) -> None:
-    raw_dir, cache_dir = tmp_path / "raw", tmp_path / "cache"
-    write_release(
-        raw_dir,
-        routes=routes_frame([(63, 1, "RALEIGH", 35.75, -78.65)]),
-        weather=weather_frame([(1001, 63, 1, 2022, 501, 1)]),
-        species=species_frame([("07550", "Wood Thrush", "Passeriformes", "Turdidae")]),
-        fifty_stop=fifty_frame([(1001, 63, 1, 2022, "7550", dict.fromkeys(range(1, 6), 1))]),
-    )
-
-    cfg_dir = tmp_path / "config"
-    bundle = PipelineConfigBundle(
-        protocol=ProtocolConfigContract(
-            raw_data_dir=raw_dir,
-            sanitized_cache_dir=cache_dir,
-            sciencebase_doi=TEST_DOI,
-            year_range=(2021, 2023),
-        ),
-        spatial=SpatialExportConfigContract(
-            target_crs_list=["EPSG:4326"],
-            export_formats=[ExportFormat.GEOPARQUET, ExportFormat.PARQUET],
-            output_dir=tmp_path / "out",
-        ),
-    )
-    bundle.save_to_dir(cfg_dir)
-
-    assert cli_main(["run", "--config-dir", str(cfg_dir), "--validate-only"]) == 0
-    assert cli_main(["run", "--config-dir", str(cfg_dir), "--offline"]) == 0
-
-    result = run_bbs_pipeline_from_dir(cfg_dir)
-    assert result.funnel_metrics.ingress_tier_used == "cache"
-    assert result.funnel_metrics.final_output_rows == 1
-    assert len(result.exported_files) == 2
-    assert len(result.preview_records) == 1
+def test_unknown_output_extension_is_rejected() -> None:
+    with pytest.raises(ValueError, match="Unknown output extension '.xlsx'"):
+        OutputContract(path=Path("o.xlsx"))
 
 
-def test_streamlit_workbench_two_way_contract_sync(
-    tmp_path: Path,
-    monkeypatch: pytest.MonkeyPatch,
+def test_streamlit_editor_saves_the_profile(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    cfg_dir = tmp_path / "config"
-    default_bundle = PipelineConfigBundle()
-    default_bundle.save_to_dir(cfg_dir)
+    profile_path = tmp_path / "project.toml"
+    save_profile(RunProfile(), profile_path)
+    monkeypatch.setenv("BBS_PROFILE", str(profile_path))
 
-    monkeypatch.setenv("BBS_CONFIG_DIR", str(cfg_dir))
-
-    app_path = Path(__file__).resolve().parent.parent / "ui" / "app.py"
-    at = AppTest.from_file(app_path)
+    at = AppTest.from_file(Path(__file__).resolve().parent.parent / "ui" / "app.py")
     at.run(timeout=15)
     assert not at.exception
 
-    # Mutate Tab 1 (Ingress), Tab 2 (Guilds), Tab 3 (Protocol), Tab 4 (Spatial)
     at.checkbox(key="ui_offline").check()
-    at.text_input(key="ui_sciencebase_doi").set_value("10.5066/CUSTOM_DOI")
-    at.checkbox(key="ui_force_resanitize").check()
-
-    at.text_input(key="ui_guild_citation").set_value("Updated Citation (2026)")
-    at.text_input(key="ui_guild_aou_codes").set_value("07550, 06740, 06080")
-
-    at.slider(key="ui_year_range").set_value((2001, 2023))
-    at.text_input(key="ui_boundary_path").set_value("boundaries/nc_buffer.gpkg")
-    at.slider(key="ui_continuity_ratio").set_value(0.5)
-    at.selectbox(key="ui_observer_tenure_mode").select("veteran_only")
+    at.text_input(key="ui_release").set_value("10.5066/CUSTOM_DOI")
     at.text_input(key="ui_states").set_value("63, NC, Virginia")
-    at.checkbox(key="ui_join_bcr").check()
-
-    at.checkbox(key="ui_crs_5070").uncheck()
-    at.text_input(key="ui_custom_crs").set_value("EPSG:26917")
-
+    at.text_input(key="ui_boundary").set_value("boundaries/nc_buffer.gpkg")
+    at.slider(key="ui_years").set_value((2001, 2023))
+    at.slider(key="ui_min_continuity").set_value(0.5)
+    at.selectbox(key="ui_observer_tenure").select("veteran_only")
+    at.text_input(key="ui_families").set_value("Parulidae")
+    at.text_input(key="ui_aous").set_value("7550")
+    at.multiselect(key="ui_joins").select("bcr")
+    at.text_input(key="ui_output_path").set_value("out/nc.gpkg")
+    at.text_area(key="ui_overlays").set_value("watershed=data/huc8.gpkg")
     at.run(timeout=15)
     assert not at.exception
 
-    # Reload from disk and verify two-way JSON contract synchronization
-    reloaded = PipelineConfigBundle.load_from_dir(cfg_dir)
+    tomllib.loads(profile_path.read_text(encoding="utf-8"))  # valid TOML
+    saved = load_profile(profile_path)
+    assert saved.source.offline is True
+    assert saved.source.release == "10.5066/CUSTOM_DOI"
+    assert saved.routes.states == [63, "NC", "Virginia"]
+    assert saved.routes.boundary == Path("boundaries/nc_buffer.gpkg")
+    assert (saved.runs.start_year, saved.runs.end_year) == (2001, 2023)
+    assert saved.runs.min_continuity == pytest.approx(0.5)
+    assert saved.runs.observer_tenure == ObserverTenureMode.VETERAN_ONLY
+    assert saved.species.families == ["Parulidae"]
+    assert saved.species.aous == ["07550"]
+    assert "bcr" in [j.value for j in saved.joins.tables]
+    assert saved.output.path == Path("out/nc.gpkg")
+    assert saved.output.overlays == {"watershed": Path("data/huc8.gpkg")}
 
-    assert reloaded.protocol.offline is True
-    assert reloaded.protocol.sciencebase_doi == "10.5066/CUSTOM_DOI"
-    assert reloaded.protocol.force_resanitize is True
 
-    active_key = reloaded.guilds.active_guild
-    assert active_key is not None
-    assert reloaded.guilds.profiles[active_key].citation == "Updated Citation (2026)"
-    assert reloaded.guilds.profiles[active_key].aou_codes == ["07550", "06740", "06080"]
+def test_streamlit_editor_shows_validation_errors_without_saving(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    profile_path = tmp_path / "project.toml"
+    save_profile(RunProfile(), profile_path)
+    before = profile_path.read_text(encoding="utf-8")
+    monkeypatch.setenv("BBS_PROFILE", str(profile_path))
 
-    assert reloaded.protocol.year_range == (2001, 2023)
-    assert reloaded.protocol.boundary_path == Path("boundaries/nc_buffer.gpkg")
-    assert reloaded.protocol.min_route_continuity_ratio == pytest.approx(0.5)
-    assert reloaded.protocol.observer_tenure_mode == ObserverTenureMode.VETERAN_ONLY
-    assert reloaded.protocol.states == [63, "NC", "Virginia"]
-    assert "bcr" in [j.value for j in reloaded.protocol.include_joins]
+    at = AppTest.from_file(Path(__file__).resolve().parent.parent / "ui" / "app.py")
+    at.run(timeout=15)
+    at.text_input(key="ui_output_path").set_value("out/nc.xlsx")
+    at.run(timeout=15)
 
-    assert "EPSG:5070" not in reloaded.spatial.target_crs_list
-    assert "EPSG:26917" in reloaded.spatial.target_crs_list
+    assert any("output.path" in e.value for e in at.error)
+    assert profile_path.read_text(encoding="utf-8") == before

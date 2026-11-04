@@ -14,10 +14,10 @@ import polars as pl
 
 from bbs_pipeline.contracts import (
     FunnelAuditMetrics,
-    GuildRegistryContract,
     JoinDimension,
     ObserverTenureMode,
     ProtocolConfigContract,
+    SpeciesSelectionContract,
     StopAggregationMode,
     TemporalRoutingMode,
 )
@@ -169,34 +169,54 @@ def compute_observer_tenure[FrameT: (pl.DataFrame, pl.LazyFrame)](
     return _match_return_type(lf, weather)
 
 
+SPECIES_SELECTORS: tuple[tuple[str, str], ...] = (
+    ("aous", "AOU"),
+    ("common_names", "English_Common_Name"),
+    ("families", "Family"),
+    ("orders", "Order"),
+)
+
+
 def filter_target_species[FrameT: (pl.DataFrame, pl.LazyFrame)](
     species: FrameT,
-    guilds: GuildRegistryContract,
+    selection: SpeciesSelectionContract,
 ) -> FrameT:
-    """Resolve target species from the `species` lookup table using active guild rules."""
+    """Keep species matching ANY selector (union); every species when all are empty.
+
+    Names, families, and orders match case-insensitively. A selector value that matches
+    no species raises, so a typo cannot silently shrink the species list.
+    """
     lf = _to_lazy(normalize_canonical_keys(species))
+    if selection.is_empty:
+        return _match_return_type(lf, species)
+
     schema_names = set(lf.collect_schema().names())
+    predicates: list[pl.Expr] = []
+    unmatched: list[str] = []
+    for field, column in SPECIES_SELECTORS:
+        wanted = getattr(selection, field)
+        if not wanted:
+            continue
+        if column not in schema_names:
+            raise KeyError(f"species.{field} needs column '{column}' in the species list.")
+        if column == "AOU":
+            expr = pl.col(column)
+            keys = list(wanted)
+        else:
+            expr = pl.col(column).str.strip_chars().str.to_lowercase()
+            keys = [w.strip().lower() for w in wanted]
+        present = set(lf.select(expr.alias("k")).collect()["k"].to_list())
+        unmatched += [
+            f"{field}={w!r}" for w, k in zip(wanted, keys, strict=True) if k not in present
+        ]
+        predicates.append(expr.is_in(keys))
+    if unmatched:
+        raise ValueError(f"Species selector value(s) match no species: {', '.join(unmatched)}")
 
-    active_key = guilds.active_guild
-    if active_key is not None and active_key in guilds.profiles:
-        profile = guilds.profiles[active_key]
-        if profile.aou_codes:
-            lf = lf.filter(pl.col("AOU").is_in(profile.aou_codes))
-        elif profile.english_names and "English_Common_Name" in schema_names:
-            lf = lf.filter(pl.col("English_Common_Name").is_in(profile.english_names))
-        elif profile.families or profile.orders:
-            predicates: list[pl.Expr] = []
-            if profile.families and "Family" in schema_names:
-                predicates.append(pl.col("Family").is_in(profile.families))
-            if profile.orders and "Order" in schema_names:
-                predicates.append(pl.col("Order").is_in(profile.orders))
-            if predicates:
-                combined = predicates[0]
-                for expr in predicates[1:]:
-                    combined = combined | expr
-                lf = lf.filter(combined)
-
-    return _match_return_type(lf, species)
+    combined = predicates[0]
+    for expr in predicates[1:]:
+        combined = combined | expr
+    return _match_return_type(lf.filter(combined), species)
 
 
 def _null_aware_sum_horizontal(cols: list[str]) -> pl.Expr:
@@ -501,9 +521,9 @@ def _assert_one_run_per_route_year(runs_lf: pl.LazyFrame) -> None:
 
 def run_ecological_engine(
     tables: dict[str, pl.LazyFrame | pl.DataFrame],
-    guilds: GuildRegistryContract,
+    species: SpeciesSelectionContract,
     protocol: ProtocolConfigContract,
-    ingress_tier_used: str = "tier1_cache",
+    data_source: str = "cache",
 ) -> EcologicalEngineResult:
     """Execute the end-to-end Polars Ecological Engine pipeline."""
     for req_table in ("routes", "weather", "species"):
@@ -541,34 +561,51 @@ def run_ecological_engine(
     ]
     routes_dedup_lf = routes_lf.select(route_meta_cols).unique(subset=["route_id"], keep="first")
 
+    # Route filters run on the routes table; a filter on a missing column raises
+    def _route_column(name: str, setting: str) -> pl.Expr:
+        if name not in routes_schema:
+            raise KeyError(f"{setting} filter needs column '{name}' in routes.csv.")
+        return pl.col(name).cast(pl.Int64)
+
+    route_predicates: list[pl.Expr] = [pl.lit(True)]
+    if protocol.states:
+        regions_df = _to_lazy(tables["regions"]).collect() if "regions" in tables else None
+        state_nums = resolve_states(protocol.states, regions_df)
+        route_predicates.append(_route_column("StateNum", "states").is_in(state_nums))
+    if protocol.bcrs:
+        route_predicates.append(_route_column("BCR", "bcrs").is_in(protocol.bcrs))
+    if protocol.strata:
+        route_predicates.append(_route_column("Stratum", "strata").is_in(protocol.strata))
+    if protocol.routes:
+        route_predicates.append(pl.col("route_id").is_in(protocol.routes))
+    if protocol.boundary_path is not None:
+        inside_ids = routes_within_boundary(routes_dedup_lf.collect(), protocol.boundary_path)
+        route_predicates.append(pl.col("route_id").is_in(inside_ids))
+    selected_routes_lf = routes_dedup_lf.filter(pl.all_horizontal(route_predicates))
+    routes_selected = int(selected_routes_lf.select(pl.len()).collect().item())
+
     # Avoid duplicate non-key columns during weather + routes join
     overlap_cols = [c for c in route_meta_cols if c != "route_id" and c in weather_schema]
     events_lf = weather_tenure_lf.drop(overlap_cols).join(
-        routes_dedup_lf, on="route_id", how="inner"
+        selected_routes_lf, on="route_id", how="inner"
     )
     events_schema = set(events_lf.collect_schema().names())
 
+    def _run_column(name: str, setting: str) -> pl.Expr:
+        if name not in events_schema:
+            raise KeyError(f"{setting} filter needs column '{name}' in weather.csv.")
+        return pl.col(name).cast(pl.Int64)
+
     start_yr, end_yr = protocol.year_range
     predicates: list[pl.Expr] = [(pl.col("Year") >= start_yr) & (pl.col("Year") <= end_yr)]
-    if protocol.run_types and "RunType" in events_schema:
-        predicates.append(pl.col("RunType").cast(pl.Int64).is_in(protocol.run_types))
-    if protocol.quality_current_ids and "QualityCurrentID" in events_schema:
+    if protocol.run_types:
+        predicates.append(_run_column("RunType", "run_types").is_in(protocol.run_types))
+    if protocol.quality_current_ids:
         predicates.append(
-            pl.col("QualityCurrentID").cast(pl.Int64).is_in(protocol.quality_current_ids)
+            _run_column("QualityCurrentID", "quality_current_ids").is_in(
+                protocol.quality_current_ids
+            )
         )
-    if protocol.states and "StateNum" in events_schema:
-        regions_df = _to_lazy(tables["regions"]).collect() if "regions" in tables else None
-        state_nums = resolve_states(protocol.states, regions_df)
-        predicates.append(pl.col("StateNum").cast(pl.Int64).is_in(state_nums))
-    if protocol.bcrs and "BCR" in events_schema:
-        predicates.append(pl.col("BCR").cast(pl.Int64).is_in(protocol.bcrs))
-    if protocol.strata and "Stratum" in events_schema:
-        predicates.append(pl.col("Stratum").cast(pl.Int64).is_in(protocol.strata))
-    if protocol.routes:
-        predicates.append(pl.col("route_id").is_in(protocol.routes))
-    if protocol.boundary_path is not None:
-        inside_ids = routes_within_boundary(routes_dedup_lf.collect(), protocol.boundary_path)
-        predicates.append(pl.col("route_id").is_in(inside_ids))
 
     combined_pred = predicates[0]
     for p in predicates[1:]:
@@ -598,21 +635,20 @@ def run_ecological_engine(
         ]
     )
     _assert_one_run_per_route_year(valid_sampling_events_lf)
+    runs_after_continuity = int(valid_sampling_events_lf.select(pl.len()).collect().item())
 
     continuity_filtered_routes = int(
         valid_sampling_events_lf.select(pl.col("route_id").n_unique()).collect().item()
     )
 
     # Step 5: Target Species Resolution
-    target_species_lf = filter_target_species(species_raw_lf, guilds)
+    target_species_lf = filter_target_species(species_raw_lf, species)
     target_aous_df = (
         target_species_lf.select(["AOU"]).unique(subset=["AOU"], keep="first").collect()
     )
     n_target_species = int(target_aous_df.height)
 
-    lump_flag = True
-    if guilds.active_guild is not None and guilds.active_guild in guilds.profiles:
-        lump_flag = guilds.profiles[guilds.active_guild].lump_subspecies_and_hybrids
+    lump_flag = protocol.lump_subspecies_and_hybrids
 
     # Step 6: 10-Stop vs 50-Stop Temporal Harmonization
     harmonized_obs_lf = harmonize_observations(
@@ -694,10 +730,12 @@ def run_ecological_engine(
     final_output_rows = int(observations_df.height)
 
     funnel_metrics = FunnelAuditMetrics(
-        ingress_tier_used=ingress_tier_used,
+        data_source=data_source,
         total_routes_raw=total_routes_raw,
         total_sampling_events_raw=total_sampling_events_raw,
+        routes_selected=routes_selected,
         protocol_filtered_events=protocol_filtered_events,
+        runs_after_continuity=runs_after_continuity,
         continuity_filtered_routes=continuity_filtered_routes,
         target_species_count=n_target_species,
         zero_filled_matrix_rows=zero_filled_matrix_rows,

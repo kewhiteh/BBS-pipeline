@@ -6,11 +6,10 @@ import polars as pl
 import pytest
 
 from bbs_pipeline.contracts import (
-    GuildProfileContract,
-    GuildRegistryContract,
     JoinDimension,
     ObserverTenureMode,
     ProtocolConfigContract,
+    SpeciesSelectionContract,
     StopAggregationMode,
     TemporalRoutingMode,
 )
@@ -112,18 +111,8 @@ def _build_synthetic_tables() -> dict[str, pl.DataFrame]:
     }
 
 
-def _build_two_species_guilds() -> GuildRegistryContract:
-    return GuildRegistryContract(
-        active_guild="whitcomb_test",
-        profiles={
-            "whitcomb_test": GuildProfileContract(
-                citation="Whitcomb et al. (1981)",
-                description="Test interior obligates",
-                aou_codes=["07550", "06740"],
-                lump_subspecies_and_hybrids=True,
-            )
-        },
-    )
+def _build_two_species_guilds() -> SpeciesSelectionContract:
+    return SpeciesSelectionContract(aous=["07550", "06740"])
 
 
 def test_normalize_canonical_keys() -> None:
@@ -317,28 +306,28 @@ def test_a_la_carte_include_joins() -> None:
     assert res_bcr.active_joins == ["bcr"]
 
 
-def test_filter_target_species_fallbacks() -> None:
-    """Verify English common name and Family/Order fallbacks in filter_target_species."""
+def test_species_selectors_combine_as_union() -> None:
+    """A species matching ANY selector is kept; names and families match case-insensitively."""
     species = _build_synthetic_tables()["species"]
 
-    by_name_guilds = GuildRegistryContract(
-        active_guild="by_name",
-        profiles={
-            "by_name": GuildProfileContract(
-                english_names=["Northern Cardinal"],
-            )
-        },
+    by_name = filter_target_species(
+        species, SpeciesSelectionContract(common_names=["northern cardinal"])
     )
-    res_name = filter_target_species(species, by_name_guilds)
-    assert res_name["AOU"].to_list() == ["05930"]
+    assert by_name["AOU"].to_list() == ["05930"]
 
-    by_family_guilds = GuildRegistryContract(
-        active_guild="by_family",
-        profiles={
-            "by_family": GuildProfileContract(
-                families=["Turdidae", "Parulidae"],
-            )
-        },
+    union = filter_target_species(
+        species, SpeciesSelectionContract(families=["Parulidae"], aous=["07550"])
     )
-    res_fam = filter_target_species(species, by_family_guilds)
-    assert sorted(res_fam["AOU"].to_list()) == ["06740", "07550"]
+    assert sorted(union["AOU"].to_list()) == ["06740", "07550"]
+
+    everything = filter_target_species(species, SpeciesSelectionContract())
+    assert everything.height == 3
+
+
+def test_species_selector_that_matches_nothing_raises() -> None:
+    species = _build_synthetic_tables()["species"]
+
+    with pytest.raises(ValueError, match=r"families='Parulidea'"):
+        filter_target_species(
+            species, SpeciesSelectionContract(families=["Parulidea"], aous=["07550"])
+        )

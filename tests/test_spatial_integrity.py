@@ -9,7 +9,6 @@ import polars as pl
 import pytest
 from shapely.geometry import Point, box
 
-from bbs_pipeline.contracts import SpatialExportConfigContract
 from bbs_pipeline.spatial import (
     assign_custom_overlays,
     build_spatial_geodataframe,
@@ -40,9 +39,7 @@ def _write_boundary(path: Path, crs: str | None = "EPSG:4326") -> Path:
 
 
 def test_route_without_coordinates_gets_null_geometry() -> None:
-    gdf = build_spatial_geodataframe(
-        _observations(), _routes(lat2=None), SpatialExportConfigContract()
-    )
+    gdf = build_spatial_geodataframe(_observations(), _routes(lat2=None))
 
     by_route = dict(zip(gdf["route_id"], gdf.geometry, strict=True))
     assert by_route["63_002"] is None
