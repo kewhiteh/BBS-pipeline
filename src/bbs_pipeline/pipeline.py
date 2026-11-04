@@ -31,9 +31,7 @@ def run_bbs_pipeline(bundle: PipelineConfigBundle) -> PipelineExecutionResult:
     exported_files = run_spatial_export(
         observations_df=engine_result.observations_df,
         routes_df=routes_lf,
-        protocol=bundle.protocol,
         spatial=bundle.spatial,
-        guild_rollup_df=engine_result.guild_rollup_df,
     )
 
     return PipelineExecutionResult(
@@ -41,7 +39,6 @@ def run_bbs_pipeline(bundle: PipelineConfigBundle) -> PipelineExecutionResult:
         exported_files=exported_files,
         active_joins=engine_result.active_joins,
         preview_records=engine_result.observations_df.head(50).to_dicts(),
-        guild_summary_records=engine_result.guild_rollup_df.head(50).to_dicts(),
     )
 
 

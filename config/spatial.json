@@ -1,9 +1,5 @@
 {
   "enable_spatial_join": true,
-  "geometry_source": "route_polylines",
-  "route_geometry_path": "data/spatial/bbs_routes.parquet",
-  "agol_fallback_url": "https://services.arcgis.com/P3ePLMYs2RVChkJx/arcgis/rest/services/USA_BBS_Routes/FeatureServer/0/query",
-  "enable_stop_linear_referencing": false,
   "custom_overlay_paths": {},
   "target_crs_list": [
     "EPSG:4326",

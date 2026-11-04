@@ -26,12 +26,8 @@ class IngressMode(StrEnum):
     SCIENCEBASE_STREAM = "sciencebase_stream"
 
 
-class Covid2020Mode(StrEnum):
-    """Strategy for handling the 2020 COVID-19 survey cancellation year."""
-
-    EXCLUDE_GAP = "exclude_gap"
-    SUBSTITUTE_2019 = "substitute_2019"
-    INTERPOLATE_2019_2021 = "interpolate_2019_2021"
+# The 2020 survey was cancelled (COVID-19); the release has no 2020 runs
+CANCELLED_SURVEY_YEARS: frozenset[int] = frozenset({2020})
 
 
 class ObserverTenureMode(StrEnum):
@@ -68,13 +64,6 @@ class JoinDimension(StrEnum):
     BCR = "bcr"
 
 
-class GeometrySource(StrEnum):
-    """Primary geometry source for spatial joins."""
-
-    ROUTE_POLYLINES = "route_polylines"
-    ROUTE_START_POINTS_FALLBACK = "route_start_points_fallback"
-
-
 class ExportFormat(StrEnum):
     """Supported vector and tabular output sinks."""
 
@@ -84,7 +73,6 @@ class ExportFormat(StrEnum):
     GEOJSON = "geojson"
     PARQUET = "parquet"
     CSV = "csv"
-    DUCKDB = "duckdb"
 
 
 class GuildProfileContract(BaseModel):
@@ -204,7 +192,7 @@ class ProtocolConfigContract(BaseModel):
     )
     sanitized_cache_dir: Path = Field(
         default=Path("data/sanitized_cache"),
-        description="Path to sanitized intake_engine Parquet directory containing intake_manifest.json.",
+        description="Path to the sanitized Parquet cache directory containing intake_manifest.json.",
     )
     raw_data_dir: Path = Field(
         default=Path("data/raw"),
@@ -232,7 +220,7 @@ class ProtocolConfigContract(BaseModel):
     )
     force_resanitize: bool = Field(
         default=False,
-        description="Force IntakeEngine.assess() and IntakeEngine.execute_pipeline() rebuild.",
+        description="Rebuild the cache from raw files even if a valid cache exists.",
     )
     run_types: list[int] = Field(
         default_factory=lambda: [1],
@@ -262,20 +250,18 @@ class ProtocolConfigContract(BaseModel):
         default_factory=list,
         description="Filter by canonical route_id ('SS_RRR') strings (empty = all routes).",
     )
-    covid_2020_mode: Covid2020Mode = Field(
-        default=Covid2020Mode.EXCLUDE_GAP,
-        description="Handling mode for the cancelled 2020 COVID-19 survey year.",
+    boundary_path: Path | None = Field(
+        default=None,
+        description=(
+            "Polygon file (.gpkg/.shp/.geojson/.parquet). Keeps routes whose routes.csv start "
+            "point (NAD83) lies inside or on the boundary. None = no spatial filter."
+        ),
     )
     min_route_continuity_ratio: float = Field(
         default=0.0,
         ge=0.0,
         le=1.0,
         description="Minimum fraction of active calendar years a route must be surveyed (0.0..1.0).",
-    )
-    rolling_window_years: int | None = Field(
-        default=1,
-        ge=1,
-        description="Optional rolling window length in years (1 or None for unsmoothed annual).",
     )
     observer_tenure_mode: ObserverTenureMode = Field(
         default=ObserverTenureMode.INCLUDE_ALL,
@@ -322,12 +308,9 @@ class ProtocolConfigContract(BaseModel):
         return self
 
     def expected_active_years(self) -> list[int]:
-        """Return expected survey years in year_range, excluding 2020 in exclude_gap mode."""
+        """Return expected survey years in year_range, excluding cancelled survey years."""
         start, end = self.year_range
-        years = list(range(start, end + 1))
-        if self.covid_2020_mode == Covid2020Mode.EXCLUDE_GAP and 2020 in years:
-            years.remove(2020)
-        return years
+        return [y for y in range(start, end + 1) if y not in CANCELLED_SURVEY_YEARS]
 
     def save_json(self, path: Path | str) -> None:
         target = Path(path)
@@ -344,29 +327,13 @@ class ProtocolConfigContract(BaseModel):
 
 
 class SpatialExportConfigContract(BaseModel):
-    """Contract for config/spatial.json governing linear referencing, overlays, CRS, and sinks."""
+    """Contract for config/spatial.json governing route geometry, overlays, CRS, and sinks."""
 
     model_config = ConfigDict(frozen=True, extra="forbid")
 
     enable_spatial_join: bool = Field(
         default=True,
-        description="Attach route/stop geometries and run spatial operations (False = pure tabular).",
-    )
-    geometry_source: GeometrySource = Field(
-        default=GeometrySource.ROUTE_POLYLINES,
-        description="Primary geometry representation for routes.",
-    )
-    route_geometry_path: Path = Field(
-        default=Path("data/spatial/bbs_routes.parquet"),
-        description="Path to cached USGS BBS route polylines (.parquet/.gpkg/.geojson).",
-    )
-    agol_fallback_url: str = Field(
-        default="https://services.arcgis.com/P3ePLMYs2RVChkJx/arcgis/rest/services/USA_BBS_Routes/FeatureServer/0/query",
-        description="Fallback ArcGIS Online Feature Service URL when local route geometries are absent.",
-    )
-    enable_stop_linear_referencing: bool = Field(
-        default=False,
-        description="Use Shapely linear referencing (line_interpolate_point / substring) for stops/bins.",
+        description="Attach route start-point geometry for vector formats (False = tabular only).",
     )
     custom_overlay_paths: dict[str, Path] = Field(
         default_factory=dict,
@@ -440,7 +407,6 @@ class PipelineExecutionResult(BaseModel):
     exported_files: list[Path] = Field(default_factory=list)
     active_joins: list[str] = Field(default_factory=list)
     preview_records: list[dict[str, Any]] = Field(default_factory=list)
-    guild_summary_records: list[dict[str, Any]] = Field(default_factory=list)
 
 
 class PipelineConfigBundle(BaseModel):

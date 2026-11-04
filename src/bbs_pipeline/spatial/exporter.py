@@ -4,15 +4,10 @@ from __future__ import annotations
 
 from pathlib import Path
 
-import duckdb
 import polars as pl
 
-from bbs_pipeline.contracts import (
-    ExportFormat,
-    ProtocolConfigContract,
-    SpatialExportConfigContract,
-)
-from bbs_pipeline.spatial.linear_referencing import build_spatial_geodataframe
+from bbs_pipeline.contracts import ExportFormat, SpatialExportConfigContract
+from bbs_pipeline.spatial.geometry import build_spatial_geodataframe
 
 VECTOR_FORMATS: frozenset[ExportFormat] = frozenset(
     {
@@ -27,9 +22,7 @@ VECTOR_FORMATS: frozenset[ExportFormat] = frozenset(
 def run_spatial_export(
     observations_df: pl.DataFrame,
     routes_df: pl.DataFrame | pl.LazyFrame | None,
-    protocol: ProtocolConfigContract,
     spatial: SpatialExportConfigContract,
-    guild_rollup_df: pl.DataFrame | None = None,
 ) -> list[Path]:
     """Export observations to configured tabular and multi-CRS spatial vector formats."""
     output_dir = Path(spatial.output_dir)
@@ -48,25 +41,10 @@ def run_spatial_export(
         observations_df.write_csv(csv_path)
         exported_paths.append(csv_path)
 
-    if ExportFormat.DUCKDB in requested_formats:
-        duckdb_path = output_dir / "bbs_observations.duckdb"
-        if duckdb_path.exists():
-            duckdb_path.unlink()
-        with duckdb.connect(str(duckdb_path)) as con:
-            con.register("_obs_view", observations_df)
-            con.execute("CREATE OR REPLACE TABLE bbs_observations AS SELECT * FROM _obs_view")
-            con.unregister("_obs_view")
-            if guild_rollup_df is not None:
-                con.register("_guild_view", guild_rollup_df)
-                con.execute("CREATE OR REPLACE TABLE bbs_guild_rollup AS SELECT * FROM _guild_view")
-                con.unregister("_guild_view")
-        exported_paths.append(duckdb_path)
-
     if spatial.enable_spatial_join and (requested_formats & VECTOR_FORMATS):
         base_gdf = build_spatial_geodataframe(
             observations_df=observations_df,
             routes_df=routes_df,
-            protocol=protocol,
             spatial=spatial,
         )
 

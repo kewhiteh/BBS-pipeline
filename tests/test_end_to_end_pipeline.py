@@ -3,9 +3,10 @@
 Proves full integration across:
 - Frozen Pydantic v2 JSON Contracts (guilds.json, protocol.json, spatial.json)
 - Three-Tier Ingress Gate + Fixed-Width SpeciesList.txt Normalizer + TableRoleResolver
-- Predicate-First Polars Ecological Engine (2020 COVID gap modes, observer tenure,
-  extirpation-aware zero-filling, 10/50-stop harmonization, dynamic a-la-carte joins)
-- Shapely Linear Referencing, STRtree Polygon Overlays & Multi-CRS Vector/Tabular Exports
+- Predicate-First Polars Ecological Engine (cancelled-2020 continuity, observer tenure,
+  start-point boundary selection, extirpation-aware zero-filling, 10/50-stop
+  harmonization, dynamic a-la-carte joins)
+- Route start-point geometry, STRtree Polygon Overlays & Multi-CRS Vector/Tabular Exports
 - Two-Way Streamlit Visual Workbench end-to-end execution
 """
 
@@ -16,13 +17,11 @@ from pathlib import Path
 
 import geopandas as gpd
 import polars as pl
-from shapely.geometry import LineString, Polygon
+from shapely.geometry import Polygon, box
 from streamlit.testing.v1 import AppTest
 
 from bbs_pipeline.contracts import (
-    Covid2020Mode,
     ExportFormat,
-    GeometrySource,
     GuildProfileContract,
     GuildRegistryContract,
     IngressMode,
@@ -149,8 +148,8 @@ def _build_synthetic_raw_bbs_dir(raw_dir: Path) -> None:
         outer_zf.writestr("nc_fifty_inner.zip", inner_bytes)
 
 
-def test_end_to_end_pipeline_covid_modes_zerofill_and_multicrs(tmp_path: Path) -> None:
-    """Prove full end-to-end execution across Tier 2 -> Tier 1 cache, COVID modes, zero-fill, and multi-CRS."""
+def test_end_to_end_pipeline_zerofill_boundary_and_multicrs(tmp_path: Path) -> None:
+    """Prove end-to-end execution across Tier 2 -> Tier 1 cache, zero-fill, boundary, multi-CRS."""
     raw_dir = tmp_path / "raw"
     cache_dir = tmp_path / "cache"
     spatial_dir = tmp_path / "spatial_inputs"
@@ -158,20 +157,6 @@ def test_end_to_end_pipeline_covid_modes_zerofill_and_multicrs(tmp_path: Path) -
     spatial_dir.mkdir(parents=True, exist_ok=True)
 
     _build_synthetic_raw_bbs_dir(raw_dir)
-
-    # Create route polylines & watershed overlay polygons
-    routes_gdf = gpd.GeoDataFrame(
-        {
-            "route_id": ["63_001", "63_002"],
-            "geometry": [
-                LineString([(-78.70, 35.75), (-78.50, 35.85)]),
-                LineString([(-78.95, 35.95), (-78.80, 36.05)]),
-            ],
-        },
-        crs="EPSG:4326",
-    )
-    route_geom_path = spatial_dir / "routes.parquet"
-    routes_gdf.to_parquet(route_geom_path)
 
     watersheds_gdf = gpd.GeoDataFrame(
         {
@@ -197,13 +182,12 @@ def test_end_to_end_pipeline_covid_modes_zerofill_and_multicrs(tmp_path: Path) -
         },
     )
 
-    # Run 1: Tier 2 (Local Raw via Intake fallback) + covid_2020_mode="exclude_gap" + 100% continuity (2018-2022)
-    protocol_exclude = ProtocolConfigContract(
+    # Run 1: Tier 2 (local raw) + 100% continuity over 2018-2022 (2020 not counted)
+    protocol_full = ProtocolConfigContract(
         ingress_mode=IngressMode.AUTO_THREE_TIER,
         sanitized_cache_dir=cache_dir,
         raw_data_dir=raw_dir,
         year_range=(2018, 2022),
-        covid_2020_mode=Covid2020Mode.EXCLUDE_GAP,
         min_route_continuity_ratio=1.0,  # Route 63_001 has 4/4 active years (2018,2019,2021,2022) -> 1.0!
         observer_tenure_mode=ObserverTenureMode.DROP_FIRST_YEAR_ON_ROUTE,
         temporal_routing_mode=TemporalRoutingMode.FIFTY_STOP_1997_PLUS,
@@ -214,9 +198,6 @@ def test_end_to_end_pipeline_covid_modes_zerofill_and_multicrs(tmp_path: Path) -
 
     spatial_cfg = SpatialExportConfigContract(
         enable_spatial_join=True,
-        geometry_source=GeometrySource.ROUTE_POLYLINES,
-        route_geometry_path=route_geom_path,
-        enable_stop_linear_referencing=True,
         custom_overlay_paths={"watershed": watershed_path},
         target_crs_list=["EPSG:4326", "EPSG:5070", "EPSG:32119"],
         export_formats=[
@@ -224,13 +205,12 @@ def test_end_to_end_pipeline_covid_modes_zerofill_and_multicrs(tmp_path: Path) -
             ExportFormat.GPKG,
             ExportFormat.PARQUET,
             ExportFormat.CSV,
-            ExportFormat.DUCKDB,
         ],
         output_dir=output_dir,
     )
 
     res1 = run_bbs_pipeline(
-        PipelineConfigBundle(guilds=guilds, protocol=protocol_exclude, spatial=spatial_cfg)
+        PipelineConfigBundle(guilds=guilds, protocol=protocol_full, spatial=spatial_cfg)
     )
     assert res1.funnel_metrics.ingress_tier_used == "tier2_local_raw"
     assert (
@@ -252,30 +232,37 @@ def test_end_to_end_pipeline_covid_modes_zerofill_and_multicrs(tmp_path: Path) -
     assert "StartTemp" not in obs_df1.columns
     assert "English_Common_Name" in obs_df1.columns
 
-    # Verify linear-referenced multi-CRS GeoParquet output (8 route-year-species * 5 ten-stop bins = 40 segments)
+    # One start point per output row, reprojected per CRS, with the overlay attribute
     gdf_32119 = gpd.read_parquet(output_dir / "bbs_observations_epsg_32119.geoparquet")
-    assert len(gdf_32119) == 40
+    assert len(gdf_32119) == 8
     assert gdf_32119.crs.to_epsg() == 32119
+    assert set(gdf_32119.geometry.geom_type) == {"Point"}
     assert (gdf_32119["overlay_watershed"] == "Neuse_River_Basin").all()
 
-    # Run 2: Tier 1 Fast-Path Cache Hit + covid_2020_mode="interpolate_2019_2021"
-    protocol_interp = protocol_exclude.model_copy(
-        update={
-            "covid_2020_mode": Covid2020Mode.INTERPOLATE_2019_2021,
-            "min_route_continuity_ratio": 0.8,
-        }
+    # Run 2: Tier 1 cache hit + boundary around 63_001's start point only
+    boundary_path = spatial_dir / "raleigh_box.gpkg"
+    gpd.GeoDataFrame(geometry=[box(-78.7, 35.7, -78.6, 35.85)], crs="EPSG:4269").to_file(
+        boundary_path, driver="GPKG"
+    )
+    protocol_boundary = protocol_full.model_copy(
+        update={"min_route_continuity_ratio": 0.0, "boundary_path": boundary_path}
     )
     res2 = run_bbs_pipeline(
-        PipelineConfigBundle(guilds=guilds, protocol=protocol_interp, spatial=spatial_cfg)
+        PipelineConfigBundle(guilds=guilds, protocol=protocol_boundary, spatial=spatial_cfg)
     )
     assert res2.funnel_metrics.ingress_tier_used == "tier1_cache"
     obs_df2 = pl.read_parquet(output_dir / "bbs_observations.parquet")
-    assert 2020 in obs_df2["Year"].to_list()
-    # Ovenbird (06740) had 10 in 2019 and 20 in 2021 -> 2020 interpolated = 15.0!
-    oven_2020 = obs_df2.filter((pl.col("AOU") == "06740") & (pl.col("Year") == 2020))
-    assert oven_2020.height == 1
-    assert oven_2020["route_total"].item() == 15.0
-    assert oven_2020["is_covid_imputed"].item() is True
+    assert set(obs_df2["route_id"].to_list()) == {"63_001"}
+
+    # Without the boundary, 63_002 (outside the box) also survives at 0.0 continuity
+    res3 = run_bbs_pipeline(
+        PipelineConfigBundle(
+            guilds=guilds,
+            protocol=protocol_boundary.model_copy(update={"boundary_path": None}),
+            spatial=spatial_cfg,
+        )
+    )
+    assert res3.funnel_metrics.continuity_filtered_routes == 2
 
 
 def test_streamlit_tab5_end_to_end_execution(tmp_path: Path, monkeypatch) -> None:

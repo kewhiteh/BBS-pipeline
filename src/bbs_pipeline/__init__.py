@@ -1,10 +1,8 @@
 """BBS-Pipeline v3: Contract-First Polars/Shapely Spatial & Ecological ETL Engine."""
 
 from bbs_pipeline.contracts import (
-    Covid2020Mode,
     ExportFormat,
     FunnelAuditMetrics,
-    GeometrySource,
     GuildProfileContract,
     GuildRegistryContract,
     IngressMode,
@@ -19,10 +17,8 @@ from bbs_pipeline.contracts import (
 )
 
 __all__ = [
-    "Covid2020Mode",
     "ExportFormat",
     "FunnelAuditMetrics",
-    "GeometrySource",
     "GuildProfileContract",
     "GuildRegistryContract",
     "IngressMode",

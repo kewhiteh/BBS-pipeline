@@ -15,9 +15,7 @@ import polars as pl
 import streamlit as st
 
 from bbs_pipeline.contracts import (
-    Covid2020Mode,
     ExportFormat,
-    GeometrySource,
     GuildProfileContract,
     GuildRegistryContract,
     IngressMode,
@@ -308,19 +306,6 @@ def render_workbench() -> None:
             key="ui_year_range",
         )
 
-        covid_options = [m.value for m in Covid2020Mode]
-        covid_idx = (
-            covid_options.index(bundle.protocol.covid_2020_mode.value)
-            if bundle.protocol.covid_2020_mode.value in covid_options
-            else 0
-        )
-        ui_covid_2020_mode = st.selectbox(
-            "COVID-19 (2020) Cancellation Handling",
-            options=covid_options,
-            index=covid_idx,
-            key="ui_covid_2020_mode",
-        )
-
         ui_continuity_ratio = st.slider(
             "Minimum Route Continuity Ratio",
             min_value=0.0,
@@ -328,14 +313,6 @@ def render_workbench() -> None:
             value=float(bundle.protocol.min_route_continuity_ratio),
             step=0.05,
             key="ui_continuity_ratio",
-        )
-
-        ui_rolling_window = st.number_input(
-            "Rolling Window Length (Years)",
-            min_value=1,
-            max_value=30,
-            value=int(bundle.protocol.rolling_window_years or 1),
-            key="ui_rolling_window",
         )
 
         ui_states = st.text_input(
@@ -357,6 +334,11 @@ def render_workbench() -> None:
             "Canonical Route IDs (comma-separated SS_RRR)",
             value=", ".join(bundle.protocol.routes),
             key="ui_routes",
+        )
+        ui_boundary_path = st.text_input(
+            "Boundary Polygon File (keeps routes whose start point is inside; empty = none)",
+            value=str(bundle.protocol.boundary_path or ""),
+            key="ui_boundary_path",
         )
 
         temporal_options = [m.value for m in TemporalRoutingMode]
@@ -444,9 +426,8 @@ def render_workbench() -> None:
             bcrs=_parse_csv_ints(ui_bcrs),
             strata=_parse_csv_ints(ui_strata),
             routes=_parse_csv_strings(ui_routes),
-            covid_2020_mode=Covid2020Mode(ui_covid_2020_mode),
+            boundary_path=Path(ui_boundary_path.strip()) if ui_boundary_path.strip() else None,
             min_route_continuity_ratio=float(ui_continuity_ratio),
-            rolling_window_years=int(ui_rolling_window),
             observer_tenure_mode=ObserverTenureMode(ui_observer_tenure_mode),
             observer_min_years=bundle.protocol.observer_min_years,
             veteran_min_years=bundle.protocol.veteran_min_years,
@@ -461,36 +442,11 @@ def render_workbench() -> None:
     # TAB 4: Spatial & Sink Configurator
     # -------------------------------------------------------------------------
     with tab4:
-        st.subheader("Spatial Join, Linear Referencing & Multi-CRS Sinks")
+        st.subheader("Route Start Points, Overlays & Multi-CRS Sinks")
         ui_enable_spatial_join = st.checkbox(
             "Enable Spatial Join & Vector Export",
             value=bundle.spatial.enable_spatial_join,
             key="ui_enable_spatial_join",
-        )
-
-        geom_options = [g.value for g in GeometrySource]
-        geom_idx = (
-            geom_options.index(bundle.spatial.geometry_source.value)
-            if bundle.spatial.geometry_source.value in geom_options
-            else 0
-        )
-        ui_geometry_source = st.selectbox(
-            "Primary Route Geometry Source",
-            options=geom_options,
-            index=geom_idx,
-            key="ui_geometry_source",
-        )
-
-        ui_route_geometry_path = st.text_input(
-            "Route Polylines Path",
-            value=str(bundle.spatial.route_geometry_path),
-            key="ui_route_geometry_path",
-        )
-
-        ui_linear_referencing = st.checkbox(
-            "Enable Stop Linear Referencing (Sub-route bins / 50-stop interpolation)",
-            value=bundle.spatial.enable_stop_linear_referencing,
-            key="ui_linear_referencing",
         )
 
         current_crs_set = {c.upper() for c in bundle.spatial.target_crs_list}
@@ -561,10 +517,6 @@ def render_workbench() -> None:
 
         updated_spatial = SpatialExportConfigContract(
             enable_spatial_join=bool(ui_enable_spatial_join),
-            geometry_source=GeometrySource(ui_geometry_source),
-            route_geometry_path=Path(ui_route_geometry_path),
-            agol_fallback_url=bundle.spatial.agol_fallback_url,
-            enable_stop_linear_referencing=bool(ui_linear_referencing),
             custom_overlay_paths=_parse_custom_overlays(ui_custom_overlays),
             target_crs_list=crs_list,
             export_formats=[ExportFormat(f) for f in ui_export_formats]
@@ -599,10 +551,6 @@ def render_workbench() -> None:
             if res_data.get("preview_records"):
                 st.markdown("**Observations Preview (First 50 Rows)**")
                 st.dataframe(pl.DataFrame(res_data["preview_records"]))
-
-            if res_data.get("guild_summary_records"):
-                st.markdown("**Guild Rollup Summary**")
-                st.dataframe(pl.DataFrame(res_data["guild_summary_records"]))
 
             if res_data.get("exported_files"):
                 st.markdown("**Exported Artifacts**")
