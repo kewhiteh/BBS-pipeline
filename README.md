@@ -32,18 +32,28 @@ uv run bbs run      --config project.toml --offline # writes the output file + m
 ## Editor
 
 ```bash
+uv run streamlit run ui/app.py                       # open a profile from the sidebar
 BBS_PROFILE=project.toml uv run streamlit run ui/app.py
 ```
 
-Pick lists for states, BCRs, strata, routes (narrowed to the chosen states and BCRs),
-species, families, orders, guild trait values, and each table's join columns come from
-the release. Edits stay in a draft until **Save profile**; the sidebar shows unsaved
-changes and validation errors. **Inspect** shows the count after every stage, the exact
-output columns, and the guild report (turn on *Live inspect* to update after each
-change); **Run** writes the output. Without a fetched release, a **Fetch release** button
-appears and list fields fall back to text boxes.
+Everything the CLI does can be done in the editor:
 
-See `examples/profile_template.toml` for every setting and its default.
+| CLI | Editor |
+|---|---|
+| `bbs fetch` | **Fetch release** button (Release & Cache tab) |
+| `--config FILE` | Sidebar **Open / new**: profiles found in the project, or any path; **New profile** |
+| editing the TOML | Every setting, including download settings under **Advanced** |
+| `bbs validate` | Sidebar validation messages and the **Profile TOML** view (with download) |
+| `bbs values` | Pick lists for states, BCRs, strata, routes (narrowed to the chosen states and BCRs), species, families, orders, guild traits, and each table's join columns |
+| `--set key=value` | Change the field and Inspect/Run without saving |
+| `bbs inspect` | **Inspect** (or *Live inspect*): stage counts, exact output columns, guild report, preview |
+| `bbs run` | **Run** |
+
+Edits stay in a draft until **Save profile** or **Save as** (which will not overwrite an
+existing file unless you tick *Overwrite*). Entries the editor cannot read (a malformed
+overlay or filter line, a non-number in a number list) are listed in the sidebar and
+block saving and running until fixed. Guild traits without a pick list (free-text
+columns) can be filtered in the *Other trait filters* box.
 
 ## Guild file
 

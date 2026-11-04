@@ -173,3 +173,154 @@ def test_without_a_release_lists_fall_back_to_text_boxes(
     assert at.text_input(key="ui_states") is not None
     assert any("Fetch release" in b.label for b in at.button)
     assert any("Pick lists unavailable" in w.value for w in at.warning)
+
+
+# --- GUI parity with the CLI ------------------------------------------------------
+
+
+def test_open_another_profile_loads_its_values(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    other = tmp_path / "other.toml"
+    save_profile(_profile(tmp_path, routes={"bcrs": [28]}, runs={"start_year": 2001}), other)
+    at, _ = _app(tmp_path, monkeypatch, _profile(tmp_path))
+
+    at.sidebar.text_input(key="sb_open_path").set_value(str(other)).run()
+    at.sidebar.button(key="btn_open").click().run()
+
+    assert not at.exception, at.exception
+    assert any(str(other) in m.value for m in at.sidebar.markdown)
+    assert at.multiselect(key="ui_bcrs").value == [28]
+    assert at.slider(key="ui_years").value == (2001, 2024)
+
+
+def test_open_reports_an_invalid_profile(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    bad = tmp_path / "bad.toml"
+    bad.write_text("[runs]\nstart_yeer = 2000\n", encoding="utf-8")
+    at, _ = _app(tmp_path, monkeypatch, _profile(tmp_path))
+
+    at.sidebar.text_input(key="sb_open_path").set_value(str(bad)).run()
+    at.sidebar.button(key="btn_open").click().run()
+
+    assert any("runs.start_yeer: unknown key" in e.value for e in at.sidebar.error)
+
+
+def test_save_as_writes_a_new_file_and_refuses_to_overwrite(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    at, path = _app(tmp_path, monkeypatch, _profile(tmp_path))
+    copy = tmp_path / "copy.toml"
+
+    at.multiselect(key="ui_bcrs").set_value([27])
+    at.sidebar.text_input(key="sb_save_as").set_value(str(copy))
+    at.sidebar.button(key="btn_save_as").click().run()
+    assert load_profile(copy).routes.bcrs == [27]
+    assert load_profile(path).routes.bcrs == []  # the original is untouched
+    assert any(str(copy) in m.value for m in at.sidebar.markdown)
+
+    at.sidebar.text_input(key="sb_save_as").set_value(str(path))
+    at.sidebar.button(key="btn_save_as").click().run()
+    assert any("tick 'Overwrite if it exists'" in e.value for e in at.sidebar.error)
+    assert load_profile(path).routes.bcrs == []
+
+
+def test_new_profile_starts_from_defaults_and_needs_save_as(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.chdir(tmp_path)  # the defaults point at ./data/raw, which does not exist here
+    at, _ = _app(tmp_path, monkeypatch, _profile(tmp_path, routes={"bcrs": [29]}))
+
+    at.sidebar.button(key="btn_new").click().run()
+
+    assert not at.exception, at.exception
+    assert any("new, not saved yet" in m.value for m in at.sidebar.markdown)
+    assert at.slider(key="ui_years").value == (1997, 2024)
+    assert not any(b.key == "btn_save" for b in at.sidebar.button)
+    # No release there: the editor offers Fetch and never downloads on its own
+    assert any("Fetch release" in b.label for b in at.button)
+    assert not (tmp_path / "data").exists()
+
+
+def test_download_settings_are_editable(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    at, path = _app(tmp_path, monkeypatch, _profile(tmp_path))
+
+    at.number_input(key="ui_http_timeout").set_value(90.0)
+    at.number_input(key="ui_http_retries").set_value(5)
+    at.number_input(key="ui_http_backoff").set_value(2.5).run()
+    at.sidebar.button(key="btn_save").click().run()
+
+    source = load_profile(path).source
+    assert (source.http_timeout_seconds, source.http_retries, source.http_backoff_seconds) == (
+        90.0,
+        5,
+        2.5,
+    )
+
+
+def test_resolved_toml_is_shown(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    at, _ = _app(tmp_path, monkeypatch, _profile(tmp_path))
+
+    shown = "\n".join(c.value for c in at.sidebar.code)
+
+    assert "[runs]" in shown and "start_year = 2015" in shown
+    assert "http_retries = 3" in shown  # every default filled in, like `bbs validate`
+
+
+def test_free_text_guild_filter_for_traits_without_a_pick_list(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    at, path = _app(tmp_path, monkeypatch, _profile(tmp_path, guilds={"file": str(GUILDS)}))
+
+    at.text_area(key="ui_guild_other_filters").set_value("pwrc_name=Wood thrush").run()
+    at.sidebar.button(key="btn_save").click().run()
+
+    assert load_profile(path).guilds.filters == {"pwrc_name": ["Wood thrush"]}
+
+
+@pytest.mark.parametrize(
+    ("widget", "value", "message"),
+    [
+        ("ui_overlays", "watershed data/huc8.gpkg", "Overlays, line 1: expected name=value"),
+        ("ui_guild_other_filters", "habitat", "Other trait filters, line 1: expected name=value"),
+    ],
+)
+def test_malformed_lines_block_saving(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, widget: str, value: str, message: str
+) -> None:
+    at, path = _app(tmp_path, monkeypatch, _profile(tmp_path, guilds={"file": str(GUILDS)}))
+    before = path.read_text(encoding="utf-8")
+
+    at.text_area(key=widget).set_value(value).run()
+
+    assert any(message in e.value for e in at.sidebar.error)
+    assert not any(b.key == "btn_save" for b in at.sidebar.button)
+    assert path.read_text(encoding="utf-8") == before
+
+
+def test_non_numeric_bcr_in_text_box_is_reported(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    profile = _profile(tmp_path, source={"raw_dir": str(tmp_path / "empty")})
+    at, _ = _app(tmp_path, monkeypatch, profile)
+
+    at.text_input(key="ui_bcrs").set_value("27, twenty-nine").run()
+
+    assert not at.exception, at.exception
+    assert any("'twenty-nine' is not a whole number" in e.value for e in at.sidebar.error)
+
+
+def test_profile_list_skips_non_profile_toml_files(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    (tmp_path / "pyproject.toml").write_text('[project]\nname = "x"\n', encoding="utf-8")
+    (tmp_path / "broken.toml").write_text("[runs\n", encoding="utf-8")
+    (tmp_path / "typo.toml").write_text("[runs]\nstart_yeer = 2000\n", encoding="utf-8")
+    at, _ = _app(tmp_path, monkeypatch, _profile(tmp_path))
+
+    offered = at.sidebar.selectbox(key="sb_open_choice").options
+
+    assert "project.toml" in offered
+    assert "typo.toml" in offered  # a profile with a mistake can still be opened and fixed
+    assert "pyproject.toml" not in offered
+    assert "broken.toml" not in offered
