@@ -1,0 +1,57 @@
+{
+  "item_id": "6a0b0b0ab66b0188da36aedd",
+  "doi": "10.5066/P144YU3S",
+  "title": "2026 Release (1966-2025) - golden-test subset: 12 NC routes",
+  "publication_date": "2026-05-28",
+  "fetched_at": "2026-11-04T19:47:03+00:00",
+  "files": [
+    {
+      "name": "50-StopData.zip",
+      "size": 301549,
+      "md5": "e889cb55c3077f75db9dfcf54e496953",
+      "sha256": "88be463f1ae26ba414d6aab5271b742478ccc256e1a4c4197de453ccbe9df396"
+    },
+    {
+      "name": "MigrantNonBreeder.zip",
+      "size": 1367,
+      "md5": "f29ee26f326599375000b5297c33229c",
+      "sha256": "122b333eb22dc6a17d60134c884c49ef08be42d751fc0dad5b12fecc89125265"
+    },
+    {
+      "name": "North American Breeding Bird Survey Dataset (1966-2025).xml",
+      "size": 125988,
+      "md5": "a462b1ca5bf5b4ddc58186e83644562e",
+      "sha256": "c16e9785a9e7fdf29b084fa2bd151710a662837a64c340fb7ab443c159402172"
+    },
+    {
+      "name": "Routes.csv",
+      "size": 890,
+      "md5": "864de4e420c11a1c5387b42d20eaa198",
+      "sha256": "22340c94db08bf814fe540430a02bd026235ceca24d64a53fbd395f22ef4aef1"
+    },
+    {
+      "name": "SpeciesList.csv",
+      "size": 73748,
+      "md5": "ae778053cf2db6013f9a24d4e91cae98",
+      "sha256": "e54e4b5b1eb6fc5fc5941a8e31876ecc17675f229265f60c4dbfed742fb35274"
+    },
+    {
+      "name": "States.zip",
+      "size": 227122,
+      "md5": "005c31d9b50701c75d90fa8716ca3ab1",
+      "sha256": "3f6d3b7dbf47e24653f0f7337b6412b8c5e6bd48638b493e872afbdabcef8cc1"
+    },
+    {
+      "name": "VehicleData.csv",
+      "size": 238399,
+      "md5": "aef558ea584408df4c71f1640d9c5e43",
+      "sha256": "0ec6e77ddc7740d2796030d57ed23c58105d867eb9ae1346a782c19648aee9fb"
+    },
+    {
+      "name": "Weather.csv",
+      "size": 42720,
+      "md5": "21f50aeb6d8a7b52e35d32e50772a571",
+      "sha256": "915db3d334a580051b134eb6b3c5e0690873a7efdc27690b75bbdbeb80206089"
+    }
+  ]
+}

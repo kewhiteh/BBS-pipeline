@@ -1,0 +1,35 @@
+# Golden test: 10-stop data, wide output, state filter by abbreviation, tenure filter,
+# guild filter. Paths are set by tests/test_golden.py.
+[routes]
+states = ["NC"]
+route_ids = ["63_101", "63_207", "63_224", "63_311", "63_031", "63_228",
+             "63_906", "63_910", "63_012", "63_024", "63_027", "63_225"]
+
+[runs]
+start_year = 2015
+end_year = 2024
+run_types = [1]
+quality_current_ids = [1]
+min_continuity = 0.8
+observer_tenure = "drop_first_year_on_route"
+
+[observations]
+source = "10_stop"
+rolling_years = 5
+
+[guilds]
+file = "guilds/pwrc_species_groups.csv"
+filters = { breeding_habitat = ["woodland"] }
+
+[joins]
+routes = ["RouteName", "BCR"]
+weather = []
+observer = []
+species = ["English_Common_Name"]
+guilds = ["breeding_habitat", "migration"]
+
+[output]
+path = "golden_10stop_wide.csv"
+shape = "wide"
+wide_value = "rolling_mean"
+manifest = false
