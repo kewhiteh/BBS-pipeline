@@ -27,8 +27,9 @@ boundary = ""      # polygon file; keeps routes whose start point is inside ("" 
 [runs]
 start_year = 1997
 end_year = 2024
-run_types = [1]               # [] = no RunType filter
-quality_current_ids = [1]     # [] = no QualityCurrentID filter
+run_types = [1]               # [] = no RunType filter. 1 = QualityCurrentID 1 + random route + official protocol
+quality_current_ids = [1]     # [] = no filter. 1 = BBS weather, date, time, and route-completion criteria met,
+                              # including at least 45 of 50 stops completed (the release has no per-run stop count)
 min_continuity = 0.0          # share of non-cancelled years a route must be surveyed (2020 never counts)
 observer_tenure = "include_all"  # include_all | drop_first_year_on_route | drop_novice_observers | veteran_only
 observer_min_years = 2        # fewer survey years than this = novice

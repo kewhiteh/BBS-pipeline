@@ -199,6 +199,7 @@ These corrupt numbers today, so they come before the refactor. Write a failing t
 | D6 | ~~Zero-fill semantics~~ **Decided:** historical species pool per route; NULL beyond TotalStops | Phase 1 |
 | D7 | ~~Guild file~~ **Decided:** CSV only; one row per species with any of aou / common_name / scientific_name plus any trait columns; match AOU, then scientific, then common name; conflicting identifiers raise; unmatched rows reported. Ship a sample CSV with instructions. Source for GHY 5812: BBS breeding-habitat groups, woodland split by Freemark & Collins (1992) and Whitcomb et al. (1981) | Phase 5 |
 | D8 | ~~Selector combination~~ **Decided:** union (any selector matches); a selector value that matches no species raises | Phase 4 |
+| D11 | ~~Minimum stops per run~~ **Decided:** use BBS's own criterion. QualityCurrentID = 1 (part of RunType = 1) requires >= 45 of 50 stops completed; the release has no per-run stop count, so there is no separate stop filter. "80% completion" means `runs.min_continuity = 0.8` | Phase 4 follow-up |
 | D9 | ~~Project profiles~~ **Decided:** `examples/wood_thrush_story_map.toml` (12 NC routes, 1995-2025, no quality filters, wide CSV) and `examples/ghy5812_guilds.toml` (BCRs 27-29, RunType 1, continuity 0.8, years open, long CSV). Output shape long/wide and an N-year rolling mean are profile options | Phase 4 |
 | D10 | Real-data slice for the golden test | Phase 8 |
 

@@ -10,8 +10,8 @@ bcrs = [27, 28, 29]
 [runs]
 start_year = 1966
 end_year = 2025
-run_types = [1]
-quality_current_ids = [1]
+run_types = [1]            # meets official BBS criteria (see RunType.pdf in the release)
+quality_current_ids = [1]  # stop completion: QualityCurrentID 1 requires >= 45 of 50 stops completed
 min_continuity = 0.8       # "80% completion": share of non-cancelled years surveyed
 
 [observations]
