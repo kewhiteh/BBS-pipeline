@@ -196,3 +196,31 @@ def test_user_run_filters_are_not_overridden() -> None:
 
     assert protocol.run_types == [0, 1]
     assert protocol.quality_current_ids == []
+
+
+def test_ten_stop_abundance_is_species_total_not_stop_total() -> None:
+    """StopTotal counts stops with a detection; SpeciesTotal counts birds."""
+    ten_stop = pl.DataFrame(
+        {
+            "RouteDataID": [900],
+            "StateNum": [63],
+            "Route": [1],
+            "Year": [1990],
+            "AOU": ["07550"],
+            "Count10": [9],
+            "Count20": [3],
+            "Count30": [0],
+            "Count40": [0],
+            "Count50": [0],
+            "StopTotal": [2],
+            "SpeciesTotal": [12],
+        }
+    )
+    protocol = ProtocolConfigContract(
+        temporal_routing_mode=TemporalRoutingMode.TEN_STOP_1966_PLUS,
+        stop_aggregation=StopAggregationMode.TEN_STOP_BINS,
+    )
+
+    row = harmonize_observations({"ten_stop": ten_stop}, protocol).collect().row(0, named=True)
+
+    assert row["route_total"] == 12

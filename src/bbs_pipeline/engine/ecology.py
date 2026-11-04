@@ -285,8 +285,6 @@ def _prepare_50_stop_frame(
         lf = lf.with_columns(_null_aware_sum_horizontal(present_stops).alias("route_total"))
     elif "route_total" in schema_names:
         lf = lf.with_columns(pl.col("route_total").cast(pl.Int64).alias("route_total"))
-    elif "StopTotal" in schema_names:
-        lf = lf.with_columns(pl.col("StopTotal").cast(pl.Int64).alias("route_total"))
     else:
         lf = lf.with_columns(
             _null_aware_sum_horizontal([f"Count{b * 10}" for b in range(1, 6)]).alias("route_total")
@@ -309,8 +307,10 @@ def _prepare_10_stop_frame(ten_stop: pl.LazyFrame) -> pl.LazyFrame:
             bin_exprs.append(pl.lit(None, dtype=pl.Int64).alias(c))
     lf = lf.with_columns(bin_exprs)
 
-    if "StopTotal" in schema_names:
-        lf = lf.with_columns(pl.col("StopTotal").cast(pl.Int64).alias("route_total"))
+    # SpeciesTotal is the number of birds; StopTotal is only the number of stops with a
+    # detection, so it must never be used as abundance.
+    if "SpeciesTotal" in schema_names:
+        lf = lf.with_columns(pl.col("SpeciesTotal").cast(pl.Int64).alias("route_total"))
     elif "route_total" in schema_names:
         lf = lf.with_columns(pl.col("route_total").cast(pl.Int64).alias("route_total"))
     else:
