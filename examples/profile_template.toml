@@ -60,7 +60,18 @@ filters = {}              # e.g. { forest_guild = ["interior", "interior_edge"] 
 unmatched = "report"      # report | error: guild rows that match no BBS species
 
 [joins]
-tables = ["species", "routes", "weather"]   # any of: species, routes, weather, bcr, guilds
+# Columns to add per table: [] = none, ["*"] = every column, or list names. An unknown
+# name raises with the valid list (`bbs inspect` shows the result).
+routes = ["StateNum", "Route", "RouteName", "Latitude", "Longitude", "Stratum"]
+                          # also: CountryNum, Active, BCR, RouteTypeID, RouteTypeDetailID
+weather = ["ObsN", "RunType", "QualityCurrentID", "StartTemp", "EndTemp", "StartWind", "EndWind"]
+                          # also: RPID, Month, Day, TotalSpp, TempScale, StartSky, EndSky,
+                          # StartTime, EndTime, Assistant
+observer = ["is_first_year", "tenure_tier"]   # also: ObsN, obs_total_years
+vehicle = []              # RecordedCar, CarTotal, NoiseTotal, Car1..Car50, Noise1..Noise50 (1997+)
+species = ["English_Common_Name", "Order", "Family", "Genus", "Species"]
+                          # also: Seq, French_Common_Name
+guilds = ["*"]            # trait columns of guilds.file (ignored without a file)
 
 [output]
 path = "output/bbs_observations.parquet"    # .parquet .csv .geoparquet .gpkg .fgb .geojson

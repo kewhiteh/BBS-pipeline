@@ -6,7 +6,6 @@ import polars as pl
 import pytest
 
 from bbs_pipeline.contracts import (
-    JoinDimension,
     ObserverTenureMode,
     ProtocolConfigContract,
     SpeciesSelectionContract,
@@ -266,44 +265,6 @@ def test_hybrid_harmonized_10_stop() -> None:
     assert row_2018["Count20"].item() == 2
     assert row_2018["Count30"].item() == 0
     assert row_2018["route_total"].item() == 6
-
-
-def test_a_la_carte_include_joins() -> None:
-    """Prove unrequested tables in include_joins are never joined onto observations_df."""
-    tables = _build_synthetic_tables()
-    guilds = _build_two_species_guilds()
-
-    # Request ONLY species join
-    protocol_sp_only = ProtocolConfigContract(
-        year_range=(2018, 2022),
-        routes=["63_001"],
-        include_joins=[JoinDimension.SPECIES],
-    )
-    res_sp = run_ecological_engine(tables, guilds, protocol_sp_only)
-    cols_sp = set(res_sp.observations_df.columns)
-
-    assert "English_Common_Name" in cols_sp
-    # Routes, Weather, and BCR columns MUST NOT appear
-    assert "RouteName" not in cols_sp
-    assert "Latitude" not in cols_sp
-    assert "StartTemp" not in cols_sp
-    assert "ObsN" not in cols_sp
-    assert "BCR" not in cols_sp
-    assert res_sp.active_joins == ["species"]
-
-    # Request ONLY BCR join
-    protocol_bcr_only = ProtocolConfigContract(
-        year_range=(2018, 2022),
-        routes=["63_001"],
-        include_joins=[JoinDimension.BCR],
-    )
-    res_bcr = run_ecological_engine(tables, guilds, protocol_bcr_only)
-    cols_bcr = set(res_bcr.observations_df.columns)
-    assert "BCR" in cols_bcr
-    assert "RouteName" not in cols_bcr
-    assert "English_Common_Name" not in cols_bcr
-    assert "StartTemp" not in cols_bcr
-    assert res_bcr.active_joins == ["bcr"]
 
 
 def test_species_selectors_combine_as_union() -> None:

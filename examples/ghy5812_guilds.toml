@@ -24,7 +24,11 @@ file = "guilds/pwrc_species_groups.csv"
 # filters = { breeding_habitat = ["woodland"], forest_guild = ["interior"] }
 
 [joins]
-tables = ["species", "routes", "bcr", "guilds"]
+routes = ["RouteName", "Latitude", "Longitude", "BCR", "Stratum"]
+weather = ["Month", "Day", "ObsN", "StartTime", "EndTime"]
+observer = ["is_first_year", "tenure_tier"]
+species = ["English_Common_Name", "Family", "Order"]
+guilds = ["*"]
 
 [output]
 path = "output/ghy5812_bcr27-29.csv"

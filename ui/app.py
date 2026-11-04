@@ -22,7 +22,7 @@ from bbs_pipeline.config import (
     profile_from_data,
     save_profile,
 )
-from bbs_pipeline.contracts import JoinDimension, ObserverTenureMode
+from bbs_pipeline.contracts import JOIN_TABLES, ObserverTenureMode
 from bbs_pipeline.pipeline import run_profile
 from bbs_pipeline.sources.cache import CACHE_MANIFEST
 
@@ -186,9 +186,11 @@ def render_editor() -> None:
 
     with tab_output:
         out = p["output"]
-        p["joins"]["tables"] = st.multiselect(
-            "Join tables", [j.value for j in JoinDimension], p["joins"]["tables"], key="ui_joins"
-        )
+        st.markdown("Join columns per table: comma-separated names, `*` for all, empty for none.")
+        for table in JOIN_TABLES:
+            p["joins"][table] = _csv_list(
+                st.text_input(f"joins.{table}", _joined(p["joins"][table]), key=f"ui_join_{table}")
+            )
         out["path"] = st.text_input(
             "Output file (.parquet .csv .geoparquet .gpkg .fgb .geojson)",
             out["path"],

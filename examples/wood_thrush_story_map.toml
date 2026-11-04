@@ -25,7 +25,10 @@ source = "10_stop"         # covers 1995-1996, before the 50-stop data begins
 aous = ["07550"]           # Wood Thrush
 
 [joins]
-tables = ["routes", "bcr"]
+routes = ["RouteName", "Latitude", "Longitude", "BCR"]
+weather = []
+observer = []
+species = ["English_Common_Name"]
 
 [output]
 path = "output/wood_thrush_story_map.csv"

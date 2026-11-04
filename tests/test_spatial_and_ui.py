@@ -117,7 +117,7 @@ def test_streamlit_editor_saves_the_profile(
     at.selectbox(key="ui_observer_tenure").select("veteran_only")
     at.text_input(key="ui_families").set_value("Parulidae")
     at.text_input(key="ui_aous").set_value("7550")
-    at.multiselect(key="ui_joins").select("bcr")
+    at.text_input(key="ui_join_routes").set_value("RouteName, BCR")
     at.text_input(key="ui_output_path").set_value("out/nc.gpkg")
     at.text_area(key="ui_overlays").set_value("watershed=data/huc8.gpkg")
     at.run(timeout=15)
@@ -134,7 +134,7 @@ def test_streamlit_editor_saves_the_profile(
     assert saved.runs.observer_tenure == ObserverTenureMode.VETERAN_ONLY
     assert saved.species.families == ["Parulidae"]
     assert saved.species.aous == ["07550"]
-    assert "bcr" in [j.value for j in saved.joins.tables]
+    assert saved.joins.routes == ["RouteName", "BCR"]
     assert saved.output.path == Path("out/nc.gpkg")
     assert saved.output.overlays == {"watershed": Path("data/huc8.gpkg")}
 

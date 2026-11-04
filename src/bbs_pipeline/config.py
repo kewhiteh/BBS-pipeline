@@ -14,9 +14,9 @@ from typing import Any, Literal
 from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator, model_validator
 
 from bbs_pipeline.contracts import (
+    DEFAULT_JOINS,
     FORMAT_BY_SUFFIX,
     GuildSettingsContract,
-    JoinDimension,
     ObserverTenureMode,
     OutputContract,
     PipelineConfigBundle,
@@ -168,10 +168,30 @@ class GuildsSection(_Section):
         return out
 
 
+def _join_default(table: str) -> Any:
+    return Field(default_factory=lambda: list(DEFAULT_JOINS[table]))
+
+
 class JoinsSection(_Section):
-    tables: list[JoinDimension] = Field(
-        default_factory=lambda: [JoinDimension.SPECIES, JoinDimension.ROUTES, JoinDimension.WEATHER]
-    )
+    """Columns to join per table: [] = none, ["*"] = every column, or a list of names."""
+
+    routes: list[str] = _join_default("routes")
+    weather: list[str] = _join_default("weather")
+    observer: list[str] = _join_default("observer")
+    vehicle: list[str] = _join_default("vehicle")
+    species: list[str] = _join_default("species")
+    guilds: list[str] = _join_default("guilds")
+
+    @model_validator(mode="before")
+    @classmethod
+    def _old_tables_key(cls, data: Any) -> Any:
+        if isinstance(data, dict) and "tables" in data:
+            raise ValueError(
+                "joins.tables was replaced by one column list per table, e.g. "
+                'routes = ["RouteName", "BCR"], weather = [], species = ["*"] '
+                "(see examples/profile_template.toml)"
+            )
+        return data
 
 
 class OutputSection(_Section):
@@ -238,9 +258,9 @@ class RunProfile(_Section):
                 "zeros the mean would cover only years the species was detected"
             )
         if self.guilds.file is None and (
-            self.guilds.filters or JoinDimension.GUILDS in self.joins.tables
+            self.guilds.filters or self.joins.guilds not in ([], ["*"])
         ):
-            raise ValueError("guilds.filters and joins.tables = ['guilds'] need guilds.file")
+            raise ValueError("guilds.filters and joins.guilds column names need guilds.file")
         if self.output.wide_value == "rolling_mean" and not obs.rolling_years:
             raise ValueError("output.wide_value = 'rolling_mean' needs observations.rolling_years")
         protocol = ProtocolConfigContract(
@@ -269,7 +289,7 @@ class RunProfile(_Section):
             enable_extirpation_zero_fill=obs.zero_fill,
             lump_subspecies_and_hybrids=obs.lump_subspecies,
             rolling_window_years=obs.rolling_years,
-            include_joins=self.joins.tables,
+            join_columns=self.joins.model_dump(),
         )
         species = SpeciesSelectionContract(**self.species.model_dump())
         guilds = GuildSettingsContract(**self.guilds.model_dump())
