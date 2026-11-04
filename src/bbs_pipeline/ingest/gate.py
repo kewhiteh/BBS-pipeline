@@ -10,8 +10,8 @@ Implements the resilient Three-Tier Ingress pattern for BBS-Pipeline v3:
   and populates ``sanitized_cache_dir``.
 - Tier 3 (``tier3_sciencebase_stream``): Queries the USGS ScienceBase Catalog API
   by DOI with exponential backoff, streams remote archives into a staging
-  directory, sanitizes into ``sanitized_cache_dir``, and gracefully falls back
-  to Tier 2 or Tier 1 on network failure.
+  directory and sanitizes into ``sanitized_cache_dir``. Download failures raise;
+  there is no silent fallback to an older cache.
 """
 
 from __future__ import annotations
@@ -170,28 +170,14 @@ class ThreeTierIngressGate:
         )
 
     def _execute_tier3_sciencebase(self) -> IngressResult:
-        """Tier 3: Stream raw BBS release files from USGS ScienceBase API with fallback."""
-        try:
-            with tempfile.TemporaryDirectory(prefix="bbs_sb_stream_") as tmp_sb_str:
-                tmp_sb_dir = Path(tmp_sb_str)
-                self._download_sciencebase_release(tmp_sb_dir)
-                return self._execute_tier2_local_raw(
-                    tmp_sb_dir,
-                    tier_label="tier3_sciencebase_stream",
-                )
-        except Exception as exc:
-            logger.warning(
-                "ScienceBase Tier 3 streaming failed (%s); attempting fallback to Tier 2 / Tier 1.",
-                exc,
+        """Tier 3: Stream raw BBS release files from USGS ScienceBase API."""
+        with tempfile.TemporaryDirectory(prefix="bbs_sb_stream_") as tmp_sb_str:
+            tmp_sb_dir = Path(tmp_sb_str)
+            self._download_sciencebase_release(tmp_sb_dir)
+            return self._execute_tier2_local_raw(
+                tmp_sb_dir,
+                tier_label="tier3_sciencebase_stream",
             )
-            if self._has_raw_files(self.protocol.raw_data_dir):
-                return self._execute_tier2_local_raw(
-                    self.protocol.raw_data_dir,
-                    tier_label="tier2_local_raw",
-                )
-            if self.is_cache_valid(self.protocol.sanitized_cache_dir):
-                return self._execute_tier1_cache()
-            raise
 
     @classmethod
     def _unpack_raw_directory(cls, source_dir: Path, unpacked_dir: Path) -> None:
@@ -247,8 +233,8 @@ class ThreeTierIngressGate:
         for csv_file in sorted(unpacked_dir.rglob("*.csv")):
             try:
                 cols = list(pl.scan_csv(csv_file, infer_schema_length=100).collect_schema().names())
-            except Exception:
-                continue
+            except pl.exceptions.PolarsError as exc:
+                raise ValueError(f"Cannot read the header of '{csv_file.name}': {exc}") from exc
             role = identify_role_from_columns(cols)
             if role in role_Buckets:
                 role_Buckets[role].append(csv_file)
@@ -294,10 +280,6 @@ class ThreeTierIngressGate:
             engine_used = "intake_engine"
         except ImportError:
             logger.info("intake_engine package not installed; using built-in Polars sanitizer.")
-        except Exception as exc:
-            logger.warning(
-                "IntakeEngine execution raised %s; falling back to Polars sanitizer.", exc
-            )
 
         # Ensure Parquet files and intake_manifest.json exist (handles both fallback & mocked IntakeEngine)
         if not self.is_cache_valid(cache_dir):
