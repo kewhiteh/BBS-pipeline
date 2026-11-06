@@ -64,9 +64,21 @@ def test_values_field_listing_and_unknown_field(tmp_path: Path) -> None:
     values = collect_values(_profile(tmp_path))
 
     assert "63\tNC\tNorth Carolina" in values.field_values("routes.states")
-    assert values.field_values("routes.bcrs") == ["27", "28", "29"]
+    assert values.field_values("routes.bcrs") == [
+        "27\tSoutheastern Coastal Plain",
+        "28\tAppalachian Mountains",
+        "29\tPiedmont",
+    ]
+    assert values.label("Stratum", 1) == "1 · Sub-tropical"
+    assert values.label("RunType", 1).startswith("1 · Meets all BBS criteria")
     with pytest.raises(KeyError, match="Unknown field 'joins.nope'"):
         values.field_values("joins.nope")
+
+
+def test_code_labels_are_empty_without_metadata(tmp_path: Path) -> None:
+    from bbs_pipeline.values import _code_labels
+
+    assert _code_labels(tmp_path) == {}
 
 
 def test_editor_offers_pick_lists_and_saves_only_on_save(
