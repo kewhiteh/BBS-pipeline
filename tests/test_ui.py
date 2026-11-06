@@ -81,6 +81,21 @@ def test_code_labels_are_empty_without_metadata(tmp_path: Path) -> None:
     assert _code_labels(tmp_path) == {}
 
 
+def test_editor_shows_names_for_coded_filters(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    at, _ = _app(tmp_path, monkeypatch, _profile(tmp_path))
+
+    bcrs = at.multiselect(key="ui_bcrs")
+    assert bcrs.options == [
+        "27 · Southeastern Coastal Plain",
+        "28 · Appalachian Mountains",
+        "29 · Piedmont",
+    ]
+    assert bcrs.help
+    assert all(" · " in o for o in at.multiselect(key="ui_strata").options)
+
+
 def test_editor_offers_pick_lists_and_saves_only_on_save(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
