@@ -130,16 +130,22 @@ def _pick(
     key: str,
     fmt: Any = str,
     as_int: bool = False,
+    help: str | None = None,
 ) -> list[Any]:
     """Multiselect over ``options``; a text box when no pick list is available."""
     if options is None:
-        raw = st.text_input(f"{label} (comma-separated)", _joined(current), key=key)
+        raw = st.text_input(f"{label} (comma-separated)", _joined(current), key=key, help=help)
         return _int_list(raw, label) if as_int else _csv_list(raw)
     missing = [c for c in current if c not in options]
     if missing:
         st.warning(f"{label}: not in this release, dropped from the list: {missing}")
     return st.multiselect(
-        label, options, [c for c in current if c in options], format_func=fmt, key=key
+        label,
+        options,
+        [c for c in current if c in options],
+        format_func=fmt,
+        key=key,
+        help=help,
     )
 
 
@@ -152,14 +158,39 @@ def _draft() -> dict[str, Any]:
 
 def _source_tab(p: dict[str, Any]) -> None:
     src = p["source"]
-    src["release"] = st.text_input(
-        "Release DOI or ScienceBase item id", src["release"], key="ui_release"
+    st.caption(
+        "Which BBS data release to use and where it lives on disk. Start here: fetch the "
+        "release once, and the other tabs get pick lists with names instead of codes."
     )
-    src["raw_dir"] = st.text_input("Release directory", src["raw_dir"], key="ui_raw_dir")
-    src["cache_dir"] = st.text_input("Cache directory", src["cache_dir"], key="ui_cache_dir")
-    src["offline"] = st.checkbox("Offline (never download)", src["offline"], key="ui_offline")
+    src["release"] = st.text_input(
+        "Release DOI or ScienceBase item id",
+        src["release"],
+        key="ui_release",
+        help="The USGS BBS dataset release, e.g. 10.5066/P144YU3S (the 1966–2025 release).",
+    )
+    src["raw_dir"] = st.text_input(
+        "Release directory",
+        src["raw_dir"],
+        key="ui_raw_dir",
+        help="Folder holding the downloaded release files (Routes.csv, zips, metadata XML).",
+    )
+    src["cache_dir"] = st.text_input(
+        "Cache directory",
+        src["cache_dir"],
+        key="ui_cache_dir",
+        help="Where the cleaned, typed copy of the release is kept so runs start fast.",
+    )
+    src["offline"] = st.checkbox(
+        "Offline (never download)",
+        src["offline"],
+        key="ui_offline",
+        help="Use only files already on disk; fail instead of reaching ScienceBase.",
+    )
     src["rebuild_cache"] = st.checkbox(
-        "Rebuild cache on next run", src["rebuild_cache"], key="ui_rebuild_cache"
+        "Rebuild cache on next run",
+        src["rebuild_cache"],
+        key="ui_rebuild_cache",
+        help="Rebuild the cache from the release files, e.g. after replacing them.",
     )
     with st.expander("Advanced: download settings"):
         src["http_timeout_seconds"] = float(
@@ -199,6 +230,10 @@ def _source_tab(p: dict[str, Any]) -> None:
 
 def _routes_runs_tab(p: dict[str, Any], v: ProfileValues | None) -> None:
     rt, rn = p["routes"], p["runs"]
+    st.caption(
+        "Choose where (routes) and which surveys (runs) to keep. Each filter narrows the "
+        "previous ones; leave a list empty to keep everything."
+    )
     st.subheader("Routes")
     if v is not None:
         names = {s["StateNum"]: s for s in v.states}
@@ -216,12 +251,37 @@ def _routes_runs_tab(p: dict[str, Any], v: ProfileValues | None) -> None:
             current,
             "ui_states",
             lambda c: f"{names[c]['abbreviation'] or c} · {names[c]['StateName']}",
+            help="Keep routes in these states or provinces. Empty = all.",
         )
         rt["states"] = [names[c]["abbreviation"] or c for c in codes]
     else:
-        rt["states"] = _pick("States / provinces", None, rt["states"], "ui_states")
-    rt["bcrs"] = _pick("BCRs", v.bcrs if v else None, rt["bcrs"], "ui_bcrs", as_int=True)
-    rt["strata"] = _pick("Strata", v.strata if v else None, rt["strata"], "ui_strata", as_int=True)
+        rt["states"] = _pick(
+            "States / provinces",
+            None,
+            rt["states"],
+            "ui_states",
+            help="Names, postal abbreviations, or StateNum codes. Empty = all.",
+        )
+    rt["bcrs"] = _pick(
+        "Bird Conservation Regions (BCRs)",
+        v.bcrs if v else None,
+        rt["bcrs"],
+        "ui_bcrs",
+        (lambda c: v.label("BCR", c)) if v else str,
+        as_int=True,
+        help="NABCI ecological regions with similar bird communities and habitats. "
+        "Keep routes in these BCRs. Empty = all.",
+    )
+    rt["strata"] = _pick(
+        "BBS physiographic strata",
+        v.strata if v else None,
+        rt["strata"],
+        "ui_strata",
+        (lambda c: v.label("Stratum", c)) if v else str,
+        as_int=True,
+        help="The BBS's own physiographic regions (older than BCRs). Keep routes in these "
+        "strata. Empty = all.",
+    )
 
     route_options = None
     if v is not None:
@@ -240,26 +300,42 @@ def _routes_runs_tab(p: dict[str, Any], v: ProfileValues | None) -> None:
         rt["route_ids"],
         "ui_route_ids",
         (lambda r: f"{r} · {route_info[r]['RouteName']}") if v else str,
+        help="Pick individual routes. Empty = every route that passes the filters above.",
     )
     rt["boundary"] = st.text_input(
-        "Boundary polygon file (start point inside)", rt["boundary"] or "", key="ui_boundary"
+        "Boundary polygon file (start point inside)",
+        rt["boundary"] or "",
+        key="ui_boundary",
+        help="Optional polygon file. Keeps routes whose start point falls inside it.",
     )
 
     st.subheader("Runs")
     rn["start_year"], rn["end_year"] = st.slider(
-        "Years", 1966, 2026, (rn["start_year"], rn["end_year"]), key="ui_years"
+        "Years",
+        1966,
+        2026,
+        (rn["start_year"], rn["end_year"]),
+        key="ui_years",
+        help="Survey years to keep (inclusive).",
     )
+    run_label = (lambda c: v.label("RunType", c)) if v else str
     rn["run_types"] = st.multiselect(
-        "RunType (empty = all; 1 = meets BBS criteria)",
+        "RunType",
         sorted({0, 1, *rn["run_types"]}),
         rn["run_types"],
+        format_func=run_label,
         key="ui_run_types",
+        help="Whether a run met all standard BBS criteria. Most trend analyses keep only "
+        "1. Empty = all.",
     )
+    quality_label = (lambda c: v.label("QualityCurrentID", c)) if v else str
     rn["quality_current_ids"] = st.multiselect(
-        "QualityCurrentID (empty = all; 1 includes >= 45 of 50 stops)",
+        "QualityCurrentID",
         sorted({0, 1, *rn["quality_current_ids"]}),
         rn["quality_current_ids"],
+        format_func=quality_label,
         key="ui_quality_ids",
+        help="Whether weather, time, date, and route-completion criteria were met. Empty = all.",
     )
     rn["min_continuity"] = st.slider(
         "Minimum continuity (share of non-cancelled years surveyed)",
@@ -268,34 +344,78 @@ def _routes_runs_tab(p: dict[str, Any], v: ProfileValues | None) -> None:
         float(rn["min_continuity"]),
         0.05,
         key="ui_min_continuity",
+        help="Drop routes with a surviving run in less than this share of the non-cancelled "
+        "years in range. 0 = keep all; 0.8 = at least 80% of years.",
     )
     tenure = [m.value for m in ObserverTenureMode]
     rn["observer_tenure"] = st.selectbox(
-        "Observer tenure", tenure, tenure.index(rn["observer_tenure"]), key="ui_observer_tenure"
+        "Observer tenure",
+        tenure,
+        tenure.index(rn["observer_tenure"]),
+        key="ui_observer_tenure",
+        help="include_all keeps every run. The others drop each observer's first year on a "
+        "route, drop novices, or keep only veterans (thresholds below).",
     )
     c1, c2 = st.columns(2)
     rn["observer_min_years"] = int(
-        c1.number_input("Novice below (years)", 1, 60, rn["observer_min_years"], key="ui_novice")
+        c1.number_input(
+            "Novice below (years)",
+            1,
+            60,
+            rn["observer_min_years"],
+            key="ui_novice",
+            help="Observers with fewer years than this count as novices.",
+        )
     )
     rn["veteran_min_years"] = int(
-        c2.number_input("Veteran from (years)", 1, 60, rn["veteran_min_years"], key="ui_veteran")
+        c2.number_input(
+            "Veteran from (years)",
+            1,
+            60,
+            rn["veteran_min_years"],
+            key="ui_veteran",
+            help="Observers with at least this many years count as veterans.",
+        )
     )
 
 
 def _species_tab(p: dict[str, Any], v: ProfileValues | None) -> None:
     obs, sp, g = p["observations"], p["species"], p["guilds"]
+    st.caption(
+        "How bird counts are read, and which species to keep. Species filters combine "
+        "with OR; guild filters then narrow the result."
+    )
     st.subheader("Observations")
     sources, layouts = list(OBSERVATION_SOURCES), list(STOP_LAYOUTS)
     c1, c2 = st.columns(2)
     obs["source"] = c1.selectbox(
-        "Source", sources, sources.index(obs["source"]), key="ui_obs_source"
+        "Source",
+        sources,
+        sources.index(obs["source"]),
+        key="ui_obs_source",
+        help="50_stop: per-stop counts, 1997 on. 10_stop: 10-stop summaries, 1966 on. "
+        "hybrid: both, harmonised to 10-stop bins.",
     )
-    obs["stops"] = c2.selectbox("Stop layout", layouts, layouts.index(obs["stops"]), key="ui_stops")
+    obs["stops"] = c2.selectbox(
+        "Stop layout",
+        layouts,
+        layouts.index(obs["stops"]),
+        key="ui_stops",
+        help="route_total: one count per run. ten_stop_bins: five counts per run "
+        "(stops 1–10, 11–20, ...). stops: all 50 stops (needs the 50_stop source).",
+    )
     obs["zero_fill"] = st.checkbox(
-        "Zero-fill every species ever recorded on the route", obs["zero_fill"], key="ui_zero_fill"
+        "Zero-fill every species ever recorded on the route",
+        obs["zero_fill"],
+        key="ui_zero_fill",
+        help="Add a 0 count for each species seen on the route in any year but not on "
+        "this run. Needed for most abundance models.",
     )
     obs["lump_subspecies"] = st.checkbox(
-        "Count subspecies and forms under their species", obs["lump_subspecies"], key="ui_lump"
+        "Count subspecies and forms under their species",
+        obs["lump_subspecies"],
+        key="ui_lump",
+        help="E.g. fold Dark-eyed Junco forms into Dark-eyed Junco.",
     )
     obs["rolling_years"] = int(
         st.number_input(
@@ -304,6 +424,7 @@ def _species_tab(p: dict[str, Any], v: ProfileValues | None) -> None:
             60,
             obs["rolling_years"],
             key="ui_rolling",
+            help="Smooth each route's counts with a moving average over this many years.",
         )
     )
 
@@ -327,7 +448,11 @@ def _species_tab(p: dict[str, Any], v: ProfileValues | None) -> None:
 
     st.subheader("Guilds")
     g["file"] = st.text_input(
-        "Guild file (CSV; see docs/guild_file.md)", g["file"] or "", key="ui_guild_file"
+        "Guild file (CSV; see docs/guild_file.md)",
+        g["file"] or "",
+        key="ui_guild_file",
+        help="Optional CSV that tags species with traits (habitat, diet, ...). Lets you "
+        "filter by trait and adds the traits as output columns.",
     )
     units = ["report", "error"]
     g["unmatched"] = st.selectbox(
@@ -366,6 +491,7 @@ def _species_tab(p: dict[str, Any], v: ProfileValues | None) -> None:
 
 
 def _joins_output_tab(p: dict[str, Any], v: ProfileValues | None) -> None:
+    st.caption("Extra columns to attach to each output row, and the file to write.")
     st.subheader("Join columns")
     for table in JOIN_TABLES:
         current = p["joins"][table]
@@ -386,7 +512,12 @@ def _joins_output_tab(p: dict[str, Any], v: ProfileValues | None) -> None:
 
     st.subheader("Output")
     out = p["output"]
-    out["path"] = st.text_input(f"Output file ({FORMATS})", out["path"], key="ui_output_path")
+    out["path"] = st.text_input(
+        f"Output file ({FORMATS})",
+        out["path"],
+        key="ui_output_path",
+        help="The file extension picks the format. Vector formats include route geometry.",
+    )
     shapes = ["long", "wide"]
     out["shape"] = st.radio(
         "Shape (long: one row per run and species; wide: one row per route and species)",
@@ -400,7 +531,12 @@ def _joins_output_tab(p: dict[str, Any], v: ProfileValues | None) -> None:
         out["wide_value"] = st.selectbox(
             "Value per year", wide_values, wide_values.index(out["wide_value"]), key="ui_wide_value"
         )
-    out["crs"] = st.text_input("CRS (vector formats)", out["crs"], key="ui_crs")
+    out["crs"] = st.text_input(
+        "CRS (vector formats)",
+        out["crs"],
+        key="ui_crs",
+        help="Coordinate system to write geometry in, e.g. EPSG:4326 or EPSG:5070.",
+    )
     out["layer_name"] = st.text_input("GeoPackage layer", out["layer_name"], key="ui_layer_name")
     overlays_raw = st.text_area(
         "Overlays (name=path per line; vector formats)",
@@ -408,7 +544,12 @@ def _joins_output_tab(p: dict[str, Any], v: ProfileValues | None) -> None:
         key="ui_overlays",
     )
     out["overlays"] = _key_values(overlays_raw, "Overlays", split_values=False)
-    out["manifest"] = st.checkbox("Write manifest", out["manifest"], key="ui_manifest")
+    out["manifest"] = st.checkbox(
+        "Write manifest",
+        out["manifest"],
+        key="ui_manifest",
+        help="Write a manifest file beside the output describing how it was made.",
+    )
 
 
 def _show_result(res: dict[str, Any]) -> None:
@@ -443,6 +584,10 @@ def _inspect_run_tab(profile: RunProfile | None, stamp: tuple) -> None:
     if profile is None:
         st.info("Fix the profile errors in the sidebar to inspect or run.")
         return
+    st.caption(
+        "Inspect shows what the profile would produce (row counts at each filter and a "
+        "preview) without writing a file. Run writes the output file."
+    )
     live = st.toggle("Live inspect (re-inspect after every change)", key="ui_live")
     c1, c2 = st.columns(2)
     inspect_clicked = c1.button("Inspect", key="btn_inspect")
