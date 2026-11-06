@@ -5,6 +5,8 @@ Config-driven extraction of North American Breeding Bird Survey (BBS) data. One 
 filters, observation handling, species, joins, and the output file. The CLI and the
 Streamlit editor (`ui/app.py`) both read and write that profile.
 
+What is verified, known limitations, and open items: [docs/STATUS.md](docs/STATUS.md).
+
 ## Quick start
 
 ```bash
@@ -44,7 +46,7 @@ Everything the CLI does can be done in the editor:
 | `--config FILE` | Sidebar **Open / new**: profiles found in the project, or any path; **New profile** |
 | editing the TOML | Every setting, including download settings under **Advanced** |
 | `bbs validate` | Sidebar validation messages and the **Profile TOML** view (with download) |
-| `bbs values` | Pick lists for states, BCRs, strata, routes (narrowed to the chosen states and BCRs), species, families, orders, guild traits, and each table's join columns |
+| `bbs values` | Pick lists for states, BCRs, strata (with names from the release metadata), routes (narrowed to the chosen states and BCRs), species, families, orders, guild traits, and each table's join columns |
 | `--set key=value` | Change the field and Inspect/Run without saving |
 | `bbs inspect` | **Inspect** (or *Live inspect*): stage counts, exact output columns, guild report, preview |
 | `bbs run` | **Run** |
