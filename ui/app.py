@@ -41,7 +41,6 @@ from bbs_pipeline.sources.regions import resolve_states
 from bbs_pipeline.sources.release import RELEASE_JSON, fetch_release
 from bbs_pipeline.values import ProfileValues, collect_values
 
-FORMATS = ".parquet .csv .geoparquet .gpkg .fgb .geojson"
 PROFILE_DIRS: tuple[str, ...] = (".", "examples", "profiles")
 ERROR_LOG = Path("logs") / "ui_errors.log"
 
@@ -535,65 +534,191 @@ def _species_tab(p: dict[str, Any], v: ProfileValues | None) -> None:
     g["filters"] = filters
 
 
+JOIN_TABLE_HELP: dict[str, str] = {
+    "routes": "Route details: name, start coordinates, stratum, BCR.",
+    "weather": "Conditions on each run: temperature, wind, sky, times, RunType, "
+    "QualityCurrentID, observer id.",
+    "observer": "Observer experience: years surveyed, first-year flag, tenure tier.",
+    "vehicle": "Cars and noise counted during each run.",
+    "species": "Taxonomy: common and scientific names, family, order.",
+    "guilds": "Traits from your guild file.",
+}
+JOIN_MODES = ("None", "Some", "All")
+
+# label, extension, what it is for
+OUTPUT_FORMATS: tuple[tuple[str, str, str], ...] = (
+    ("CSV", ".csv", "opens in Excel, R, or any spreadsheet"),
+    ("Parquet", ".parquet", "compact and fast, for R or Python"),
+    ("GeoPackage", ".gpkg", "GIS layer of route start points (ArcGIS, QGIS)"),
+    ("GeoParquet", ".geoparquet", "Parquet with route start points"),
+    ("FlatGeobuf", ".fgb", "fast GIS layer of route start points"),
+    ("GeoJSON", ".geojson", "web-map layer of route start points"),
+)
+VECTOR_EXTENSIONS = frozenset({".gpkg", ".geoparquet", ".fgb", ".geojson"})
+
+# Common output coordinate systems; anything else via "Other"
+CRS_CHOICES: dict[str, str] = {
+    "EPSG:4326": "Latitude/longitude, WGS 84 (GPS and web maps)",
+    "EPSG:4269": "Latitude/longitude, NAD83 (what BBS route coordinates use)",
+    "EPSG:5070": "Albers equal-area, lower 48 US (meters; for areas and distances)",
+    "EPSG:32119": "North Carolina State Plane, NAD83 (meters)",
+    "EPSG:3857": "Web Mercator (web tile maps; distorts area)",
+}
+OTHER_CRS = "Other (enter an EPSG code)"
+
+
+def _join_picker(p: dict[str, Any], table: str, options: list[str] | None) -> None:
+    """None / Some / All for one table; "Some" opens a column picker."""
+    current = p["joins"][table]
+    mode_now = "All" if current == ["*"] else ("Some" if current else "None")
+    with st.container(border=True):
+        mode = st.segmented_control(
+            table,
+            JOIN_MODES,
+            default=mode_now,
+            required=True,
+            key=f"ui_join_mode_{table}",
+        )
+        st.caption(JOIN_TABLE_HELP.get(table, ""))
+        if mode == "All":
+            p["joins"][table] = ["*"]
+        elif mode == "Some":
+            p["joins"][table] = _pick(
+                f"{table} columns",
+                options,
+                [c for c in current if c != "*"],
+                f"ui_join_{table}",
+            )
+        else:
+            p["joins"][table] = []
+
+
+def _output_path_picker(out: dict[str, Any]) -> str:
+    """Folder + file name + format list; returns the chosen extension ('' if none)."""
+    path = Path(out["path"])
+    extensions = [ext for _, ext, _ in OUTPUT_FORMATS]
+    suffix = path.suffix.lower()
+    if suffix not in extensions:
+        st.warning(f"'{path.name}' has no supported format; choose one below.")
+    c1, c2, c3 = st.columns([2, 2, 2], vertical_alignment="bottom")
+    folder = c1.text_input(
+        "Folder", str(path.parent), key="ui_output_folder", help="Created if it doesn't exist."
+    )
+    stem = c2.text_input(
+        "File name",
+        path.stem if suffix in extensions else path.name,
+        key="ui_output_name",
+        help="Without the extension; the format adds it.",
+    )
+    labels = {ext: f"{name} ({ext}): {use}" for name, ext, use in OUTPUT_FORMATS}
+    ext = c3.selectbox(
+        "Format",
+        extensions,
+        extensions.index(suffix) if suffix in extensions else None,
+        format_func=labels.get,
+        key="ui_output_format",
+        help="GIS formats include each route's start point; CSV and Parquet are plain tables.",
+    )
+    if not stem.strip():
+        _input_error("Output: enter a file name")
+    if ext is None:
+        _input_error("Output: choose a format")
+        return ""
+    out["path"] = str(Path(folder.strip() or ".") / f"{stem.strip()}{ext}")
+    st.caption(f"Writes `{out['path']}`")
+    return ext
+
+
+def _crs_picker(out: dict[str, Any]) -> None:
+    current = out["crs"]
+    options = [*CRS_CHOICES, OTHER_CRS]
+    choice = st.selectbox(
+        "Map coordinate system (projection)",
+        options,
+        options.index(current) if current in CRS_CHOICES else len(options) - 1,
+        format_func=lambda c: c if c == OTHER_CRS else f"{CRS_CHOICES[c]} · {c}",
+        key="ui_crs_choice",
+        help="How route locations are stored in the GIS file. Pick latitude/longitude "
+        "unless your analysis needs meters (e.g. Albers for areas and distances).",
+    )
+    if choice == OTHER_CRS:
+        out["crs"] = st.text_input(
+            "EPSG code",
+            current,
+            key="ui_crs",
+            help="Look one up at epsg.io, e.g. EPSG:26917 (UTM zone 17N).",
+        )
+    else:
+        out["crs"] = choice
+
+
 def _joins_output_tab(p: dict[str, Any], v: ProfileValues | None) -> None:
-    st.caption("Extra columns to attach to each output row, and the file to write.")
-    st.subheader("Join columns")
+    st.caption(
+        "Extra columns to add to each output row, and the file to write. Inspect shows "
+        "the exact columns you'll get."
+    )
+    st.subheader("Extra columns")
     for table in JOIN_TABLES:
-        current = p["joins"][table]
         options = v.join_columns.get(table, []) if v else None
         if options is not None and not options:
-            st.caption(f"`{table}`: nothing to join in this release/profile")
+            st.caption(f"`{table}`: nothing to add in this release/profile")
             p["joins"][table] = []
             continue
-        everything = st.checkbox(
-            f"{table}: all columns", current == ["*"], key=f"ui_join_all_{table}"
-        )
-        if everything:
-            p["joins"][table] = ["*"]
-        else:
-            p["joins"][table] = _pick(
-                table, options, [c for c in current if c != "*"], f"ui_join_{table}"
-            )
+        _join_picker(p, table, options)
 
-    st.subheader("Output")
+    st.subheader("Output file")
     out = p["output"]
-    out["path"] = st.text_input(
-        f"Output file ({FORMATS})",
-        out["path"],
-        key="ui_output_path",
-        help="The file extension picks the format. Vector formats include route geometry.",
-    )
+    ext = _output_path_picker(out)
     shapes = ["long", "wide"]
-    out["shape"] = st.radio(
-        "Shape (long: one row per run and species; wide: one row per route and species)",
+    out["shape"] = st.segmented_control(
+        "Table layout",
         shapes,
-        shapes.index(out["shape"]),
-        horizontal=True,
+        default=out["shape"],
+        format_func={
+            "long": "Long: one row per run and species",
+            "wide": "Wide: one row per route and species, a column per year",
+        }.get,
+        required=True,
         key="ui_shape",
+        help="Long suits most statistics; wide suits spreadsheets and maps.",
     )
     if out["shape"] == "wide":
         wide_values = ["route_total", "rolling_mean"]
         out["wide_value"] = st.selectbox(
-            "Value per year", wide_values, wide_values.index(out["wide_value"]), key="ui_wide_value"
+            "Value in each year column",
+            wide_values,
+            wide_values.index(out["wide_value"]),
+            format_func={
+                "route_total": "That year's count",
+                "rolling_mean": "Rolling mean (set N on the Species & Guilds tab)",
+            }.get,
+            key="ui_wide_value",
         )
-    out["crs"] = st.text_input(
-        "CRS (vector formats)",
-        out["crs"],
-        key="ui_crs",
-        help="Coordinate system to write geometry in, e.g. EPSG:4326 or EPSG:5070.",
-    )
-    out["layer_name"] = st.text_input("GeoPackage layer", out["layer_name"], key="ui_layer_name")
-    overlays_raw = st.text_area(
-        "Overlays (name=path per line; vector formats)",
-        "\n".join(f"{k}={val}" for k, val in out["overlays"].items()),
-        key="ui_overlays",
-    )
-    out["overlays"] = _key_values(overlays_raw, "Overlays", split_values=False)
+    if ext in VECTOR_EXTENSIONS:
+        _crs_picker(out)
+        if ext == ".gpkg":
+            out["layer_name"] = st.text_input(
+                "Layer name",
+                out["layer_name"],
+                key="ui_layer_name",
+                help="The layer's name inside the GeoPackage, as GIS software lists it.",
+            )
+        overlays_raw = st.text_area(
+            "Tag routes with polygon layers (overlays)",
+            "\n".join(f"{k}={val}" for k, val in out["overlays"].items()),
+            key="ui_overlays",
+            placeholder="basin=data/nc_river_basins.gpkg",
+            help="One name=file per line. Each route gets a column overlay_<name> holding "
+            "the polygon it falls in, e.g. its river basin. The polygon's label is taken "
+            "from a name, id, or basin column.",
+        )
+        out["overlays"] = _key_values(overlays_raw, "Overlays", split_values=False)
     out["manifest"] = st.checkbox(
         "Write manifest",
         out["manifest"],
         key="ui_manifest",
-        help="Write a manifest file beside the output describing how it was made.",
+        help="Write <file>.manifest.json beside the output: the profile, release, code "
+        "version, and the counts after each filter, so the file can be traced and rebuilt.",
     )
 
 

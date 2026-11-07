@@ -110,8 +110,9 @@ def test_editor_offers_pick_lists_and_saves_only_on_save(
     at.multiselect(key="ui_bcrs").set_value([29])
     at.multiselect(key="ui_families").set_value(["Turdidae"])
     at.multiselect(key="ui_guild_breeding_habitat").set_value(["woodland"])
+    at.segmented_control(key="ui_join_mode_vehicle").set_value("Some").run()
     at.multiselect(key="ui_join_vehicle").set_value(["CarTotal"])
-    at.radio(key="ui_shape").set_value("wide")
+    at.segmented_control(key="ui_shape").set_value("wide")
     at.run()
     assert not at.exception, at.exception
 
@@ -145,7 +146,7 @@ def test_join_all_columns_checkbox_saves_a_star(
 ) -> None:
     at, path = _app(tmp_path, monkeypatch, _profile(tmp_path))
 
-    at.checkbox(key="ui_join_all_routes").check().run()
+    at.segmented_control(key="ui_join_mode_routes").set_value("All").run()
     at.sidebar.button(key="btn_save").click().run()
 
     assert load_profile(path).joins.routes == ["*"]
@@ -182,12 +183,14 @@ def test_run_writes_the_output(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) 
 def test_invalid_edit_shows_the_error_and_disables_save(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    at, path = _app(tmp_path, monkeypatch, _profile(tmp_path))
+    gpkg = {"path": str(tmp_path / "out" / "o.gpkg")}
+    at, path = _app(tmp_path, monkeypatch, _profile(tmp_path, output=gpkg))
     before = path.read_text(encoding="utf-8")
 
-    at.text_input(key="ui_output_path").set_value("out/nc.xlsx").run()
+    at.selectbox(key="ui_crs_choice").set_value("Other (enter an EPSG code)").run()
+    at.text_input(key="ui_crs").set_value("not-a-crs").run()
 
-    assert any("output.path" in e.value for e in at.sidebar.error)
+    assert any("output.crs" in e.value for e in at.sidebar.error)
     assert path.read_text(encoding="utf-8") == before
 
 
@@ -314,7 +317,10 @@ def test_free_text_guild_filter_for_traits_without_a_pick_list(
 def test_malformed_lines_block_saving(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, widget: str, value: str, message: str
 ) -> None:
-    at, path = _app(tmp_path, monkeypatch, _profile(tmp_path, guilds={"file": str(GUILDS)}))
+    profile = _profile(
+        tmp_path, guilds={"file": str(GUILDS)}, output={"path": str(tmp_path / "out" / "o.gpkg")}
+    )
+    at, path = _app(tmp_path, monkeypatch, profile)
     before = path.read_text(encoding="utf-8")
 
     at.text_area(key=widget).set_value(value).run()
@@ -382,3 +388,32 @@ def test_failures_are_logged_with_their_traceback(
     assert any("logs/ui_errors.log" in e.value for e in at.error)
     log = (tmp_path / "logs" / "ui_errors.log").read_text(encoding="utf-8")
     assert "Inspect" in log and "Traceback" in log and "requested from both" in log
+
+
+def test_output_file_is_folder_name_and_format(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    at, path = _app(tmp_path, monkeypatch, _profile(tmp_path))
+    assert not any(s.key == "ui_crs_choice" for s in at.selectbox)  # CSV: no projection
+
+    at.text_input(key="ui_output_name").set_value("wood_thrush").run()
+    at.selectbox(key="ui_output_format").set_value(".gpkg").run()
+    at.selectbox(key="ui_crs_choice").set_value("EPSG:5070").run()
+    at.sidebar.button(key="btn_save").click().run()
+
+    saved = load_profile(path).output
+    assert saved.path == tmp_path / "out" / "wood_thrush.gpkg"
+    assert saved.crs == "EPSG:5070"
+
+
+def test_join_modes_none_some_all(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    at, path = _app(tmp_path, monkeypatch, _profile(tmp_path))
+
+    at.segmented_control(key="ui_join_mode_weather").set_value("None").run()
+    at.segmented_control(key="ui_join_mode_vehicle").set_value("Some").run()
+    at.multiselect(key="ui_join_vehicle").set_value(["CarTotal"]).run()
+    at.segmented_control(key="ui_join_mode_species").set_value("All").run()
+    at.sidebar.button(key="btn_save").click().run()
+
+    joins = load_profile(path).joins
+    assert (joins.weather, joins.vehicle, joins.species) == ([], ["CarTotal"], ["*"])
