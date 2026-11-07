@@ -699,8 +699,9 @@ def _joins_output_tab(p: dict[str, Any], v: ProfileValues | None) -> None:
     for table in JOIN_TABLES:
         options = v.join_columns.get(table, []) if v else None
         if options is not None and not options:
+            # Leave the saved value alone (e.g. guilds = ["*"] without a guild file):
+            # clearing it marked every such profile "Unsaved changes" as soon as it opened
             st.caption(f"`{table}`: nothing to add in this release/profile")
-            p["joins"][table] = []
             continue
         _join_picker(p, table, options)
 

@@ -463,3 +463,12 @@ def test_unknown_projection_code_is_flagged(
 
     assert any("not a known EPSG code" in c.value for c in at.caption)
     assert not any(b.key == "btn_add_crs" for b in at.button)
+
+
+def test_opening_a_saved_profile_shows_no_unsaved_changes(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Default joins.guilds is ["*"]; with no guild file the editor must not clear it."""
+    at, _ = _app(tmp_path, monkeypatch, _profile(tmp_path))
+
+    assert [c.value for c in at.sidebar.caption if "aved" in c.value] == ["Saved"]
