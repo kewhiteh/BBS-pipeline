@@ -52,8 +52,15 @@ change that discovers or fixes any of it. The phase plan and its decisions live 
   **Fetch release** again.
 - RunType and QualityCurrentID pick lists offer only 0 and 1 (plus any value already in
   the profile), not the codes found in the data.
-- Observer tenure tooltips do not say whether "years" means years on that route or in
-  the whole survey. Check `stages/runs.py` before relying on the wording.
+- **Observer tenure tiers are not route-specific (known error, fix pending decision).**
+  Kyle (2026-11-07, from the literature): tenure used as a condition, variable or
+  constraint is **route-specific**. In `stages/runs.py`, `is_first_year` is per
+  (route, observer) and correct, but `obs_total_years`, which sets `tenure_tier` and
+  drives `drop_novice_observers` / `veteran_only`, counts the observer's distinct years
+  on **any** route, over the **whole record including later years**. A first run on a
+  route by someone who later surveys for a decade is tagged "veteran". Until it's fixed,
+  don't use `tenure_tier`, `drop_novice_observers` or `veteran_only` in analyses.
+  `drop_first_year_on_route` and `is_first_year` are fine.
 
 ## Environment notes
 
@@ -63,6 +70,12 @@ change that discovers or fixes any of it. The phase plan and its decisions live 
   ruff and pytest.
 
 ## Open items
+
+- **DECISION (Kyle): how route-specific tenure counts years.** A: years this observer
+  surveyed this route up to and including the run (experience at the time of the
+  survey; recommended). B: total years on this route over the whole record (one fixed
+  tier per observer–route; uses later years). Then fix `compute_observer_tenure`,
+  rename `obs_total_years` to match, and add tests.
 
 - Help text is unreviewed by Kyle. Check the wording, especially the observation source,
   stop layout, and tenure descriptions.
