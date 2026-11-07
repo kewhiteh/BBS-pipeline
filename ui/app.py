@@ -107,6 +107,26 @@ def _inspect(profile_json: str, _stamp: tuple) -> dict[str, Any]:
     )
 
 
+def _pick_list_profile(p: dict[str, Any]) -> RunProfile:
+    """The draft's pick-list inputs (release, observation source, guild file) as a profile.
+
+    Built from those fields alone, so a draft that is briefly invalid elsewhere (say,
+    1995 with the 50_stop source, mid-edit) keeps its pick lists instead of every
+    picker falling back to a text box and losing its selection.
+    """
+    obs, g = p["observations"], p["guilds"]
+    return profile_from_data(
+        {
+            "source": p["source"],
+            "observations": {
+                "source": obs["source"],
+                "lump_subspecies": obs["lump_subspecies"],
+            },
+            "guilds": {"file": g["file"], "unmatched": g["unmatched"]},
+        }
+    )
+
+
 def _value_source(profile: RunProfile) -> tuple[str, tuple]:
     """Only the fields that change the pick lists, plus file stamps, as the cache key."""
     keyed = profile.model_copy(
@@ -708,20 +728,25 @@ def render_editor() -> None:
     st.session_state["input_errors"] = []
 
     st.title("BBS Run Profile")
+    alerts = st.container()  # filled after the tabs, once the draft has been validated
     values: ProfileValues | None = None
     values_error = None
     try:
-        values = _values(*_value_source(profile_from_data(p)))
+        values = _values(*_value_source(_pick_list_profile(p)))
     except Exception as exc:  # no release yet, or an unreadable guild file
         values_error = str(exc)
+    if values_error:
+        alerts.warning(
+            f"Fetch the release or fix the release directory on the Release & Cache tab: "
+            f"{values_error}",
+            title="Pick lists unavailable, using text boxes",
+        )
 
     tabs = st.tabs(
         ["Release & Cache", "Routes & Runs", "Species & Guilds", "Joins & Output", "Inspect & Run"]
     )
     with tabs[0]:
         _source_tab(p)
-        if values_error:
-            st.warning(f"Pick lists unavailable, using text boxes: {values_error}")
     with tabs[1]:
         _routes_runs_tab(p, values)
     with tabs[2]:
@@ -734,11 +759,13 @@ def render_editor() -> None:
         problems = st.session_state["input_errors"]
         if problems:
             st.error("Fix these entries:\n\n" + "\n".join(f"- {m}" for m in problems))
+            alerts.error("\n".join(f"- {m}" for m in problems), title="Fix these entries")
         else:
             try:
                 profile = profile_from_data(p, origin="from the editor")
             except ProfileError as exc:
                 st.error(str(exc))
+                alerts.error(str(exc), title="This profile can't be inspected or run yet")
         _profile_manager(path, profile, saved)
     with tabs[4]:
         stamp = _value_source(profile)[1] if profile is not None else ()

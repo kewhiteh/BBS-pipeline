@@ -199,7 +199,7 @@ def test_without_a_release_lists_fall_back_to_text_boxes(
 
     assert at.text_input(key="ui_states") is not None
     assert any("Fetch release" in b.label for b in at.button)
-    assert any("Pick lists unavailable" in w.value for w in at.warning)
+    assert any("Fetch the release" in w.value for w in at.warning)
 
 
 # --- GUI parity with the CLI ------------------------------------------------------
@@ -351,3 +351,20 @@ def test_profile_list_skips_non_profile_toml_files(
     assert "typo.toml" in offered  # a profile with a mistake can still be opened and fixed
     assert "pyproject.toml" not in offered
     assert "broken.toml" not in offered
+
+
+def test_pick_lists_survive_a_briefly_invalid_profile(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """1995 with the 50_stop source is invalid until the source changes; keep the pickers."""
+    at, _ = _app(tmp_path, monkeypatch, _profile(tmp_path))
+    at.multiselect(key="ui_run_types").set_value([1]).run()
+
+    at.slider(key="ui_years").set_value((1995, 2024)).run()
+    assert any(m.key == "ui_aous" for m in at.multiselect)
+    assert at.multiselect(key="ui_run_types").value == [1]
+    assert any("50_stop" in e.value for e in at.error)  # the reason is shown
+
+    at.selectbox(key="ui_obs_source").set_value("10_stop").run()
+    assert not at.error
+    assert at.multiselect(key="ui_run_types").value == [1]
