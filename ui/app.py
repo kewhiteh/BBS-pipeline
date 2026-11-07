@@ -807,9 +807,26 @@ def _profile_manager(
 ) -> None:
     """Sidebar: current profile, Open, New, Save, Save as, and the resolved TOML."""
     st.markdown(f"**Profile:** `{path}`" if path else "**Profile:** new, not saved yet")
+    with st.expander("What is a profile?", icon=":material/help:"):
+        st.markdown(
+            "A profile is one `.toml` file holding every setting for one extraction: "
+            "the release, which routes and runs, species, extra columns, and the output "
+            "file. Keep one per project, e.g. `examples/wood_thrush_story_map.toml`.\n\n"
+            "- The tabs edit the open profile.\n"
+            "- Your edits are a **draft**. Inspect and Run use the draft right away; "
+            "**Save profile** writes it to the file.\n"
+            "- The command line runs the same file: `uv run bbs run --config "
+            "profile.toml`.\n\n"
+            "The old pipeline took these settings as options every time you ran it; a "
+            "profile keeps them in a file you can save, reopen, share, and rerun."
+        )
     if profile is not None:
         dirty = saved is None or profile != saved
-        st.caption("Unsaved changes" if dirty else "Saved")
+        st.caption(
+            "Unsaved changes: Inspect and Run use them; Save writes them to the file."
+            if dirty
+            else "Saved"
+        )
         if path is not None and st.button(
             "Save profile", key="btn_save", disabled=not dirty, type="primary"
         ):
