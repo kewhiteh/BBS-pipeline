@@ -14,6 +14,8 @@ from __future__ import annotations
 import json
 import os
 import tomllib
+import traceback
+from datetime import datetime
 from pathlib import Path
 from typing import Any
 
@@ -41,6 +43,7 @@ from bbs_pipeline.values import ProfileValues, collect_values
 
 FORMATS = ".parquet .csv .geoparquet .gpkg .fgb .geojson"
 PROFILE_DIRS: tuple[str, ...] = (".", "examples", "profiles")
+ERROR_LOG = Path("logs") / "ui_errors.log"
 
 
 # --- helpers -------------------------------------------------------------------------
@@ -169,6 +172,24 @@ def _pick(
     )
 
 
+def _log_failure(action: str, exc: BaseException) -> None:
+    """Append the full traceback to ERROR_LOG, so nothing has to be copied off the screen."""
+    ERROR_LOG.parent.mkdir(parents=True, exist_ok=True)
+    stamp = datetime.now().isoformat(timespec="seconds")
+    trace = "".join(traceback.format_exception(exc))
+    with ERROR_LOG.open("a", encoding="utf-8") as log:
+        log.write(f"--- {stamp} {action} (profile: {st.session_state.get('profile_path')})\n")
+        log.write(trace + "\n")
+
+
+def _show_failure(action: str, exc: BaseException) -> None:
+    """An error box with the message, the traceback on demand, and where it was logged."""
+    _log_failure(action, exc)
+    st.error(f"{exc}\n\nFull details saved to `{ERROR_LOG}`.", title=f"{action} failed")
+    with st.expander("Technical details"):
+        st.code("".join(traceback.format_exception(exc)), language=None)
+
+
 def _draft() -> dict[str, Any]:
     return st.session_state["draft"]
 
@@ -236,10 +257,14 @@ def _source_tab(p: dict[str, Any]) -> None:
     if not (raw_dir / RELEASE_JSON).exists():
         st.info(f"No {RELEASE_JSON} in {raw_dir}: fetch the release to get pick lists.")
         if st.button("Fetch release", key="btn_fetch"):
-            with st.spinner("Downloading from ScienceBase..."):
-                info = fetch_release(src["release"], raw_dir)
-            st.success(f"Fetched {info.title}")
-            st.rerun()
+            try:
+                with st.spinner("Downloading from ScienceBase..."):
+                    info = fetch_release(src["release"], raw_dir)
+            except Exception as exc:  # shown and logged, not swallowed
+                _show_failure("Fetch release", exc)
+            else:
+                st.success(f"Fetched {info.title}")
+                st.rerun()
     manifest = Path(src["cache_dir"]) / CACHE_MANIFEST
     if manifest.is_file():
         data = json.loads(manifest.read_text(encoding="utf-8"))
@@ -618,8 +643,8 @@ def _inspect_run_tab(profile: RunProfile | None, stamp: tuple) -> None:
                 st.session_state["last_result"] = run_profile(profile).model_dump(mode="json")
         elif inspect_clicked or live:
             st.session_state["last_result"] = _inspect(profile.model_dump_json(), stamp)
-    except Exception as exc:  # shown to the user, not swallowed
-        st.error(f"{'Run' if run_clicked else 'Inspect'} failed: {exc}")
+    except Exception as exc:  # shown and logged, not swallowed
+        _show_failure("Run" if run_clicked else "Inspect", exc)
         return
     if "last_result" in st.session_state:
         _show_result(st.session_state["last_result"])
@@ -735,6 +760,9 @@ def render_editor() -> None:
         values = _values(*_value_source(_pick_list_profile(p)))
     except Exception as exc:  # no release yet, or an unreadable guild file
         values_error = str(exc)
+        if st.session_state.get("logged_values_error") != values_error:  # once, not per rerun
+            st.session_state["logged_values_error"] = values_error
+            _log_failure("Reading pick lists", exc)
     if values_error:
         alerts.warning(
             f"Fetch the release or fix the release directory on the Release & Cache tab: "
@@ -772,4 +800,8 @@ def render_editor() -> None:
         _inspect_run_tab(profile, stamp)
 
 
-render_editor()
+try:
+    render_editor()
+except Exception as exc:  # st.rerun/st.stop are BaseException, so they pass through
+    _log_failure("Unexpected error", exc)
+    raise  # Streamlit still shows it on the page

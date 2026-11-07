@@ -46,3 +46,6 @@ Thumbs.db
 *.swp
 *~
 *Zone.Identifier
+
+# Editor error log
+logs/

@@ -368,3 +368,17 @@ def test_pick_lists_survive_a_briefly_invalid_profile(
     at.selectbox(key="ui_obs_source").set_value("10_stop").run()
     assert not at.error
     assert at.multiselect(key="ui_run_types").value == [1]
+
+
+def test_failures_are_logged_with_their_traceback(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    profile = _profile(tmp_path, joins={"weather": ["ObsN"], "observer": ["ObsN"]})
+    at, _ = _app(tmp_path, monkeypatch, profile)
+    monkeypatch.chdir(tmp_path)
+
+    at.button(key="btn_inspect").click().run()
+
+    assert any("logs/ui_errors.log" in e.value for e in at.error)
+    log = (tmp_path / "logs" / "ui_errors.log").read_text(encoding="utf-8")
+    assert "Inspect" in log and "Traceback" in log and "requested from both" in log
