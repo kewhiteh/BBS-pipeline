@@ -472,3 +472,39 @@ def test_opening_a_saved_profile_shows_no_unsaved_changes(
     at, _ = _app(tmp_path, monkeypatch, _profile(tmp_path))
 
     assert [c.value for c in at.sidebar.caption if "aved" in c.value] == ["Saved"]
+
+
+# --- getting started ----------------------------------------------------------------
+
+
+def test_start_from_an_example_makes_an_unsaved_copy(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    example = ROOT / "examples" / "wood_thrush_story_map.toml"
+    before = example.read_text(encoding="utf-8")
+    at, _ = _app(tmp_path, monkeypatch, _profile(tmp_path))
+
+    picker = at.selectbox(key="guide_example_choice")
+    assert any("wood_thrush_story_map: Wood Thrush story map" in o for o in picker.options)
+    picker.set_value("examples/wood_thrush_story_map.toml").run()
+    at.button(key="btn_guide_example").click().run()
+
+    assert at.session_state["profile_path"] is None  # new, unsaved: Save as to keep it
+    route_ids = at.session_state["draft"]["routes"]["route_ids"]
+    assert route_ids == load_profile(example).routes.route_ids
+    assert example.read_text(encoding="utf-8") == before
+
+
+def test_getting_started_ticks_steps_as_they_are_done(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    at, _ = _app(tmp_path, monkeypatch, _profile(tmp_path))
+    label = next(e.label for e in at.expander if e.label.startswith("Getting started"))
+    # open + fetched + surveys + output are done; where, species, inspect, run are not
+    assert "(5 of 9 done)" in label  # the profile is also saved
+
+    at.multiselect(key="ui_states").set_value([63]).run()
+    at.button(key="btn_inspect").click().run()
+
+    label = next(e.label for e in at.expander if e.label.startswith("Getting started"))
+    assert "(6 of 9 done)" in label  # where and inspect done, but now unsaved

@@ -805,6 +805,7 @@ def _inspect_run_tab(profile: RunProfile | None, stamp: tuple) -> None:
         if run_clicked:
             with st.spinner("Running..."):
                 st.session_state["last_result"] = run_profile(profile).model_dump(mode="json")
+            st.session_state["ran"] = True
         elif inspect_clicked or live:
             st.session_state["last_result"] = _inspect(profile.model_dump_json(), stamp)
     except Exception as exc:  # shown and logged, not swallowed
@@ -831,11 +832,48 @@ def _found_profiles() -> list[str]:
     return sorted(found)
 
 
+EXAMPLES_DIR = Path("examples")
+
+
+def _example_profiles() -> dict[str, str]:
+    """{path: description} for example profiles; the description is the first comment line."""
+    examples: dict[str, str] = {}
+    for path in sorted(EXAMPLES_DIR.glob("*.toml")):
+        if not _looks_like_profile(path):
+            continue
+        first = next(
+            (ln for ln in path.read_text(encoding="utf-8").splitlines() if ln.startswith("#")),
+            "",
+        )
+        examples[str(path)] = first.lstrip("# ").strip() or path.stem
+    return examples
+
+
+def _example_picker(key: str) -> None:
+    """Start a new, unsaved draft from an example (the example file is never overwritten)."""
+    examples = _example_profiles()
+    if not examples:
+        st.caption(f"No example profiles in `{EXAMPLES_DIR}/`.")
+        return
+    with st.container(horizontal=True, vertical_alignment="bottom"):
+        choice = st.selectbox(
+            "Start from an example",
+            list(examples),
+            format_func=lambda e: f"{Path(e).stem}: {examples[e]}",
+            key=f"{key}_choice",
+            help="Copies the example into a new, unsaved profile. Use Save as to keep it.",
+        )
+        if st.button("Use example", key=f"btn_{key}", icon=":material/content_copy:"):
+            _switch_to(None, load_profile(Path(choice)).model_dump(mode="json"))
+
+
 def _switch_to(path: Path | None, draft: dict[str, Any]) -> None:
     """Make ``path`` (None = a new, unsaved profile) current and reset every field."""
     for key in [k for k in st.session_state if k.startswith(("ui_", "sb_"))]:
         del st.session_state[key]
     st.session_state.pop("last_result", None)
+    st.session_state.pop("ran", None)
+    st.session_state["started"] = True  # opened, new or from an example: step 1 is done
     st.session_state["profile_path"] = str(path) if path is not None else None
     st.session_state["draft"] = draft
     st.rerun()
@@ -905,6 +943,7 @@ def _profile_manager(
                 _switch_to(target_path, opened.model_dump(mode="json"))
         if st.button("New profile (defaults)", key="btn_new"):
             _switch_to(None, RunProfile().model_dump(mode="json"))
+        _example_picker("sb_example")
 
     if profile is not None:
         with st.expander("Profile TOML (what `bbs validate` prints)"):
@@ -917,6 +956,69 @@ def _profile_manager(
                 mime="application/toml",
                 key="btn_download_toml",
             )
+
+
+# --- getting started -----------------------------------------------------------------
+
+
+def _getting_started(
+    p: dict[str, Any], path: Path | None, profile: RunProfile | None, saved: RunProfile | None
+) -> None:
+    """A checklist of the steps from nothing to an output file, ticked from the draft."""
+    rt, rn, sp, out = p["routes"], p["runs"], p["species"], p["output"]
+    fetched = (Path(p["source"]["raw_dir"]) / RELEASE_JSON).exists()
+    where = rt["states"] or rt["bcrs"] or rt["strata"] or rt["route_ids"] or rt["boundary"]
+    which = sp["aous"] or sp["common_names"] or sp["families"] or sp["orders"]
+    inspected = "last_result" in st.session_state
+    is_saved = path is not None and profile is not None and profile == saved
+    steps = [
+        (
+            (path is not None and path.exists()) or bool(st.session_state.get("started")),
+            "Open a profile",
+            "Sidebar **Open / new**, or start from an example below. A profile is one file "
+            "holding every setting.",
+        ),
+        (
+            fetched,
+            "Get the data",
+            "**Release & Cache** tab: **Fetch release** (once). Pick lists need it.",
+        ),
+        (
+            bool(where),
+            "Choose where",
+            "**Routes & Runs** tab: states, BCRs, strata, routes or a boundary. Optional: "
+            "empty keeps every route.",
+        ),
+        (
+            True,
+            "Choose which surveys",
+            f"**Routes & Runs** tab: years {rn['start_year']}–{rn['end_year']}, RunType "
+            f"{rn['run_types'] or 'any'}, QualityCurrentID {rn['quality_current_ids'] or 'any'}.",
+        ),
+        (
+            bool(which),
+            "Choose species",
+            "**Species & Guilds** tab. Optional: empty keeps every species.",
+        ),
+        (True, "Choose the output file", f"**Joins & Output** tab: now `{out['path']}`."),
+        (
+            inspected,
+            "Inspect",
+            "**Inspect & Run** tab: counts after each filter and a preview; writes nothing.",
+        ),
+        (is_saved, "Save the profile", "Sidebar **Save profile** or **Save as**."),
+        (bool(st.session_state.get("ran")), "Run", "**Inspect & Run** tab: writes the file."),
+    ]
+    done = sum(ok for ok, _, _ in steps)
+    with st.expander(
+        f"Getting started ({done} of {len(steps)} done)",
+        expanded=not is_saved,
+        icon=":material/checklist:",
+    ):
+        for number, (ok, title, how) in enumerate(steps, start=1):
+            mark = ":green[:material/check_circle:]" if ok else ":material/radio_button_unchecked:"
+            st.markdown(f"{mark} **{number}. {title}.** {how}")
+        _example_picker("guide_example")
 
 
 # --- page ----------------------------------------------------------------------------
@@ -934,6 +1036,7 @@ def render_editor() -> None:
     st.session_state["input_errors"] = []
 
     st.title("BBS Run Profile")
+    guide = st.container()  # filled last, once inspect/run state for this rerun is known
     alerts = st.container()  # filled after the tabs, once the draft has been validated
     values: ProfileValues | None = None
     values_error = None
@@ -979,6 +1082,8 @@ def render_editor() -> None:
     with tabs[4]:
         stamp = _value_source(profile)[1] if profile is not None else ()
         _inspect_run_tab(profile, stamp)
+    with guide:
+        _getting_started(p, path, profile, saved)
 
 
 try:
