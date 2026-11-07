@@ -35,7 +35,14 @@ change that discovers or fixes any of it. The phase plan and its decisions live 
   32119 (NC State Plane, meters), 3857, plus "Other" for any EPSG code. The v2 GUI
   offered 4326, 5070, 3857 and `nc_state_plane`. The v3 config takes EPSG codes only,
   so NC State Plane is listed as EPSG:32119. The projection, layer name and overlays are
-  shown only for GIS formats, where they're used.
+  shown only for GIS formats, where they're used. Kyle approved this list on 2026-11-07.
+- **Saved projections.** With "Other", the editor names the typed code from pyproj
+  (e.g. `EPSG:26917: NAD83 / UTM zone 17N, metre`), flags unknown codes, and offers
+  **Add to my list**. Added codes go in `projections.toml` (`[projections]`
+  `"EPSG:26917" = "label"`) at the project root, read relative to where Streamlit is
+  started, and appear after the built-ins in every profile. The file is not
+  git-ignored: commit it to share the list, or leave it local. Remove entries by editing
+  it.
 
 - **Observer experience matches USGS trend analysis: first year on a route, or not**
   (Kyle, 2026-11-07). `runs.drop_observer_first_year = true` drops each observer's
@@ -79,8 +86,6 @@ change that discovers or fixes any of it. The phase plan and its decisions live 
 
 - Help text is unreviewed by Kyle. Check the wording, especially the observation source,
   stop layout, and first-year descriptions.
-- Projection list unreviewed by Kyle (`CRS_CHOICES` in `ui/app.py`): add or drop
-  choices?
 - The UI has no in-app walkthrough or example profile picker for first-time users beyond
   tooltips, tab captions and the sidebar "What is a profile?" note.
 - Overlays are still a `name=path` text box. A file picker with a column chooser would
