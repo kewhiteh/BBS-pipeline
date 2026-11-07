@@ -20,6 +20,7 @@ from pathlib import Path
 from typing import Any
 
 import polars as pl
+import pyproj
 import streamlit as st
 
 from bbs_pipeline.cli import STAGE_LABELS
@@ -543,6 +544,8 @@ CRS_CHOICES: dict[str, str] = {
     "EPSG:3857": "Web Mercator (web tile maps; distorts area)",
 }
 OTHER_CRS = "Other (enter an EPSG code)"
+# Projections added with "Add to my list"; shown in every profile after the built-ins
+PROJECTIONS_FILE = Path("projections.toml")
 
 
 def _join_picker(p: dict[str, Any], table: str, options: list[str] | None) -> None:
@@ -607,27 +610,84 @@ def _output_path_picker(out: dict[str, Any]) -> str:
     return ext
 
 
+def _saved_projections() -> dict[str, str]:
+    """{code: label} from PROJECTIONS_FILE's [projections] table; {} when there is none."""
+    if not PROJECTIONS_FILE.is_file():
+        return {}
+    try:
+        data = tomllib.loads(PROJECTIONS_FILE.read_text(encoding="utf-8"))
+    except tomllib.TOMLDecodeError as exc:
+        st.error(f"{PROJECTIONS_FILE} is not valid TOML, so saved projections are not shown: {exc}")
+        return {}
+    table = data.get("projections", {})
+    return {str(code): str(label) for code, label in table.items()}
+
+
+def _save_projection(code: str, label: str) -> None:
+    saved = {**_saved_projections(), code: label}
+    lines = [
+        '# Projections added in the editor with "Add to my list". Edit or delete freely.',
+        "[projections]",
+        *(f"{json.dumps(c)} = {json.dumps(text, ensure_ascii=False)}" for c, text in saved.items()),
+    ]
+    PROJECTIONS_FILE.write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+
+def _crs_name(code: str) -> str | None:
+    """The official name of an EPSG code (e.g. 'NAD83 / UTM zone 17N, metre'), or None."""
+    try:
+        crs = pyproj.CRS.from_user_input(code)
+    except pyproj.exceptions.CRSError:
+        return None
+    unit = crs.axis_info[0].unit_name if crs.axis_info else ""
+    return f"{crs.name}, {unit}" if unit else crs.name
+
+
 def _crs_picker(out: dict[str, Any]) -> None:
     current = out["crs"]
-    options = [*CRS_CHOICES, OTHER_CRS]
+    choices = {**CRS_CHOICES, **_saved_projections()}
+    options = [*choices, OTHER_CRS]
+    if "pending_crs" in st.session_state:  # just added: select it before the list is drawn
+        st.session_state["ui_crs_choice"] = st.session_state.pop("pending_crs")
     choice = st.selectbox(
         "Map coordinate system (projection)",
         options,
-        options.index(current) if current in CRS_CHOICES else len(options) - 1,
-        format_func=lambda c: c if c == OTHER_CRS else f"{CRS_CHOICES[c]} · {c}",
+        options.index(current) if current in choices else len(options) - 1,
+        format_func=lambda c: c if c == OTHER_CRS else f"{choices[c]} · {c}",
         key="ui_crs_choice",
         help="How route locations are stored in the GIS file. Pick latitude/longitude "
-        "unless your analysis needs meters (e.g. Albers for areas and distances).",
+        "unless your analysis needs meters (e.g. Albers for areas and distances). "
+        'Codes you add with "Add to my list" appear here in every profile.',
     )
-    if choice == OTHER_CRS:
-        out["crs"] = st.text_input(
-            "EPSG code",
-            current,
-            key="ui_crs",
-            help="Look one up at epsg.io, e.g. EPSG:26917 (UTM zone 17N).",
-        )
-    else:
+    if choice != OTHER_CRS:
         out["crs"] = choice
+        return
+    out["crs"] = st.text_input(
+        "EPSG code",
+        current,
+        key="ui_crs",
+        help="Look one up at epsg.io, e.g. EPSG:26917 (UTM zone 17N).",
+    )
+    code = out["crs"].strip().upper()
+    if code.isdigit():
+        code = f"EPSG:{code}"
+    name = _crs_name(code)
+    if name is None:
+        st.caption(f"`{out['crs']}` is not a known EPSG code.")
+        return
+    st.caption(f"{code}: {name}")
+    with st.container(horizontal=True, vertical_alignment="bottom"):
+        label = st.text_input(
+            "Name in my list",
+            name,
+            key=f"ui_crs_label_{code}",  # per code, so a new code gets its own name
+            help="How it will appear in the list.",
+        )
+        if st.button("Add to my list", key="btn_add_crs", icon=":material/bookmark_add:"):
+            _save_projection(code, label.strip() or name)
+            st.toast(f"Added {code} to {PROJECTIONS_FILE}")
+            st.session_state["pending_crs"] = code
+            st.rerun()
 
 
 def _joins_output_tab(p: dict[str, Any], v: ProfileValues | None) -> None:

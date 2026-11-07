@@ -429,3 +429,37 @@ def test_observer_first_year_is_one_checkbox(
     at.sidebar.button(key="btn_save").click().run()
 
     assert load_profile(path).runs.drop_observer_first_year is True
+
+
+def test_other_projection_can_be_added_to_the_list(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    gpkg = {"path": str(tmp_path / "out" / "o.gpkg")}
+    at, path = _app(tmp_path, monkeypatch, _profile(tmp_path, output=gpkg))
+    monkeypatch.chdir(tmp_path)
+
+    at.selectbox(key="ui_crs_choice").set_value("Other (enter an EPSG code)").run()
+    at.text_input(key="ui_crs").set_value("26917").run()
+    assert any("NAD83 / UTM zone 17N" in c.value for c in at.caption)
+    at.button(key="btn_add_crs").click().run()
+
+    saved = (tmp_path / "projections.toml").read_text(encoding="utf-8")
+    assert '"EPSG:26917" = "NAD83 / UTM zone 17N, metre"' in saved
+    choice = at.selectbox(key="ui_crs_choice")
+    assert choice.value == "EPSG:26917"
+    assert "NAD83 / UTM zone 17N, metre · EPSG:26917" in choice.options
+    at.sidebar.button(key="btn_save").click().run()
+    assert load_profile(path).output.crs == "EPSG:26917"
+
+
+def test_unknown_projection_code_is_flagged(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    gpkg = {"path": str(tmp_path / "out" / "o.gpkg")}
+    at, _ = _app(tmp_path, monkeypatch, _profile(tmp_path, output=gpkg))
+
+    at.selectbox(key="ui_crs_choice").set_value("Other (enter an EPSG code)").run()
+    at.text_input(key="ui_crs").set_value("EPSG:999999").run()
+
+    assert any("not a known EPSG code" in c.value for c in at.caption)
+    assert not any(b.key == "btn_add_crs" for b in at.button)
