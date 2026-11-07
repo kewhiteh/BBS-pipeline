@@ -10,7 +10,15 @@ from enum import StrEnum
 from pathlib import Path
 from typing import Any, Literal
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    SerializerFunctionWrapHandler,
+    field_validator,
+    model_serializer,
+    model_validator,
+)
 
 JOIN_TABLES: tuple[str, ...] = ("routes", "weather", "observer", "vehicle", "species", "guilds")
 
@@ -75,6 +83,30 @@ FORMAT_BY_SUFFIX: dict[str, ExportFormat] = {
 VECTOR_FORMATS: frozenset[ExportFormat] = frozenset(
     {ExportFormat.GEOPARQUET, ExportFormat.GPKG, ExportFormat.FLATGEOBUF, ExportFormat.GEOJSON}
 )
+
+
+class OverlaySpec(BaseModel):
+    """A polygon file whose ``column`` labels each route it contains (``None`` = automatic)."""
+
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    file: Path
+    column: str | None = None
+
+    @model_serializer(mode="wrap")
+    def _omit_automatic_column(self, handler: SerializerFunctionWrapHandler) -> dict[str, Any]:
+        data = handler(self)
+        return {k: v for k, v in data.items() if v is not None}
+
+
+def normalize_overlays(value: Any) -> Any:
+    """Accept ``name = "file.gpkg"`` (automatic column) as well as ``{file, column}``."""
+    if not isinstance(value, dict):
+        return value
+    return {
+        name: {"file": spec} if isinstance(spec, str | Path) else spec
+        for name, spec in value.items()
+    }
 
 
 def normalize_aou(value: Any) -> str:
@@ -292,10 +324,16 @@ class OutputContract(BaseModel):
     path: Path = Field(default=Path("output/bbs_observations.parquet"))
     crs: str = Field(default="EPSG:4326", description="CRS for vector formats.")
     layer_name: str = Field(default="bbs_observations", description="GeoPackage layer name.")
-    overlays: dict[str, Path] = Field(
+    overlays: dict[str, OverlaySpec] = Field(
         default_factory=dict,
         description="Named polygon layers whose attribute is attached to each route (vector).",
     )
+
+    @field_validator("overlays", mode="before")
+    @classmethod
+    def _overlays(cls, v: Any) -> Any:
+        return normalize_overlays(v)
+
     manifest: bool = Field(default=True, description="Write <path>.manifest.json.")
     shape: Literal["long", "wide"] = Field(
         default="long",

@@ -18,6 +18,7 @@ from bbs_pipeline.contracts import (
     FORMAT_BY_SUFFIX,
     GuildSettingsContract,
     OutputContract,
+    OverlaySpec,
     PipelineConfigBundle,
     ProtocolConfigContract,
     SpeciesSelectionContract,
@@ -25,6 +26,7 @@ from bbs_pipeline.contracts import (
     TemporalRoutingMode,
     normalize_aou,
     normalize_epsg,
+    normalize_overlays,
 )
 
 SECTION_ORDER: tuple[str, ...] = (
@@ -209,7 +211,7 @@ class OutputSection(_Section):
     path: Path = Path("output/bbs_observations.parquet")
     crs: str = "EPSG:4326"
     layer_name: str = "bbs_observations"
-    overlays: dict[str, Path] = Field(default_factory=dict)
+    overlays: dict[str, OverlaySpec] = Field(default_factory=dict)
     manifest: bool = True
     shape: Literal["long", "wide"] = "long"
     wide_value: Literal["route_total", "rolling_mean"] = "route_total"
@@ -218,6 +220,11 @@ class OutputSection(_Section):
     @classmethod
     def _crs(cls, v: Any) -> str:
         return normalize_epsg(v)
+
+    @field_validator("overlays", mode="before")
+    @classmethod
+    def _overlays(cls, v: Any) -> Any:
+        return normalize_overlays(v)
 
     @field_validator("path")
     @classmethod

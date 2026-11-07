@@ -67,6 +67,15 @@ change that discovers or fixes any of it. The phase plan and its decisions live 
   anything to do.
 - **Fixed 2026-11-07:** a profile without a guild file read "Unsaved changes" right
   after opening, because the editor cleared the default `joins.guilds = ["*"]` to `[]`.
+- **Overlay and boundary files** (Kyle asked for a file picker, 2026-11-07). Overlays
+  are cards: name, polygon file, label column. The file list holds GIS files found in
+  the project, "Type a path…", and an upload (GeoPackage, GeoJSON, FlatGeobuf,
+  GeoParquet, zipped shapefile) saved to `data/gis/` (git-ignored, so uploads stay
+  local). The profile stores `overlays = { basin = { file = "...", column = "HUC4" } }`; a
+  plain path still works and means an automatic column (the first of `name, Name, NAME,
+  id, ID, basin, BASIN, BCR, bcr`, else the first attribute). A column the file lacks
+  fails with the file's columns. Zip uploads are refused if a member would unpack outside
+  its folder.
 
 ## Known limitations / workarounds
 
@@ -74,10 +83,12 @@ change that discovers or fixes any of it. The phase plan and its decisions live 
   `ui/app.py` but keeps the `bbs_pipeline` modules and cached pick lists it already
   loaded, so new app code can crash against old library code (a full red error page).
   Ctrl+C, then `uv run streamlit run ui/app.py`.
-- Overlays label each polygon from the first of `name, Name, NAME, id, ID, basin, BASIN,
-  BCR, bcr` it has, else its first attribute column (`spatial/geometry.py`). There is no
-  way yet to choose the column. Overlays match routes by **intersection** with the start
-  point.
+- Overlays match routes by **intersection** with the start point. A start point on a
+  shared border, or in overlapping polygons, takes the **first** matching polygon's label;
+  the others are not reported.
+- The GIS file list searches the project from where Streamlit is started, skipping
+  `.git`, `.venv`, `output/`, `tests/`, `data/raw` and `data/sanitized_cache`, and stops
+  at 300 files. Files elsewhere: use "Type a path…".
 - Code names are read from `source.raw_dir`, not the cache. A setup that has only a
   cache (raw files deleted) shows bare codes. Workaround: keep the release files, or run
   **Fetch release** again.
@@ -95,8 +106,6 @@ change that discovers or fixes any of it. The phase plan and its decisions live 
 
 - Help text is unreviewed by Kyle. Check the wording, especially the observation source,
   stop layout, and first-year descriptions.
-- Overlays are still a `name=path` text box. A file picker with a column chooser would
-  be friendlier.
 
 ## How to reproduce key checks
 
