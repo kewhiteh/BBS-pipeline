@@ -124,23 +124,23 @@ def apply_joins(
 RUN_KEY_COLUMNS: frozenset[str] = frozenset(
     {"RouteDataID", "route_id", "CountryNum", "StateNum", "Route", "Year"}
 )
-OBSERVER_COLUMNS: list[str] = ["ObsN", "obs_total_years", "is_first_year", "tenure_tier"]
+OBSERVER_COLUMNS: list[str] = ["ObsN", "is_first_year"]
 
 
 def join_sources(
     routes_lf: pl.LazyFrame,
-    tenure_lf: pl.LazyFrame,
+    weather_lf: pl.LazyFrame,
     target_species_lf: pl.LazyFrame,
     tables: dict[str, pl.LazyFrame | pl.DataFrame],
     guild_join_df: pl.DataFrame | None,
     guild_traits: list[str],
 ) -> dict[str, JoinSource | None]:
     """The joinable tables and the columns each offers."""
-    weather = tenure_lf.with_columns(pl.col("RouteDataID").cast(pl.Int64))
+    weather = weather_lf.with_columns(pl.col("RouteDataID").cast(pl.Int64))
     weather_cols = [
         c
         for c in weather.collect_schema().names()
-        if c not in RUN_KEY_COLUMNS and c not in OBSERVER_COLUMNS and c != "route_obs_year_rank"
+        if c not in RUN_KEY_COLUMNS and c not in OBSERVER_COLUMNS
     ]
     return {
         "routes": JoinSource(

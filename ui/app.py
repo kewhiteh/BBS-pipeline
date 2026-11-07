@@ -34,7 +34,7 @@ from bbs_pipeline.config import (
     profile_from_data,
     save_profile,
 )
-from bbs_pipeline.contracts import JOIN_TABLES, ObserverTenureMode
+from bbs_pipeline.contracts import JOIN_TABLES
 from bbs_pipeline.pipeline import run_profile
 from bbs_pipeline.sources.cache import CACHE_MANIFEST
 from bbs_pipeline.sources.regions import resolve_states
@@ -391,35 +391,13 @@ def _routes_runs_tab(p: dict[str, Any], v: ProfileValues | None) -> None:
         help="Drop routes with a surviving run in less than this share of the non-cancelled "
         "years in range. 0 = keep all; 0.8 = at least 80% of years.",
     )
-    tenure = [m.value for m in ObserverTenureMode]
-    rn["observer_tenure"] = st.selectbox(
-        "Observer tenure",
-        tenure,
-        tenure.index(rn["observer_tenure"]),
-        key="ui_observer_tenure",
-        help="include_all keeps every run. The others drop each observer's first year on a "
-        "route, drop novices, or keep only veterans (thresholds below).",
-    )
-    c1, c2 = st.columns(2)
-    rn["observer_min_years"] = int(
-        c1.number_input(
-            "Novice below (years)",
-            1,
-            60,
-            rn["observer_min_years"],
-            key="ui_novice",
-            help="Observers with fewer years than this count as novices.",
-        )
-    )
-    rn["veteran_min_years"] = int(
-        c2.number_input(
-            "Veteran from (years)",
-            1,
-            60,
-            rn["veteran_min_years"],
-            key="ui_veteran",
-            help="Observers with at least this many years count as veterans.",
-        )
+    rn["drop_observer_first_year"] = st.checkbox(
+        "Drop each observer's first year on a route",
+        rn["drop_observer_first_year"],
+        key="ui_drop_first_year",
+        help="Counts are lower in an observer's first year on a route (the start-up "
+        "effect USGS trend analyses account for). Tick to leave those runs out, or keep "
+        "them and add the is_first_year column (Joins & Output) to model it.",
     )
 
 
@@ -538,7 +516,7 @@ JOIN_TABLE_HELP: dict[str, str] = {
     "routes": "Route details: name, start coordinates, stratum, BCR.",
     "weather": "Conditions on each run: temperature, wind, sky, times, RunType, "
     "QualityCurrentID, observer id.",
-    "observer": "Observer experience: years surveyed, first-year flag, tenure tier.",
+    "observer": "Observer id (ObsN) and is_first_year: the observer's first year on the route.",
     "vehicle": "Cars and noise counted during each run.",
     "species": "Taxonomy: common and scientific names, family, order.",
     "guilds": "Traits from your guild file.",

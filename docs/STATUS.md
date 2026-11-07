@@ -37,6 +37,21 @@ change that discovers or fixes any of it. The phase plan and its decisions live 
   so NC State Plane is listed as EPSG:32119. The projection, layer name and overlays are
   shown only for GIS formats, where they're used.
 
+- **Observer experience matches USGS trend analysis: first year on a route, or not**
+  (Kyle, 2026-11-07). `runs.drop_observer_first_year = true` drops each observer's
+  first year on a route; the `is_first_year` and `ObsN` columns (joins.observer) let an
+  analysis model the start-up effect and an observer-route effect instead. A run is a
+  first year when it falls in the earliest year that ObsN surveyed that route anywhere in
+  the release (route-specific; earlier years count even before `start_year`). The
+  novice/veteran tiers (`tenure_tier`, `obs_total_years`, `observer_min_years`,
+  `veteran_min_years`, `drop_novice_observers`, `veteran_only`) were removed: they
+  counted years on any route, including years after the run. Long-running BBS work
+  models only the start-up effect (Kendall, Peterjohn & Sauer 1996, Auk 113:823; Link &
+  Sauer 2002; Sauer & Link 2011; Farmer et al. 2014 notes length of service isn't
+  modelled). Old `observer_tenure` keys fail with a message saying what to use instead.
+  The golden 50-stop expected CSV lost only its `tenure_tier` column; every other value
+  is unchanged.
+
 ## Known limitations / workarounds
 
 - **Restart Streamlit after pulling or switching branches.** A running server reruns
@@ -52,15 +67,6 @@ change that discovers or fixes any of it. The phase plan and its decisions live 
   **Fetch release** again.
 - RunType and QualityCurrentID pick lists offer only 0 and 1 (plus any value already in
   the profile), not the codes found in the data.
-- **Observer tenure tiers are not route-specific (known error, fix pending decision).**
-  Kyle (2026-11-07, from the literature): tenure used as a condition, variable or
-  constraint is **route-specific**. In `stages/runs.py`, `is_first_year` is per
-  (route, observer) and correct, but `obs_total_years`, which sets `tenure_tier` and
-  drives `drop_novice_observers` / `veteran_only`, counts the observer's distinct years
-  on **any** route, over the **whole record including later years**. A first run on a
-  route by someone who later surveys for a decade is tagged "veteran". Until it's fixed,
-  don't use `tenure_tier`, `drop_novice_observers` or `veteran_only` in analyses.
-  `drop_first_year_on_route` and `is_first_year` are fine.
 
 ## Environment notes
 
@@ -71,23 +77,9 @@ change that discovers or fixes any of it. The phase plan and its decisions live 
 
 ## Open items
 
-- **DECISION (Kyle): how route-specific tenure counts years.** Kyle's rules
-  (2026-11-07): count per route; the first year an observer appears for a route in the
-  release is year 1; years after `runs.end_year` don't count. Defaults proposed: years
-  before `start_year` count (started 1990 → the 1995 run is year 6); distinct years, not
-  runs; runs dropped by RunType/quality filters still count as experience.
-  **Still open:** a running count as of each run (1995 = 1 … 2000 = 6; recommended), or
-  one total through `end_year` per observer–route (every run = 6, so a first-year run can
-  be tagged veteran). Research: USGS trend models use an observer–route effect plus a
-  first-year ("start-up") indicator, all per route (Kendall, Peterjohn & Sauer 1996, Auk
-  113:823; Link & Sauer 2002; Sauer & Link 2011). Length of service as a running count
-  is rare for the North American BBS (Farmer et al. 2014 notes USGS doesn't model it);
-  Eglington et al. 2010 (Bird Study 57:141) did it for the English BBS. Checked from
-  abstracts and summaries, not full texts. Then fix `compute_observer_tenure`, rename
-  `obs_total_years` to match, and add tests.
 
 - Help text is unreviewed by Kyle. Check the wording, especially the observation source,
-  stop layout, and tenure descriptions.
+  stop layout, and first-year descriptions.
 - The UI has no in-app walkthrough or example profile picker for first-time users beyond
   tooltips, tab captions and the sidebar "What is a profile?" note.
 - Overlays are still a `name=path` text box. A file picker with a column chooser would

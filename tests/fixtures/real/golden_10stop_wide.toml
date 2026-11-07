@@ -1,4 +1,4 @@
-# Golden test: 10-stop data, wide output, state filter by abbreviation, tenure filter,
+# Golden test: 10-stop data, wide output, state filter by abbreviation, first-year filter,
 # guild filter. Paths are set by tests/test_golden.py.
 [routes]
 states = ["NC"]
@@ -11,7 +11,7 @@ end_year = 2024
 run_types = [1]
 quality_current_ids = [1]
 min_continuity = 0.8
-observer_tenure = "drop_first_year_on_route"
+drop_observer_first_year = true
 
 [observations]
 source = "10_stop"

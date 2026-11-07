@@ -1,4 +1,4 @@
-"""Runs: observer tenure, RunType/Quality/year filters, continuity, one run per route-year."""
+"""Runs: observer first year, RunType/Quality/year filters, continuity, one run per route-year."""
 
 from __future__ import annotations
 
@@ -6,53 +6,30 @@ from dataclasses import dataclass
 
 import polars as pl
 
-from bbs_pipeline.contracts import ObserverTenureMode, ProtocolConfigContract
+from bbs_pipeline.contracts import ProtocolConfigContract
 from bbs_pipeline.stages.common import match_return_type, normalize_canonical_keys, to_lazy
 from bbs_pipeline.stages.routes import RouteSelection
 
 
-def compute_observer_tenure[FrameT: (pl.DataFrame, pl.LazyFrame)](
+def flag_observer_first_year[FrameT: (pl.DataFrame, pl.LazyFrame)](
     weather: FrameT,
     protocol: ProtocolConfigContract,
 ) -> FrameT:
-    """Compute observer tenure metrics across `weather` and apply tenure filter policy."""
-    lf = to_lazy(normalize_canonical_keys(weather))
-    schema_names = set(lf.collect_schema().names())
+    """Add ``is_first_year`` and, if asked, drop those runs.
 
-    if "ObsN" not in schema_names:
+    A run is a first year when it is in the earliest year the observer (ObsN) surveyed
+    that route anywhere in the release: the start-up effect USGS trend analyses model
+    (Kendall, Peterjohn & Sauer 1996; Link & Sauer 2002). Experience is route-specific.
+    """
+    lf = to_lazy(normalize_canonical_keys(weather))
+    if "ObsN" not in lf.collect_schema().names():
         lf = lf.with_columns(pl.lit(1, dtype=pl.Int64).alias("ObsN"))
 
-    lf = lf.sort(["route_id", "ObsN", "Year"])
-
-    lf = lf.with_columns(
-        [
-            pl.col("Year")
-            .rank(method="min")
-            .over(["route_id", "ObsN"])
-            .cast(pl.Int64)
-            .alias("route_obs_year_rank"),
-            pl.col("Year").n_unique().over("ObsN").cast(pl.Int64).alias("obs_total_years"),
-        ]
-    ).with_columns(
-        [
-            (pl.col("route_obs_year_rank") == 1).alias("is_first_year"),
-            pl.when(pl.col("obs_total_years") < protocol.observer_min_years)
-            .then(pl.lit("novice"))
-            .when(pl.col("obs_total_years") >= protocol.veteran_min_years)
-            .then(pl.lit("veteran"))
-            .otherwise(pl.lit("intermediate"))
-            .alias("tenure_tier"),
-        ]
+    lf = lf.sort(["route_id", "ObsN", "Year"]).with_columns(
+        (pl.col("Year") == pl.col("Year").min().over(["route_id", "ObsN"])).alias("is_first_year")
     )
-
-    mode = protocol.observer_tenure_mode
-    if mode == ObserverTenureMode.DROP_FIRST_YEAR_ON_ROUTE:
+    if protocol.drop_observer_first_year:
         lf = lf.filter(~pl.col("is_first_year"))
-    elif mode == ObserverTenureMode.DROP_NOVICE_OBSERVERS:
-        lf = lf.filter((pl.col("tenure_tier") != "novice") & (~pl.col("is_first_year")))
-    elif mode == ObserverTenureMode.VETERAN_ONLY:
-        lf = lf.filter(pl.col("tenure_tier") == "veteran")
-
     return match_return_type(lf, weather)
 
 
@@ -78,7 +55,7 @@ def _assert_one_run_per_route_year(runs_lf: pl.LazyFrame) -> None:
 
 @dataclass(frozen=True)
 class RunSelection:
-    tenure_lf: pl.LazyFrame  # weather with tenure columns, after the tenure filter
+    weather_lf: pl.LazyFrame  # weather with is_first_year, after the first-year filter
     runs_lf: pl.LazyFrame  # surviving runs: RouteDataID, route_id, Year, route_continuity_ratio
     total_runs: int
     runs_after_filters: int
@@ -89,16 +66,14 @@ class RunSelection:
 def select_runs(
     weather_raw_lf: pl.LazyFrame, routes: RouteSelection, protocol: ProtocolConfigContract
 ) -> RunSelection:
-    """Tenure, then run filters on the selected routes, then continuity."""
+    """First-year flag, then run filters on the selected routes, then continuity."""
     total_runs = int(weather_raw_lf.select(pl.len()).collect().item())
-    weather_tenure_lf = compute_observer_tenure(weather_raw_lf, protocol)
-    weather_schema = set(weather_tenure_lf.collect_schema().names())
+    weather_lf = flag_observer_first_year(weather_raw_lf, protocol)
+    weather_schema = set(weather_lf.collect_schema().names())
 
     # Avoid duplicate non-key columns during weather + routes join
     overlap_cols = [c for c in routes.meta_columns if c != "route_id" and c in weather_schema]
-    events_lf = weather_tenure_lf.drop(overlap_cols).join(
-        routes.selected_lf, on="route_id", how="inner"
-    )
+    events_lf = weather_lf.drop(overlap_cols).join(routes.selected_lf, on="route_id", how="inner")
     events_schema = set(events_lf.collect_schema().names())
 
     def _run_column(name: str, setting: str) -> pl.Expr:
@@ -134,7 +109,7 @@ def select_runs(
     )
     _assert_one_run_per_route_year(runs_lf)
     return RunSelection(
-        tenure_lf=weather_tenure_lf,
+        weather_lf=weather_lf,
         runs_lf=runs_lf,
         total_runs=total_runs,
         runs_after_filters=runs_after_filters,

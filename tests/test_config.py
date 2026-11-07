@@ -150,3 +150,22 @@ def test_dump_round_trips(tmp_path: Path) -> None:
     path = _write(tmp_path, dump_profile(profile))
 
     assert load_profile(path) == profile
+
+
+@pytest.mark.parametrize(
+    "runs",
+    [
+        {"observer_tenure": "drop_first_year_on_route"},
+        {"observer_min_years": 2},
+        {"veteran_min_years": 5},
+    ],
+)
+def test_old_tenure_keys_explain_the_replacement(runs: dict) -> None:
+    with pytest.raises(ProfileError, match="replaced by drop_observer_first_year"):
+        profile_from_data({"runs": runs})
+
+
+def test_drop_observer_first_year_reaches_the_protocol() -> None:
+    profile = profile_from_data({"runs": {"drop_observer_first_year": True}})
+
+    assert profile.to_bundle().protocol.drop_observer_first_year is True

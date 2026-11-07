@@ -4,7 +4,7 @@ Proves full integration across:
 - TOML run profiles with --set overrides
 - Release sources: typed loading of release-shaped files (padded values, NULL tokens,
   cp1252, nested zips, fixed-width SpeciesList.txt) and the release-tied parquet cache
-- Predicate-First Polars Ecological Engine (cancelled-2020 continuity, observer tenure,
+- Predicate-First Polars Ecological Engine (cancelled-2020 continuity, observer first year,
   start-point boundary selection, extirpation-aware zero-filling, 10/50-stop
   harmonization, dynamic a-la-carte joins)
 - Route start-point geometry, STRtree Polygon Overlays & Multi-CRS Vector/Tabular Exports
@@ -97,7 +97,7 @@ offline = true
 start_year = 2018
 end_year = 2022
 min_continuity = 1.0   # 63_001 has 4/4 active years (2018, 2019, 2021, 2022)
-observer_tenure = "drop_first_year_on_route"
+drop_observer_first_year = true
 
 [observations]
 stops = "ten_stop_bins"

@@ -17,7 +17,6 @@ from bbs_pipeline.contracts import (
     DEFAULT_JOINS,
     FORMAT_BY_SUFFIX,
     GuildSettingsContract,
-    ObserverTenureMode,
     OutputContract,
     PipelineConfigBundle,
     ProtocolConfigContract,
@@ -113,9 +112,21 @@ class RunsSection(_Section):
     run_types: list[int] = Field(default_factory=lambda: [1])
     quality_current_ids: list[int] = Field(default_factory=lambda: [1])
     min_continuity: float = Field(default=0.0, ge=0.0, le=1.0)
-    observer_tenure: ObserverTenureMode = ObserverTenureMode.INCLUDE_ALL
-    observer_min_years: int = Field(default=2, ge=1)
-    veteran_min_years: int = Field(default=5, ge=1)
+    drop_observer_first_year: bool = False  # USGS start-up effect: first year on a route
+
+    @model_validator(mode="before")
+    @classmethod
+    def _old_tenure_keys(cls, data: Any) -> Any:
+        old = {"observer_tenure", "observer_min_years", "veteran_min_years"}
+        if isinstance(data, dict) and old & set(data):
+            raise ValueError(
+                "runs.observer_tenure, observer_min_years and veteran_min_years were "
+                "replaced by drop_observer_first_year = true | false (observer experience "
+                "now matches USGS trend analysis: first year on a route or not). For "
+                'observer_tenure = "drop_first_year_on_route" use '
+                "drop_observer_first_year = true; for include_all, false."
+            )
+        return data
 
     @model_validator(mode="after")
     def _years(self) -> RunsSection:
@@ -281,9 +292,7 @@ class RunProfile(_Section):
             run_types=rn.run_types,
             quality_current_ids=rn.quality_current_ids,
             min_route_continuity_ratio=rn.min_continuity,
-            observer_tenure_mode=rn.observer_tenure,
-            observer_min_years=rn.observer_min_years,
-            veteran_min_years=rn.veteran_min_years,
+            drop_observer_first_year=rn.drop_observer_first_year,
             temporal_routing_mode=OBSERVATION_SOURCES[obs.source],
             stop_aggregation=STOP_LAYOUTS[obs.stops],
             enable_extirpation_zero_fill=obs.zero_fill,

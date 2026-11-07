@@ -14,7 +14,7 @@ from bbs_pipeline.sources.loader import load_sources
 from bbs_pipeline.sources.regions import POSTAL_ABBREVIATIONS, parse_code_labels
 from bbs_pipeline.stages.common import normalize_canonical_keys, to_lazy
 from bbs_pipeline.stages.enrich import join_sources
-from bbs_pipeline.stages.runs import compute_observer_tenure
+from bbs_pipeline.stages.runs import flag_observer_first_year
 from bbs_pipeline.taxonomy import lumped_species
 
 ABBREVIATION_BY_NAME: dict[str, str] = {name: abbr for abbr, name in POSTAL_ABBREVIATIONS.items()}
@@ -126,12 +126,12 @@ def collect_values(profile: RunProfile) -> ProfileValues:
             if len(values) <= MAX_TRAIT_VALUES:
                 trait_values[trait] = values
 
-    tenure = compute_observer_tenure(
+    weather = flag_observer_first_year(
         normalize_canonical_keys(to_lazy(tables["weather"])), bundle.protocol
     )
     sources = join_sources(
         normalize_canonical_keys(to_lazy(tables["routes"])),
-        tenure,
+        weather,
         species.lazy(),
         tables,
         guild_df,

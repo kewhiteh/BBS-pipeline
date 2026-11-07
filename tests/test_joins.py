@@ -144,7 +144,6 @@ def test_defaults_reproduce_the_previous_columns() -> None:
         "StartWind",
         "EndWind",
         "is_first_year",
-        "tenure_tier",
         "English_Common_Name",
         "Order",
         "Family",
