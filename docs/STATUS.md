@@ -71,11 +71,20 @@ change that discovers or fixes any of it. The phase plan and its decisions live 
 
 ## Open items
 
-- **DECISION (Kyle): how route-specific tenure counts years.** A: years this observer
-  surveyed this route up to and including the run (experience at the time of the
-  survey; recommended). B: total years on this route over the whole record (one fixed
-  tier per observer–route; uses later years). Then fix `compute_observer_tenure`,
-  rename `obs_total_years` to match, and add tests.
+- **DECISION (Kyle): how route-specific tenure counts years.** Kyle's rules
+  (2026-11-07): count per route; the first year an observer appears for a route in the
+  release is year 1; years after `runs.end_year` don't count. Defaults proposed: years
+  before `start_year` count (started 1990 → the 1995 run is year 6); distinct years, not
+  runs; runs dropped by RunType/quality filters still count as experience.
+  **Still open:** a running count as of each run (1995 = 1 … 2000 = 6; recommended), or
+  one total through `end_year` per observer–route (every run = 6, so a first-year run can
+  be tagged veteran). Research: USGS trend models use an observer–route effect plus a
+  first-year ("start-up") indicator, all per route (Kendall, Peterjohn & Sauer 1996, Auk
+  113:823; Link & Sauer 2002; Sauer & Link 2011). Length of service as a running count
+  is rare for the North American BBS (Farmer et al. 2014 notes USGS doesn't model it);
+  Eglington et al. 2010 (Bird Study 57:141) did it for the English BBS. Checked from
+  abstracts and summaries, not full texts. Then fix `compute_observer_tenure`, rename
+  `obs_total_years` to match, and add tests.
 
 - Help text is unreviewed by Kyle. Check the wording, especially the observation source,
   stop layout, and tenure descriptions.
