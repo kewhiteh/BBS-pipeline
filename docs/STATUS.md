@@ -59,6 +59,15 @@ change that discovers or fixes any of it. The phase plan and its decisions live 
   The golden 50-stop expected CSV lost only its `tenure_tier` column; every other value
   is unchanged.
 
+- **Getting started.** A checklist at the top of the editor (open while the profile is
+  unsaved) ticks the steps off from the draft. **Start from an example** copies an
+  `examples/*.toml` profile into a new, unsaved draft, so examples are never
+  overwritten; Save as keeps the copy. Steps 4 (surveys) and 6 (output) are always
+  ticked: they have defaults and are shown so they get checked, not because there's
+  anything to do.
+- **Fixed 2026-11-07:** a profile without a guild file read "Unsaved changes" right
+  after opening, because the editor cleared the default `joins.guilds = ["*"]` to `[]`.
+
 ## Known limitations / workarounds
 
 - **Restart Streamlit after pulling or switching branches.** A running server reruns
@@ -86,8 +95,6 @@ change that discovers or fixes any of it. The phase plan and its decisions live 
 
 - Help text is unreviewed by Kyle. Check the wording, especially the observation source,
   stop layout, and first-year descriptions.
-- The UI has no in-app walkthrough or example profile picker for first-time users beyond
-  tooltips, tab captions and the sidebar "What is a profile?" note.
 - Overlays are still a `name=path` text box. A file picker with a column chooser would
   be friendlier.
 
