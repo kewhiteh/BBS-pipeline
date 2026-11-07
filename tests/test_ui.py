@@ -310,7 +310,6 @@ def test_free_text_guild_filter_for_traits_without_a_pick_list(
 @pytest.mark.parametrize(
     ("widget", "value", "message"),
     [
-        ("ui_overlays", "watershed data/huc8.gpkg", "Overlays, line 1: expected name=value"),
         ("ui_guild_other_filters", "habitat", "Other trait filters, line 1: expected name=value"),
     ],
 )
@@ -508,3 +507,58 @@ def test_getting_started_ticks_steps_as_they_are_done(
 
     label = next(e.label for e in at.expander if e.label.startswith("Getting started"))
     assert "(6 of 9 done)" in label  # where and inspect done, but now unsaved
+
+
+# --- GIS file picker and overlays ---------------------------------------------------
+
+
+def _basins(folder: Path) -> Path:
+    import geopandas as gpd
+    from shapely.geometry import box
+
+    folder.mkdir(parents=True, exist_ok=True)
+    path = folder / "basins.gpkg"
+    gpd.GeoDataFrame(
+        {"NAME": ["Neuse", "Cape Fear"], "HUC4": ["0302", "0303"]},
+        geometry=[box(-79, 35.5, -78, 36.2), box(-79.5, 34.5, -78.5, 35.2)],
+        crs="EPSG:4326",
+    ).to_file(path)
+    return path
+
+
+def test_overlay_cards_pick_a_file_and_a_label_column(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    gpkg = {"path": str(tmp_path / "out" / "o.gpkg")}
+    at, path = _app(tmp_path, monkeypatch, _profile(tmp_path, output=gpkg))
+    monkeypatch.chdir(tmp_path)
+    basins = _basins(tmp_path / "data" / "gis").relative_to(tmp_path)
+
+    at.button(key="btn_ov_add").click().run()
+    at.text_input(key="ui_ov_0_name").set_value("basin").run()
+    files = at.selectbox(key="ui_ov_0_file")
+    assert str(basins) in files.options
+    files.set_value(str(basins)).run()
+
+    column = at.selectbox(key="ui_ov_0_column")
+    assert column.options == ["Automatic (NAME)", "NAME", "HUC4"]
+    assert any("2 polygons. `NAME` values: Neuse, Cape Fear" in c.value for c in at.caption)
+    column.set_value("HUC4").run()
+    at.sidebar.button(key="btn_save").click().run()
+
+    saved = load_profile(path).output.overlays["basin"]
+    assert (saved.file, saved.column) == (basins, "HUC4")
+
+
+def test_overlay_needs_a_file_and_can_be_removed(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    gpkg = {"path": str(tmp_path / "out" / "o.gpkg")}
+    at, path = _app(tmp_path, monkeypatch, _profile(tmp_path, output=gpkg))
+
+    at.button(key="btn_ov_add").click().run()
+    assert any("needs a polygon file" in e.value for e in at.sidebar.error)
+
+    at.button(key="btn_ov_0_remove").click().run()
+    assert not at.sidebar.error
+    assert not any(t.key == "ui_ov_0_name" for t in at.text_input)

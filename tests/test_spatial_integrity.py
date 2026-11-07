@@ -15,6 +15,7 @@ from bbs_pipeline.spatial import (
     route_geodataframe,
     routes_within_boundary,
 )
+from bbs_pipeline.spatial.files import save_gis_upload
 
 
 def _observations() -> pl.DataFrame:
@@ -103,3 +104,50 @@ def test_geometry_is_built_once_per_route_and_joined_to_every_row() -> None:
     assert gdf.crs.to_epsg() == 5070
     first = gdf[gdf["route_id"] == "63_001"].geometry
     assert first.geom_equals(first.iloc[0]).all()
+
+
+def _shapefile_zip(tmp_path: Path) -> bytes:
+    import io
+    import zipfile
+
+    import geopandas as gpd
+    from shapely.geometry import box
+
+    shp = tmp_path / "shp"
+    shp.mkdir()
+    gpd.GeoDataFrame(
+        {"NAME": ["Neuse"]}, geometry=[box(-79, 35.5, -78, 36.2)], crs="EPSG:4326"
+    ).to_file(shp / "basins.shp")
+    buffer = io.BytesIO()
+    with zipfile.ZipFile(buffer, "w") as archive:
+        for part in shp.iterdir():
+            archive.write(part, part.name)
+    return buffer.getvalue()
+
+
+def test_a_zipped_shapefile_upload_is_unpacked_to_its_shp(tmp_path: Path) -> None:
+    import geopandas as gpd
+
+    saved = save_gis_upload("basins.zip", _shapefile_zip(tmp_path), tmp_path / "gis")
+
+    assert saved == tmp_path / "gis" / "basins" / "basins.shp"
+    assert gpd.read_file(saved)["NAME"].tolist() == ["Neuse"]
+
+
+def test_an_upload_zip_cannot_write_outside_its_folder(tmp_path: Path) -> None:
+    import io
+    import zipfile
+
+    buffer = io.BytesIO()
+    with zipfile.ZipFile(buffer, "w") as archive:
+        archive.writestr("../escape.shp", b"x")
+
+    with pytest.raises(ValueError, match="unsafe path"):
+        save_gis_upload("bad.zip", buffer.getvalue(), tmp_path / "gis")
+    assert not (tmp_path / "escape.shp").exists()
+
+
+def test_a_plain_upload_is_written_as_is(tmp_path: Path) -> None:
+    saved = save_gis_upload("x.geojson", b"{}", tmp_path / "gis")
+
+    assert saved.read_bytes() == b"{}"

@@ -15,11 +15,14 @@ import json
 import os
 import tomllib
 import traceback
+import zipfile  # for BadZipFile from uploads
 from datetime import datetime
 from pathlib import Path
 from typing import Any
 
+import geopandas as gpd
 import polars as pl
+import pyogrio
 import pyproj
 import streamlit as st
 
@@ -40,6 +43,8 @@ from bbs_pipeline.pipeline import run_profile
 from bbs_pipeline.sources.cache import CACHE_MANIFEST
 from bbs_pipeline.sources.regions import resolve_states
 from bbs_pipeline.sources.release import RELEASE_JSON, fetch_release
+from bbs_pipeline.spatial.files import save_gis_upload
+from bbs_pipeline.spatial.geometry import automatic_overlay_column
 from bbs_pipeline.values import ProfileValues, collect_values
 
 PROFILE_DIRS: tuple[str, ...] = (".", "examples", "profiles")
@@ -192,6 +197,184 @@ def _show_failure(action: str, exc: BaseException) -> None:
 
 def _draft() -> dict[str, Any]:
     return st.session_state["draft"]
+
+
+# --- GIS files -----------------------------------------------------------------------
+
+GIS_EXTENSIONS = frozenset({".gpkg", ".shp", ".geojson", ".fgb", ".geoparquet"})
+UPLOAD_TYPES = ["gpkg", "geojson", "fgb", "geoparquet", "zip"]  # zip = zipped shapefile
+GIS_UPLOAD_DIR = Path("data") / "gis"  # data/ is git-ignored
+# Not searched for GIS files: tooling, caches, the raw release, outputs, test fixtures
+SKIP_DIRS = frozenset(
+    {".git", ".venv", "__pycache__", "node_modules", ".claude", ".agents", "output", "tests"}
+)
+SKIP_PATHS = frozenset({Path("data") / "raw", Path("data") / "sanitized_cache"})
+MAX_GIS_FILES = 300
+TYPE_A_PATH = "Type a path…"
+
+
+def _gis_files() -> list[str]:
+    """GIS files under the project, for pick lists (at most MAX_GIS_FILES)."""
+    found: list[str] = []
+    for root, dirs, files in os.walk("."):
+        here = Path(root)
+        dirs[:] = sorted(
+            d for d in dirs if d not in SKIP_DIRS and (here / d).relative_to(".") not in SKIP_PATHS
+        )
+        for name in sorted(files):
+            if Path(name).suffix.lower() in GIS_EXTENSIONS:
+                found.append(str((here / name).relative_to(".")))
+                if len(found) >= MAX_GIS_FILES:
+                    return found
+    return found
+
+
+@st.cache_data(show_spinner=False, max_entries=64)
+def _gis_columns(path: str, _mtime: float) -> tuple[list[str], int]:
+    """(attribute columns, feature count) of a GIS file, without reading its geometry."""
+    if Path(path).suffix.lower() == ".geoparquet":
+        gdf = gpd.read_parquet(path)
+        return [c for c in gdf.columns if c != gdf.geometry.name], len(gdf)
+    info = pyogrio.read_info(path)
+    return [str(f) for f in info["fields"]], int(info["features"])
+
+
+@st.cache_data(show_spinner=False, max_entries=64)
+def _gis_sample(path: str, column: str, _mtime: float) -> list[str]:
+    """A few distinct values of ``column``, to show what the labels will look like."""
+    if Path(path).suffix.lower() == ".geoparquet":
+        values = gpd.read_parquet(path, columns=[column])[column]
+    else:
+        values = pyogrio.read_dataframe(path, columns=[column], read_geometry=False)[column]
+    return [str(v) for v in values.dropna().unique()[:5]]
+
+
+def _uploaded(key: str) -> None:
+    """on_change for a GIS upload: save it and select it in the matching file list."""
+    uploaded = st.session_state.get(f"{key}_upload")
+    if uploaded is None:
+        return
+    try:
+        saved = save_gis_upload(uploaded.name, uploaded.getvalue(), GIS_UPLOAD_DIR)
+    except (OSError, ValueError, zipfile.BadZipFile) as exc:
+        st.session_state[f"{key}_upload_error"] = str(exc)
+        _log_failure("Upload", exc)
+        return
+    st.session_state.pop(f"{key}_upload_error", None)
+    st.session_state[key] = str(saved)
+
+
+def _gis_file_picker(label: str, current: str, key: str, help: str) -> str:
+    """Pick a GIS file found in the project, upload one, or type a path ('' = none)."""
+    found = _gis_files()
+    options = ["", *found]
+    if current and current not in options:
+        options.append(current)  # keep a saved path that is outside the searched folders
+    if st.session_state.get(key) not in (*options, TYPE_A_PATH, None):
+        options.append(st.session_state[key])  # just uploaded
+    options.append(TYPE_A_PATH)
+    choice = st.selectbox(
+        label,
+        options,
+        options.index(current) if current in options else 0,
+        format_func=lambda o: "(none)" if o == "" else o,
+        key=key,
+        help=help,
+    )
+    if choice == TYPE_A_PATH:
+        choice = st.text_input("File path", current, key=f"{key}_typed").strip()
+    with st.popover("Upload a file", icon=":material/upload:"):
+        st.file_uploader(
+            f"GeoPackage, GeoJSON, FlatGeobuf, GeoParquet, or a zipped shapefile. Saved "
+            f"to `{GIS_UPLOAD_DIR}/` (not committed).",
+            type=UPLOAD_TYPES,
+            key=f"{key}_upload",
+            on_change=_uploaded,
+            args=(key,),
+        )
+    if f"{key}_upload_error" in st.session_state:
+        st.error(st.session_state[f"{key}_upload_error"], title="Upload failed")
+    if choice and not Path(choice).exists():
+        st.warning(f"`{choice}` doesn't exist.")
+    return choice
+
+
+def _overlay_card(row: int, name: str, spec: dict[str, Any]) -> tuple[str, dict[str, Any], bool]:
+    """One overlay: name, file, label column. Returns (name, spec, remove clicked)."""
+    with st.container(border=True):
+        c1, c2 = st.columns([3, 1], vertical_alignment="bottom")
+        name = c1.text_input(
+            "Name",
+            name,
+            key=f"ui_ov_{row}_name",
+            help="The output column is overlay_<name>, e.g. overlay_basin.",
+        ).strip()
+        remove = c2.button("Remove", key=f"btn_ov_{row}_remove", icon=":material/delete:")
+        file = _gis_file_picker(
+            "Polygon file",
+            str(spec.get("file") or ""),
+            f"ui_ov_{row}_file",
+            "Each route is tagged with the polygon its start point falls in.",
+        )
+        column = spec.get("column")
+        if file and Path(file).exists():
+            try:
+                columns, features = _gis_columns(file, Path(file).stat().st_mtime)
+            except (OSError, ValueError, pyogrio.errors.DataSourceError) as exc:
+                st.error(f"Can't read `{file}`: {exc}")
+                return name, {"file": file, "column": column}, remove
+            auto = automatic_overlay_column(columns)
+            options = [None, *columns]
+            column = st.selectbox(
+                "Label column",
+                options,
+                options.index(column) if column in options else 0,
+                format_func=lambda c: f"Automatic ({auto or 'row number'})" if c is None else c,
+                key=f"ui_ov_{row}_column",
+                help="Which of the polygon's attributes goes in the output column.",
+            )
+            shown = column or auto
+            if shown:
+                sample = _gis_sample(file, shown, Path(file).stat().st_mtime)
+                st.caption(f"{features} polygons. `{shown}` values: {', '.join(sample)}…")
+        return name, {"file": file, "column": column}, remove
+
+
+def _overlays_editor(out: dict[str, Any]) -> None:
+    """Overlay cards plus Add; rows have stable ids so removing one keeps the others."""
+    if "ui_overlay_rows" not in st.session_state:
+        items = list(out["overlays"].items())
+        st.session_state["ui_overlay_rows"] = list(range(len(items)))
+        st.session_state["ui_overlay_init"] = dict(enumerate(items))
+    rows: list[int] = st.session_state["ui_overlay_rows"]
+    init: dict[int, tuple[str, dict[str, Any]]] = st.session_state["ui_overlay_init"]
+
+    st.markdown("**Tag routes with polygon layers (overlays)**")
+    st.caption(
+        "Each overlay adds a column overlay_<name> holding the polygon each route's start "
+        "point falls in, e.g. its river basin or county."
+    )
+    overlays: dict[str, dict[str, Any]] = {}
+    for row in list(rows):
+        name, spec = init.get(row, ("", {}))
+        name, spec, remove = _overlay_card(row, name, spec)
+        if remove:
+            rows.remove(row)
+            st.rerun()
+        if not name:
+            _input_error("Overlays: every overlay needs a name")
+        elif name in overlays:
+            _input_error(f"Overlays: the name '{name}' is used twice")
+        elif not spec["file"]:
+            _input_error(f"Overlays: '{name}' needs a polygon file")
+        else:
+            overlays[name] = spec if spec["column"] else {"file": spec["file"]}
+    if st.button("Add overlay", key="btn_ov_add", icon=":material/add:"):
+        new = max(rows, default=-1) + 1
+        rows.append(new)
+        init[new] = (f"overlay{len(rows)}", {})
+        st.rerun()
+    out["overlays"] = overlays
 
 
 # --- tabs ----------------------------------------------------------------------------
@@ -347,11 +530,11 @@ def _routes_runs_tab(p: dict[str, Any], v: ProfileValues | None) -> None:
         (lambda r: f"{r} · {route_info[r]['RouteName']}") if v else str,
         help="Pick individual routes. Empty = every route that passes the filters above.",
     )
-    rt["boundary"] = st.text_input(
+    rt["boundary"] = _gis_file_picker(
         "Boundary polygon file (start point inside)",
         rt["boundary"] or "",
-        key="ui_boundary",
-        help="Optional polygon file. Keeps routes whose start point falls inside it.",
+        "ui_boundary",
+        "Optional. Keeps only routes whose start point falls inside the polygon(s).",
     )
 
     st.subheader("Runs")
@@ -742,16 +925,7 @@ def _joins_output_tab(p: dict[str, Any], v: ProfileValues | None) -> None:
                 key="ui_layer_name",
                 help="The layer's name inside the GeoPackage, as GIS software lists it.",
             )
-        overlays_raw = st.text_area(
-            "Tag routes with polygon layers (overlays)",
-            "\n".join(f"{k}={val['file']}" for k, val in out["overlays"].items()),
-            key="ui_overlays",
-            placeholder="basin=data/nc_river_basins.gpkg",
-            help="One name=file per line. Each route gets a column overlay_<name> holding "
-            "the polygon it falls in, e.g. its river basin. The polygon's label is taken "
-            "from a name, id, or basin column.",
-        )
-        out["overlays"] = _key_values(overlays_raw, "Overlays", split_values=False)
+        _overlays_editor(out)
     out["manifest"] = st.checkbox(
         "Write manifest",
         out["manifest"],
