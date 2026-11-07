@@ -77,9 +77,10 @@ change that discovers or fixes any of it. The phase plan and its decisions live 
 
 ## Open items
 
-
 - Help text is unreviewed by Kyle. Check the wording, especially the observation source,
   stop layout, and first-year descriptions.
+- Projection list unreviewed by Kyle (`CRS_CHOICES` in `ui/app.py`): add or drop
+  choices?
 - The UI has no in-app walkthrough or example profile picker for first-time users beyond
   tooltips, tab captions and the sidebar "What is a profile?" note.
 - Overlays are still a `name=path` text box. A file picker with a column chooser would
