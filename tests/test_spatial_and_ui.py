@@ -9,7 +9,7 @@ import polars as pl
 import pytest
 from shapely.geometry import Point, Polygon
 
-from bbs_pipeline.contracts import OutputContract
+from bbs_pipeline.contracts import OutputContract, OverlaySpec
 from bbs_pipeline.spatial.exporter import write_output
 from bbs_pipeline.spatial.geometry import build_spatial_geodataframe
 
@@ -68,6 +68,28 @@ def test_strtree_custom_polygon_overlays(tmp_path: Path) -> None:
     r2_basin = gdf.loc[gdf["route_id"] == "63_002", "overlay_watershed"].iloc[0]
     assert r1_basin == "Neuse_Basin"
     assert r2_basin == "Cape_Fear_Basin"
+
+
+def test_overlay_uses_the_chosen_column_and_rejects_a_missing_one(tmp_path: Path) -> None:
+    obs_df = _make_sample_observations()
+    neuse_poly = Polygon([(-79.0, 35.5), (-78.0, 35.5), (-78.0, 36.2), (-79.0, 36.2)])
+    cape_fear_poly = Polygon([(-79.5, 34.5), (-78.5, 34.5), (-78.5, 35.2), (-79.5, 35.2)])
+    basins_path = tmp_path / "basins.parquet"
+    gpd.GeoDataFrame(
+        {"name": ["Neuse_Basin", "Cape_Fear_Basin"], "huc4": ["0302", "0303"]},
+        geometry=[neuse_poly, cape_fear_poly],
+        crs="EPSG:4326",
+    ).to_parquet(basins_path)
+
+    spec = OverlaySpec(file=basins_path, column="huc4")
+    gdf = build_spatial_geodataframe(obs_df, None, overlays={"basin": spec})
+    labels = dict(zip(gdf["route_id"], gdf["overlay_basin"], strict=True))
+    assert (labels["63_001"], labels["63_002"]) == ("0302", "0303")
+
+    with pytest.raises(ValueError, match="has no column 'HUC8'. Columns: name, huc4"):
+        build_spatial_geodataframe(
+            obs_df, None, overlays={"basin": OverlaySpec(file=basins_path, column="HUC8")}
+        )
 
 
 @pytest.mark.parametrize(

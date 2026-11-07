@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+from collections.abc import Mapping
 from pathlib import Path
 
 import geopandas as gpd
@@ -12,6 +13,7 @@ import shapely
 from pyproj import Transformer
 from shapely.geometry import Point
 
+from bbs_pipeline.contracts import OverlaySpec
 from bbs_pipeline.spatial.selection import ROUTE_START_CRS, load_boundary
 
 # Geometries are assembled in WGS84, then reprojected per export CRS
@@ -89,19 +91,40 @@ def route_start_points(
     return points
 
 
+AUTOMATIC_OVERLAY_COLUMNS: tuple[str, ...] = (
+    "name",
+    "Name",
+    "NAME",
+    "id",
+    "ID",
+    "basin",
+    "BASIN",
+    "BCR",
+    "bcr",
+)
+
+
+def automatic_overlay_column(columns: list[str]) -> str | None:
+    """The column an overlay uses when none is chosen: a name/id/basin-like one, else the first."""
+    preferred = [c for c in AUTOMATIC_OVERLAY_COLUMNS if c in columns]
+    return preferred[0] if preferred else (columns[0] if columns else None)
+
+
 def assign_custom_overlays(
     gdf: gpd.GeoDataFrame,
-    custom_overlay_paths: dict[str, Path],
+    overlays: Mapping[str, OverlaySpec | Path | str],
 ) -> gpd.GeoDataFrame:
-    """Assign custom polygon overlay attributes using vectorized shapely.STRtree queries."""
-    if not custom_overlay_paths or gdf.empty:
+    """Add ``overlay_<name>``: the label of the polygon each route's start point falls in."""
+    if not overlays or gdf.empty:
         return gdf
 
     result_gdf = gdf.copy()
     target_geoms = np.asarray(result_gdf.geometry.values)
 
-    for layer_name, layer_path in custom_overlay_paths.items():
-        path_obj = Path(layer_path)
+    for layer_name, spec in overlays.items():
+        if not isinstance(spec, OverlaySpec):
+            spec = OverlaySpec(file=Path(spec))
+        path_obj = Path(spec.file)
         col_name = f"overlay_{layer_name}"
         if not path_obj.exists():
             raise FileNotFoundError(f"Overlay '{layer_name}' file not found: '{path_obj}'.")
@@ -109,14 +132,12 @@ def assign_custom_overlays(
         overlay_gdf = load_boundary(path_obj).to_crs(result_gdf.crs)
 
         non_geom_cols = [c for c in overlay_gdf.columns if c != overlay_gdf.geometry.name]
-        preferred_cols = [
-            c
-            for c in ("name", "Name", "NAME", "id", "ID", "basin", "BASIN", "BCR", "bcr")
-            if c in non_geom_cols
-        ]
-        attr_col = (
-            preferred_cols[0] if preferred_cols else (non_geom_cols[0] if non_geom_cols else None)
-        )
+        if spec.column is not None and spec.column not in non_geom_cols:
+            raise ValueError(
+                f"Overlay '{layer_name}': '{path_obj.name}' has no column '{spec.column}'. "
+                f"Columns: {', '.join(non_geom_cols)}"
+            )
+        attr_col = spec.column or automatic_overlay_column(non_geom_cols)
 
         if attr_col is not None:
             attr_values = overlay_gdf[attr_col].astype(str).to_numpy()
@@ -141,7 +162,7 @@ def assign_custom_overlays(
 def route_geodataframe(
     observations_df: pl.DataFrame,
     routes_df: pl.DataFrame | pl.LazyFrame | None,
-    overlays: dict[str, Path] | None = None,
+    overlays: Mapping[str, OverlaySpec | Path | str] | None = None,
     crs: str = WORKING_CRS,
 ) -> gpd.GeoDataFrame:
     """One start point per route in ``observations_df``, with overlay columns, in ``crs``."""
@@ -160,7 +181,7 @@ def route_geodataframe(
 def build_spatial_geodataframe(
     observations_df: pl.DataFrame,
     routes_df: pl.DataFrame | pl.LazyFrame | None,
-    overlays: dict[str, Path] | None = None,
+    overlays: Mapping[str, OverlaySpec | Path | str] | None = None,
     crs: str = WORKING_CRS,
 ) -> gpd.GeoDataFrame:
     """Attach each route's start point (and overlay columns) to every observation row.

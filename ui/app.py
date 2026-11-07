@@ -744,7 +744,7 @@ def _joins_output_tab(p: dict[str, Any], v: ProfileValues | None) -> None:
             )
         overlays_raw = st.text_area(
             "Tag routes with polygon layers (overlays)",
-            "\n".join(f"{k}={val}" for k, val in out["overlays"].items()),
+            "\n".join(f"{k}={val['file']}" for k, val in out["overlays"].items()),
             key="ui_overlays",
             placeholder="basin=data/nc_river_basins.gpkg",
             help="One name=file per line. Each route gets a column overlay_<name> holding "

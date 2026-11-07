@@ -143,7 +143,10 @@ def test_dump_round_trips(tmp_path: Path) -> None:
         {
             "routes": {"states": [63, "Nova Scotia"], "boundary": "a b/ç.gpkg"},
             "species": {"common_names": ['Bird "quoted"']},
-            "output": {"path": "o.gpkg", "overlays": {"basin": "x.gpkg"}},
+            "output": {
+                "path": "o.gpkg",
+                "overlays": {"basin": "x.gpkg", "county": {"file": "c.gpkg", "column": "NAME"}},
+            },
         }
     )
 
@@ -169,3 +172,14 @@ def test_drop_observer_first_year_reaches_the_protocol() -> None:
     profile = profile_from_data({"runs": {"drop_observer_first_year": True}})
 
     assert profile.to_bundle().protocol.drop_observer_first_year is True
+
+
+def test_overlays_accept_a_path_or_file_and_column() -> None:
+    out = profile_from_data(
+        {"output": {"overlays": {"a": "x.gpkg", "b": {"file": "y.gpkg", "column": "BASIN"}}}}
+    ).output
+
+    assert (out.overlays["a"].file, out.overlays["a"].column) == (Path("x.gpkg"), None)
+    assert (out.overlays["b"].file, out.overlays["b"].column) == (Path("y.gpkg"), "BASIN")
+    with pytest.raises(ProfileError, match="colum"):
+        profile_from_data({"output": {"overlays": {"a": {"file": "x.gpkg", "colum": "N"}}}})
