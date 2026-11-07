@@ -43,7 +43,7 @@ Everything the CLI does can be done in the editor:
 | CLI | Editor |
 |---|---|
 | `bbs fetch` | **Fetch release** button (Release & Cache tab) |
-| `--config FILE` | Sidebar **Open / new**: profiles found in the project, or any path; **New profile** |
+| `--config FILE` | Sidebar **Open / new**: profiles found in the project, or any path; **New profile**; **Start from an example** (also in the **Getting started** checklist at the top) |
 | editing the TOML | Every setting, including download settings under **Advanced** |
 | `bbs validate` | Sidebar validation messages and the **Profile TOML** view (with download) |
 | `bbs values` | Pick lists for states, BCRs, strata (with names from the release metadata), routes (narrowed to the chosen states and BCRs), species, families, orders, guild traits, and each table's join columns |
