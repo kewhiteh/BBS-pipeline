@@ -11,13 +11,16 @@ from bbs_pipeline.config import RunProfile
 from bbs_pipeline.contracts import JOIN_TABLES
 from bbs_pipeline.guilds import NOTE_COLUMNS, read_guild_csv, resolve_guilds
 from bbs_pipeline.sources.loader import load_sources
-from bbs_pipeline.sources.regions import POSTAL_ABBREVIATIONS
+from bbs_pipeline.sources.regions import POSTAL_ABBREVIATIONS, parse_code_labels
 from bbs_pipeline.stages.common import normalize_canonical_keys, to_lazy
 from bbs_pipeline.stages.enrich import join_sources
 from bbs_pipeline.stages.runs import compute_observer_tenure
 from bbs_pipeline.taxonomy import lumped_species
 
 ABBREVIATION_BY_NAME: dict[str, str] = {name: abbr for abbr, name in POSTAL_ABBREVIATIONS.items()}
+
+# Coded profile fields whose descriptions come from the release metadata XML
+LABELED_CODES = ("BCR", "Stratum", "RunType", "QualityCurrentID")
 
 # Traits with more distinct values than this are free text (names), not categories
 MAX_TRAIT_VALUES = 50
@@ -36,6 +39,13 @@ class ProfileValues:
     orders: list[str]
     join_columns: dict[str, list[str]]
     guild_traits: dict[str, list[str]] = field(default_factory=dict)
+    # {"BCR": {27: "Southeastern Coastal Plain", ...}}; empty without the metadata XML
+    code_labels: dict[str, dict[int, str]] = field(default_factory=dict)
+
+    def label(self, attribute: str, code: int) -> str:
+        """'27 · Southeastern Coastal Plain', or just '27' when the release has no name."""
+        name = self.code_labels.get(attribute, {}).get(code)
+        return f"{code} · {name}" if name else str(code)
 
     def field_values(self, name: str) -> list[str]:
         """Plain-text values for `bbs values FIELD` (e.g. routes.states, guilds.habitat)."""
@@ -43,8 +53,8 @@ class ProfileValues:
             "routes.states": [
                 f"{s['StateNum']}\t{s['abbreviation'] or ''}\t{s['StateName']}" for s in self.states
             ],
-            "routes.bcrs": [str(b) for b in self.bcrs],
-            "routes.strata": [str(s) for s in self.strata],
+            "routes.bcrs": [self.label("BCR", b).replace(" · ", "\t") for b in self.bcrs],
+            "routes.strata": [self.label("Stratum", s).replace(" · ", "\t") for s in self.strata],
             "routes.route_ids": [f"{r['route_id']}\t{r['RouteName']}" for r in self.routes],
             "species.aous": [f"{s['AOU']}\t{s['English_Common_Name']}" for s in self.species],
             "species.common_names": [s["English_Common_Name"] for s in self.species],
@@ -71,6 +81,13 @@ def _sorted_unique(df: pl.DataFrame, column: str) -> list:
     if column not in df.columns:
         return []
     return sorted(df[column].drop_nulls().unique().to_list())
+
+
+def _code_labels(raw_dir: Path) -> dict[str, dict[int, str]]:
+    xml_files = sorted(raw_dir.glob("*.xml")) if raw_dir.is_dir() else []
+    if len(xml_files) != 1:
+        return {}  # no metadata (or ambiguous): show bare codes rather than guess names
+    return {a: parse_code_labels(xml_files[0], a) for a in LABELED_CODES}
 
 
 def collect_values(profile: RunProfile) -> ProfileValues:
@@ -137,4 +154,5 @@ def collect_values(profile: RunProfile) -> ProfileValues:
         orders=_sorted_unique(species, "Order"),
         join_columns=join_columns,
         guild_traits=trait_values,
+        code_labels=_code_labels(Path(profile.source.raw_dir)),
     )

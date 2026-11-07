@@ -64,9 +64,36 @@ def test_values_field_listing_and_unknown_field(tmp_path: Path) -> None:
     values = collect_values(_profile(tmp_path))
 
     assert "63\tNC\tNorth Carolina" in values.field_values("routes.states")
-    assert values.field_values("routes.bcrs") == ["27", "28", "29"]
+    assert values.field_values("routes.bcrs") == [
+        "27\tSoutheastern Coastal Plain",
+        "28\tAppalachian Mountains",
+        "29\tPiedmont",
+    ]
+    assert values.label("Stratum", 1) == "1 · Sub-tropical"
+    assert values.label("RunType", 1).startswith("1 · Meets all BBS criteria")
     with pytest.raises(KeyError, match="Unknown field 'joins.nope'"):
         values.field_values("joins.nope")
+
+
+def test_code_labels_are_empty_without_metadata(tmp_path: Path) -> None:
+    from bbs_pipeline.values import _code_labels
+
+    assert _code_labels(tmp_path) == {}
+
+
+def test_editor_shows_names_for_coded_filters(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    at, _ = _app(tmp_path, monkeypatch, _profile(tmp_path))
+
+    bcrs = at.multiselect(key="ui_bcrs")
+    assert bcrs.options == [
+        "27 · Southeastern Coastal Plain",
+        "28 · Appalachian Mountains",
+        "29 · Piedmont",
+    ]
+    assert bcrs.help
+    assert all(" · " in o for o in at.multiselect(key="ui_strata").options)
 
 
 def test_editor_offers_pick_lists_and_saves_only_on_save(
@@ -83,8 +110,9 @@ def test_editor_offers_pick_lists_and_saves_only_on_save(
     at.multiselect(key="ui_bcrs").set_value([29])
     at.multiselect(key="ui_families").set_value(["Turdidae"])
     at.multiselect(key="ui_guild_breeding_habitat").set_value(["woodland"])
+    at.segmented_control(key="ui_join_mode_vehicle").set_value("Some").run()
     at.multiselect(key="ui_join_vehicle").set_value(["CarTotal"])
-    at.radio(key="ui_shape").set_value("wide")
+    at.segmented_control(key="ui_shape").set_value("wide")
     at.run()
     assert not at.exception, at.exception
 
@@ -118,7 +146,7 @@ def test_join_all_columns_checkbox_saves_a_star(
 ) -> None:
     at, path = _app(tmp_path, monkeypatch, _profile(tmp_path))
 
-    at.checkbox(key="ui_join_all_routes").check().run()
+    at.segmented_control(key="ui_join_mode_routes").set_value("All").run()
     at.sidebar.button(key="btn_save").click().run()
 
     assert load_profile(path).joins.routes == ["*"]
@@ -155,12 +183,14 @@ def test_run_writes_the_output(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) 
 def test_invalid_edit_shows_the_error_and_disables_save(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    at, path = _app(tmp_path, monkeypatch, _profile(tmp_path))
+    gpkg = {"path": str(tmp_path / "out" / "o.gpkg")}
+    at, path = _app(tmp_path, monkeypatch, _profile(tmp_path, output=gpkg))
     before = path.read_text(encoding="utf-8")
 
-    at.text_input(key="ui_output_path").set_value("out/nc.xlsx").run()
+    at.selectbox(key="ui_crs_choice").set_value("Other (enter an EPSG code)").run()
+    at.text_input(key="ui_crs").set_value("not-a-crs").run()
 
-    assert any("output.path" in e.value for e in at.sidebar.error)
+    assert any("output.crs" in e.value for e in at.sidebar.error)
     assert path.read_text(encoding="utf-8") == before
 
 
@@ -172,7 +202,7 @@ def test_without_a_release_lists_fall_back_to_text_boxes(
 
     assert at.text_input(key="ui_states") is not None
     assert any("Fetch release" in b.label for b in at.button)
-    assert any("Pick lists unavailable" in w.value for w in at.warning)
+    assert any("Fetch the release" in w.value for w in at.warning)
 
 
 # --- GUI parity with the CLI ------------------------------------------------------
@@ -287,7 +317,10 @@ def test_free_text_guild_filter_for_traits_without_a_pick_list(
 def test_malformed_lines_block_saving(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, widget: str, value: str, message: str
 ) -> None:
-    at, path = _app(tmp_path, monkeypatch, _profile(tmp_path, guilds={"file": str(GUILDS)}))
+    profile = _profile(
+        tmp_path, guilds={"file": str(GUILDS)}, output={"path": str(tmp_path / "out" / "o.gpkg")}
+    )
+    at, path = _app(tmp_path, monkeypatch, profile)
     before = path.read_text(encoding="utf-8")
 
     at.text_area(key=widget).set_value(value).run()
@@ -324,3 +357,63 @@ def test_profile_list_skips_non_profile_toml_files(
     assert "typo.toml" in offered  # a profile with a mistake can still be opened and fixed
     assert "pyproject.toml" not in offered
     assert "broken.toml" not in offered
+
+
+def test_pick_lists_survive_a_briefly_invalid_profile(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """1995 with the 50_stop source is invalid until the source changes; keep the pickers."""
+    at, _ = _app(tmp_path, monkeypatch, _profile(tmp_path))
+    at.multiselect(key="ui_run_types").set_value([1]).run()
+
+    at.slider(key="ui_years").set_value((1995, 2024)).run()
+    assert any(m.key == "ui_aous" for m in at.multiselect)
+    assert at.multiselect(key="ui_run_types").value == [1]
+    assert any("50_stop" in e.value for e in at.error)  # the reason is shown
+
+    at.selectbox(key="ui_obs_source").set_value("10_stop").run()
+    assert not at.error
+    assert at.multiselect(key="ui_run_types").value == [1]
+
+
+def test_failures_are_logged_with_their_traceback(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    profile = _profile(tmp_path, joins={"weather": ["ObsN"], "observer": ["ObsN"]})
+    at, _ = _app(tmp_path, monkeypatch, profile)
+    monkeypatch.chdir(tmp_path)
+
+    at.button(key="btn_inspect").click().run()
+
+    assert any("logs/ui_errors.log" in e.value for e in at.error)
+    log = (tmp_path / "logs" / "ui_errors.log").read_text(encoding="utf-8")
+    assert "Inspect" in log and "Traceback" in log and "requested from both" in log
+
+
+def test_output_file_is_folder_name_and_format(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    at, path = _app(tmp_path, monkeypatch, _profile(tmp_path))
+    assert not any(s.key == "ui_crs_choice" for s in at.selectbox)  # CSV: no projection
+
+    at.text_input(key="ui_output_name").set_value("wood_thrush").run()
+    at.selectbox(key="ui_output_format").set_value(".gpkg").run()
+    at.selectbox(key="ui_crs_choice").set_value("EPSG:5070").run()
+    at.sidebar.button(key="btn_save").click().run()
+
+    saved = load_profile(path).output
+    assert saved.path == tmp_path / "out" / "wood_thrush.gpkg"
+    assert saved.crs == "EPSG:5070"
+
+
+def test_join_modes_none_some_all(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    at, path = _app(tmp_path, monkeypatch, _profile(tmp_path))
+
+    at.segmented_control(key="ui_join_mode_weather").set_value("None").run()
+    at.segmented_control(key="ui_join_mode_vehicle").set_value("Some").run()
+    at.multiselect(key="ui_join_vehicle").set_value(["CarTotal"]).run()
+    at.segmented_control(key="ui_join_mode_species").set_value("All").run()
+    at.sidebar.button(key="btn_save").click().run()
+
+    joins = load_profile(path).joins
+    assert (joins.weather, joins.vehicle, joins.species) == ([], ["CarTotal"], ["*"])

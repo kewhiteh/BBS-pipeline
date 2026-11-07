@@ -170,6 +170,14 @@ def test_star_takes_every_column_of_a_table() -> None:
     ]
 
 
+def test_all_columns_everywhere_joins_a_shared_column_once() -> None:
+    """ObsN is offered by weather and observer; "all" on both must not collide."""
+    cols = _columns({t: ["*"] for t in ("routes", "weather", "observer", "vehicle", "species")})
+
+    assert cols.count("ObsN") == 1
+    assert len(cols) == len(set(cols))
+
+
 def test_vehicle_totals_are_summed_per_run() -> None:
     protocol = ProtocolConfigContract(
         year_range=(2021, 2021), join_columns={"vehicle": ["CarTotal", "NoiseTotal", "Car1"]}

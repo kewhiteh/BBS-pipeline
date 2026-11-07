@@ -14,6 +14,8 @@ from __future__ import annotations
 import json
 import os
 import tomllib
+import traceback
+from datetime import datetime
 from pathlib import Path
 from typing import Any
 
@@ -39,8 +41,8 @@ from bbs_pipeline.sources.regions import resolve_states
 from bbs_pipeline.sources.release import RELEASE_JSON, fetch_release
 from bbs_pipeline.values import ProfileValues, collect_values
 
-FORMATS = ".parquet .csv .geoparquet .gpkg .fgb .geojson"
 PROFILE_DIRS: tuple[str, ...] = (".", "examples", "profiles")
+ERROR_LOG = Path("logs") / "ui_errors.log"
 
 
 # --- helpers -------------------------------------------------------------------------
@@ -107,6 +109,26 @@ def _inspect(profile_json: str, _stamp: tuple) -> dict[str, Any]:
     )
 
 
+def _pick_list_profile(p: dict[str, Any]) -> RunProfile:
+    """The draft's pick-list inputs (release, observation source, guild file) as a profile.
+
+    Built from those fields alone, so a draft that is briefly invalid elsewhere (say,
+    1995 with the 50_stop source, mid-edit) keeps its pick lists instead of every
+    picker falling back to a text box and losing its selection.
+    """
+    obs, g = p["observations"], p["guilds"]
+    return profile_from_data(
+        {
+            "source": p["source"],
+            "observations": {
+                "source": obs["source"],
+                "lump_subspecies": obs["lump_subspecies"],
+            },
+            "guilds": {"file": g["file"], "unmatched": g["unmatched"]},
+        }
+    )
+
+
 def _value_source(profile: RunProfile) -> tuple[str, tuple]:
     """Only the fields that change the pick lists, plus file stamps, as the cache key."""
     keyed = profile.model_copy(
@@ -130,17 +152,41 @@ def _pick(
     key: str,
     fmt: Any = str,
     as_int: bool = False,
+    help: str | None = None,
 ) -> list[Any]:
     """Multiselect over ``options``; a text box when no pick list is available."""
     if options is None:
-        raw = st.text_input(f"{label} (comma-separated)", _joined(current), key=key)
+        raw = st.text_input(f"{label} (comma-separated)", _joined(current), key=key, help=help)
         return _int_list(raw, label) if as_int else _csv_list(raw)
     missing = [c for c in current if c not in options]
     if missing:
         st.warning(f"{label}: not in this release, dropped from the list: {missing}")
     return st.multiselect(
-        label, options, [c for c in current if c in options], format_func=fmt, key=key
+        label,
+        options,
+        [c for c in current if c in options],
+        format_func=fmt,
+        key=key,
+        help=help,
     )
+
+
+def _log_failure(action: str, exc: BaseException) -> None:
+    """Append the full traceback to ERROR_LOG, so nothing has to be copied off the screen."""
+    ERROR_LOG.parent.mkdir(parents=True, exist_ok=True)
+    stamp = datetime.now().isoformat(timespec="seconds")
+    trace = "".join(traceback.format_exception(exc))
+    with ERROR_LOG.open("a", encoding="utf-8") as log:
+        log.write(f"--- {stamp} {action} (profile: {st.session_state.get('profile_path')})\n")
+        log.write(trace + "\n")
+
+
+def _show_failure(action: str, exc: BaseException) -> None:
+    """An error box with the message, the traceback on demand, and where it was logged."""
+    _log_failure(action, exc)
+    st.error(f"{exc}\n\nFull details saved to `{ERROR_LOG}`.", title=f"{action} failed")
+    with st.expander("Technical details"):
+        st.code("".join(traceback.format_exception(exc)), language=None)
 
 
 def _draft() -> dict[str, Any]:
@@ -152,14 +198,39 @@ def _draft() -> dict[str, Any]:
 
 def _source_tab(p: dict[str, Any]) -> None:
     src = p["source"]
-    src["release"] = st.text_input(
-        "Release DOI or ScienceBase item id", src["release"], key="ui_release"
+    st.caption(
+        "Which BBS data release to use and where it lives on disk. Start here: fetch the "
+        "release once, and the other tabs get pick lists with names instead of codes."
     )
-    src["raw_dir"] = st.text_input("Release directory", src["raw_dir"], key="ui_raw_dir")
-    src["cache_dir"] = st.text_input("Cache directory", src["cache_dir"], key="ui_cache_dir")
-    src["offline"] = st.checkbox("Offline (never download)", src["offline"], key="ui_offline")
+    src["release"] = st.text_input(
+        "Release DOI or ScienceBase item id",
+        src["release"],
+        key="ui_release",
+        help="The USGS BBS dataset release, e.g. 10.5066/P144YU3S (the 1966–2025 release).",
+    )
+    src["raw_dir"] = st.text_input(
+        "Release directory",
+        src["raw_dir"],
+        key="ui_raw_dir",
+        help="Folder holding the downloaded release files (Routes.csv, zips, metadata XML).",
+    )
+    src["cache_dir"] = st.text_input(
+        "Cache directory",
+        src["cache_dir"],
+        key="ui_cache_dir",
+        help="Where the cleaned, typed copy of the release is kept so runs start fast.",
+    )
+    src["offline"] = st.checkbox(
+        "Offline (never download)",
+        src["offline"],
+        key="ui_offline",
+        help="Use only files already on disk; fail instead of reaching ScienceBase.",
+    )
     src["rebuild_cache"] = st.checkbox(
-        "Rebuild cache on next run", src["rebuild_cache"], key="ui_rebuild_cache"
+        "Rebuild cache on next run",
+        src["rebuild_cache"],
+        key="ui_rebuild_cache",
+        help="Rebuild the cache from the release files, e.g. after replacing them.",
     )
     with st.expander("Advanced: download settings"):
         src["http_timeout_seconds"] = float(
@@ -185,10 +256,14 @@ def _source_tab(p: dict[str, Any]) -> None:
     if not (raw_dir / RELEASE_JSON).exists():
         st.info(f"No {RELEASE_JSON} in {raw_dir}: fetch the release to get pick lists.")
         if st.button("Fetch release", key="btn_fetch"):
-            with st.spinner("Downloading from ScienceBase..."):
-                info = fetch_release(src["release"], raw_dir)
-            st.success(f"Fetched {info.title}")
-            st.rerun()
+            try:
+                with st.spinner("Downloading from ScienceBase..."):
+                    info = fetch_release(src["release"], raw_dir)
+            except Exception as exc:  # shown and logged, not swallowed
+                _show_failure("Fetch release", exc)
+            else:
+                st.success(f"Fetched {info.title}")
+                st.rerun()
     manifest = Path(src["cache_dir"]) / CACHE_MANIFEST
     if manifest.is_file():
         data = json.loads(manifest.read_text(encoding="utf-8"))
@@ -199,6 +274,10 @@ def _source_tab(p: dict[str, Any]) -> None:
 
 def _routes_runs_tab(p: dict[str, Any], v: ProfileValues | None) -> None:
     rt, rn = p["routes"], p["runs"]
+    st.caption(
+        "Choose where (routes) and which surveys (runs) to keep. Each filter narrows the "
+        "previous ones; leave a list empty to keep everything."
+    )
     st.subheader("Routes")
     if v is not None:
         names = {s["StateNum"]: s for s in v.states}
@@ -216,12 +295,37 @@ def _routes_runs_tab(p: dict[str, Any], v: ProfileValues | None) -> None:
             current,
             "ui_states",
             lambda c: f"{names[c]['abbreviation'] or c} · {names[c]['StateName']}",
+            help="Keep routes in these states or provinces. Empty = all.",
         )
         rt["states"] = [names[c]["abbreviation"] or c for c in codes]
     else:
-        rt["states"] = _pick("States / provinces", None, rt["states"], "ui_states")
-    rt["bcrs"] = _pick("BCRs", v.bcrs if v else None, rt["bcrs"], "ui_bcrs", as_int=True)
-    rt["strata"] = _pick("Strata", v.strata if v else None, rt["strata"], "ui_strata", as_int=True)
+        rt["states"] = _pick(
+            "States / provinces",
+            None,
+            rt["states"],
+            "ui_states",
+            help="Names, postal abbreviations, or StateNum codes. Empty = all.",
+        )
+    rt["bcrs"] = _pick(
+        "Bird Conservation Regions (BCRs)",
+        v.bcrs if v else None,
+        rt["bcrs"],
+        "ui_bcrs",
+        (lambda c: v.label("BCR", c)) if v else str,
+        as_int=True,
+        help="NABCI ecological regions with similar bird communities and habitats. "
+        "Keep routes in these BCRs. Empty = all.",
+    )
+    rt["strata"] = _pick(
+        "BBS physiographic strata",
+        v.strata if v else None,
+        rt["strata"],
+        "ui_strata",
+        (lambda c: v.label("Stratum", c)) if v else str,
+        as_int=True,
+        help="The BBS's own physiographic regions (older than BCRs). Keep routes in these "
+        "strata. Empty = all.",
+    )
 
     route_options = None
     if v is not None:
@@ -240,26 +344,42 @@ def _routes_runs_tab(p: dict[str, Any], v: ProfileValues | None) -> None:
         rt["route_ids"],
         "ui_route_ids",
         (lambda r: f"{r} · {route_info[r]['RouteName']}") if v else str,
+        help="Pick individual routes. Empty = every route that passes the filters above.",
     )
     rt["boundary"] = st.text_input(
-        "Boundary polygon file (start point inside)", rt["boundary"] or "", key="ui_boundary"
+        "Boundary polygon file (start point inside)",
+        rt["boundary"] or "",
+        key="ui_boundary",
+        help="Optional polygon file. Keeps routes whose start point falls inside it.",
     )
 
     st.subheader("Runs")
     rn["start_year"], rn["end_year"] = st.slider(
-        "Years", 1966, 2026, (rn["start_year"], rn["end_year"]), key="ui_years"
+        "Years",
+        1966,
+        2026,
+        (rn["start_year"], rn["end_year"]),
+        key="ui_years",
+        help="Survey years to keep (inclusive).",
     )
+    run_label = (lambda c: v.label("RunType", c)) if v else str
     rn["run_types"] = st.multiselect(
-        "RunType (empty = all; 1 = meets BBS criteria)",
+        "RunType",
         sorted({0, 1, *rn["run_types"]}),
         rn["run_types"],
+        format_func=run_label,
         key="ui_run_types",
+        help="Whether a run met all standard BBS criteria. Most trend analyses keep only "
+        "1. Empty = all.",
     )
+    quality_label = (lambda c: v.label("QualityCurrentID", c)) if v else str
     rn["quality_current_ids"] = st.multiselect(
-        "QualityCurrentID (empty = all; 1 includes >= 45 of 50 stops)",
+        "QualityCurrentID",
         sorted({0, 1, *rn["quality_current_ids"]}),
         rn["quality_current_ids"],
+        format_func=quality_label,
         key="ui_quality_ids",
+        help="Whether weather, time, date, and route-completion criteria were met. Empty = all.",
     )
     rn["min_continuity"] = st.slider(
         "Minimum continuity (share of non-cancelled years surveyed)",
@@ -268,34 +388,78 @@ def _routes_runs_tab(p: dict[str, Any], v: ProfileValues | None) -> None:
         float(rn["min_continuity"]),
         0.05,
         key="ui_min_continuity",
+        help="Drop routes with a surviving run in less than this share of the non-cancelled "
+        "years in range. 0 = keep all; 0.8 = at least 80% of years.",
     )
     tenure = [m.value for m in ObserverTenureMode]
     rn["observer_tenure"] = st.selectbox(
-        "Observer tenure", tenure, tenure.index(rn["observer_tenure"]), key="ui_observer_tenure"
+        "Observer tenure",
+        tenure,
+        tenure.index(rn["observer_tenure"]),
+        key="ui_observer_tenure",
+        help="include_all keeps every run. The others drop each observer's first year on a "
+        "route, drop novices, or keep only veterans (thresholds below).",
     )
     c1, c2 = st.columns(2)
     rn["observer_min_years"] = int(
-        c1.number_input("Novice below (years)", 1, 60, rn["observer_min_years"], key="ui_novice")
+        c1.number_input(
+            "Novice below (years)",
+            1,
+            60,
+            rn["observer_min_years"],
+            key="ui_novice",
+            help="Observers with fewer years than this count as novices.",
+        )
     )
     rn["veteran_min_years"] = int(
-        c2.number_input("Veteran from (years)", 1, 60, rn["veteran_min_years"], key="ui_veteran")
+        c2.number_input(
+            "Veteran from (years)",
+            1,
+            60,
+            rn["veteran_min_years"],
+            key="ui_veteran",
+            help="Observers with at least this many years count as veterans.",
+        )
     )
 
 
 def _species_tab(p: dict[str, Any], v: ProfileValues | None) -> None:
     obs, sp, g = p["observations"], p["species"], p["guilds"]
+    st.caption(
+        "How bird counts are read, and which species to keep. Species filters combine "
+        "with OR; guild filters then narrow the result."
+    )
     st.subheader("Observations")
     sources, layouts = list(OBSERVATION_SOURCES), list(STOP_LAYOUTS)
     c1, c2 = st.columns(2)
     obs["source"] = c1.selectbox(
-        "Source", sources, sources.index(obs["source"]), key="ui_obs_source"
+        "Source",
+        sources,
+        sources.index(obs["source"]),
+        key="ui_obs_source",
+        help="50_stop: per-stop counts, 1997 on. 10_stop: 10-stop summaries, 1966 on. "
+        "hybrid: both, harmonised to 10-stop bins.",
     )
-    obs["stops"] = c2.selectbox("Stop layout", layouts, layouts.index(obs["stops"]), key="ui_stops")
+    obs["stops"] = c2.selectbox(
+        "Stop layout",
+        layouts,
+        layouts.index(obs["stops"]),
+        key="ui_stops",
+        help="route_total: one count per run. ten_stop_bins: five counts per run "
+        "(stops 1–10, 11–20, ...). stops: all 50 stops (needs the 50_stop source).",
+    )
     obs["zero_fill"] = st.checkbox(
-        "Zero-fill every species ever recorded on the route", obs["zero_fill"], key="ui_zero_fill"
+        "Zero-fill every species ever recorded on the route",
+        obs["zero_fill"],
+        key="ui_zero_fill",
+        help="Add a 0 count for each species seen on the route in any year but not on "
+        "this run. Needed for most abundance models.",
     )
     obs["lump_subspecies"] = st.checkbox(
-        "Count subspecies and forms under their species", obs["lump_subspecies"], key="ui_lump"
+        "Count subspecies and forms under their species",
+        obs["lump_subspecies"],
+        key="ui_lump",
+        help="E.g. fold Dark-eyed Junco forms into Dark-eyed Junco.",
     )
     obs["rolling_years"] = int(
         st.number_input(
@@ -304,6 +468,7 @@ def _species_tab(p: dict[str, Any], v: ProfileValues | None) -> None:
             60,
             obs["rolling_years"],
             key="ui_rolling",
+            help="Smooth each route's counts with a moving average over this many years.",
         )
     )
 
@@ -327,7 +492,11 @@ def _species_tab(p: dict[str, Any], v: ProfileValues | None) -> None:
 
     st.subheader("Guilds")
     g["file"] = st.text_input(
-        "Guild file (CSV; see docs/guild_file.md)", g["file"] or "", key="ui_guild_file"
+        "Guild file (CSV; see docs/guild_file.md)",
+        g["file"] or "",
+        key="ui_guild_file",
+        help="Optional CSV that tags species with traits (habitat, diet, ...). Lets you "
+        "filter by trait and adds the traits as output columns.",
     )
     units = ["report", "error"]
     g["unmatched"] = st.selectbox(
@@ -365,50 +534,192 @@ def _species_tab(p: dict[str, Any], v: ProfileValues | None) -> None:
     g["filters"] = filters
 
 
+JOIN_TABLE_HELP: dict[str, str] = {
+    "routes": "Route details: name, start coordinates, stratum, BCR.",
+    "weather": "Conditions on each run: temperature, wind, sky, times, RunType, "
+    "QualityCurrentID, observer id.",
+    "observer": "Observer experience: years surveyed, first-year flag, tenure tier.",
+    "vehicle": "Cars and noise counted during each run.",
+    "species": "Taxonomy: common and scientific names, family, order.",
+    "guilds": "Traits from your guild file.",
+}
+JOIN_MODES = ("None", "Some", "All")
+
+# label, extension, what it is for
+OUTPUT_FORMATS: tuple[tuple[str, str, str], ...] = (
+    ("CSV", ".csv", "opens in Excel, R, or any spreadsheet"),
+    ("Parquet", ".parquet", "compact and fast, for R or Python"),
+    ("GeoPackage", ".gpkg", "GIS layer of route start points (ArcGIS, QGIS)"),
+    ("GeoParquet", ".geoparquet", "Parquet with route start points"),
+    ("FlatGeobuf", ".fgb", "fast GIS layer of route start points"),
+    ("GeoJSON", ".geojson", "web-map layer of route start points"),
+)
+VECTOR_EXTENSIONS = frozenset({".gpkg", ".geoparquet", ".fgb", ".geojson"})
+
+# Common output coordinate systems; anything else via "Other"
+CRS_CHOICES: dict[str, str] = {
+    "EPSG:4326": "Latitude/longitude, WGS 84 (GPS and web maps)",
+    "EPSG:4269": "Latitude/longitude, NAD83 (what BBS route coordinates use)",
+    "EPSG:5070": "Albers equal-area, lower 48 US (meters; for areas and distances)",
+    "EPSG:32119": "North Carolina State Plane, NAD83 (meters)",
+    "EPSG:3857": "Web Mercator (web tile maps; distorts area)",
+}
+OTHER_CRS = "Other (enter an EPSG code)"
+
+
+def _join_picker(p: dict[str, Any], table: str, options: list[str] | None) -> None:
+    """None / Some / All for one table; "Some" opens a column picker."""
+    current = p["joins"][table]
+    mode_now = "All" if current == ["*"] else ("Some" if current else "None")
+    with st.container(border=True):
+        mode = st.segmented_control(
+            table,
+            JOIN_MODES,
+            default=mode_now,
+            required=True,
+            key=f"ui_join_mode_{table}",
+        )
+        st.caption(JOIN_TABLE_HELP.get(table, ""))
+        if mode == "All":
+            p["joins"][table] = ["*"]
+        elif mode == "Some":
+            p["joins"][table] = _pick(
+                f"{table} columns",
+                options,
+                [c for c in current if c != "*"],
+                f"ui_join_{table}",
+            )
+        else:
+            p["joins"][table] = []
+
+
+def _output_path_picker(out: dict[str, Any]) -> str:
+    """Folder + file name + format list; returns the chosen extension ('' if none)."""
+    path = Path(out["path"])
+    extensions = [ext for _, ext, _ in OUTPUT_FORMATS]
+    suffix = path.suffix.lower()
+    if suffix not in extensions:
+        st.warning(f"'{path.name}' has no supported format; choose one below.")
+    c1, c2, c3 = st.columns([2, 2, 2], vertical_alignment="bottom")
+    folder = c1.text_input(
+        "Folder", str(path.parent), key="ui_output_folder", help="Created if it doesn't exist."
+    )
+    stem = c2.text_input(
+        "File name",
+        path.stem if suffix in extensions else path.name,
+        key="ui_output_name",
+        help="Without the extension; the format adds it.",
+    )
+    labels = {ext: f"{name} ({ext}): {use}" for name, ext, use in OUTPUT_FORMATS}
+    ext = c3.selectbox(
+        "Format",
+        extensions,
+        extensions.index(suffix) if suffix in extensions else None,
+        format_func=labels.get,
+        key="ui_output_format",
+        help="GIS formats include each route's start point; CSV and Parquet are plain tables.",
+    )
+    if not stem.strip():
+        _input_error("Output: enter a file name")
+    if ext is None:
+        _input_error("Output: choose a format")
+        return ""
+    out["path"] = str(Path(folder.strip() or ".") / f"{stem.strip()}{ext}")
+    st.caption(f"Writes `{out['path']}`")
+    return ext
+
+
+def _crs_picker(out: dict[str, Any]) -> None:
+    current = out["crs"]
+    options = [*CRS_CHOICES, OTHER_CRS]
+    choice = st.selectbox(
+        "Map coordinate system (projection)",
+        options,
+        options.index(current) if current in CRS_CHOICES else len(options) - 1,
+        format_func=lambda c: c if c == OTHER_CRS else f"{CRS_CHOICES[c]} · {c}",
+        key="ui_crs_choice",
+        help="How route locations are stored in the GIS file. Pick latitude/longitude "
+        "unless your analysis needs meters (e.g. Albers for areas and distances).",
+    )
+    if choice == OTHER_CRS:
+        out["crs"] = st.text_input(
+            "EPSG code",
+            current,
+            key="ui_crs",
+            help="Look one up at epsg.io, e.g. EPSG:26917 (UTM zone 17N).",
+        )
+    else:
+        out["crs"] = choice
+
+
 def _joins_output_tab(p: dict[str, Any], v: ProfileValues | None) -> None:
-    st.subheader("Join columns")
+    st.caption(
+        "Extra columns to add to each output row, and the file to write. Inspect shows "
+        "the exact columns you'll get."
+    )
+    st.subheader("Extra columns")
     for table in JOIN_TABLES:
-        current = p["joins"][table]
         options = v.join_columns.get(table, []) if v else None
         if options is not None and not options:
-            st.caption(f"`{table}`: nothing to join in this release/profile")
+            st.caption(f"`{table}`: nothing to add in this release/profile")
             p["joins"][table] = []
             continue
-        everything = st.checkbox(
-            f"{table}: all columns", current == ["*"], key=f"ui_join_all_{table}"
-        )
-        if everything:
-            p["joins"][table] = ["*"]
-        else:
-            p["joins"][table] = _pick(
-                table, options, [c for c in current if c != "*"], f"ui_join_{table}"
-            )
+        _join_picker(p, table, options)
 
-    st.subheader("Output")
+    st.subheader("Output file")
     out = p["output"]
-    out["path"] = st.text_input(f"Output file ({FORMATS})", out["path"], key="ui_output_path")
+    ext = _output_path_picker(out)
     shapes = ["long", "wide"]
-    out["shape"] = st.radio(
-        "Shape (long: one row per run and species; wide: one row per route and species)",
+    out["shape"] = st.segmented_control(
+        "Table layout",
         shapes,
-        shapes.index(out["shape"]),
-        horizontal=True,
+        default=out["shape"],
+        format_func={
+            "long": "Long: one row per run and species",
+            "wide": "Wide: one row per route and species, a column per year",
+        }.get,
+        required=True,
         key="ui_shape",
+        help="Long suits most statistics; wide suits spreadsheets and maps.",
     )
     if out["shape"] == "wide":
         wide_values = ["route_total", "rolling_mean"]
         out["wide_value"] = st.selectbox(
-            "Value per year", wide_values, wide_values.index(out["wide_value"]), key="ui_wide_value"
+            "Value in each year column",
+            wide_values,
+            wide_values.index(out["wide_value"]),
+            format_func={
+                "route_total": "That year's count",
+                "rolling_mean": "Rolling mean (set N on the Species & Guilds tab)",
+            }.get,
+            key="ui_wide_value",
         )
-    out["crs"] = st.text_input("CRS (vector formats)", out["crs"], key="ui_crs")
-    out["layer_name"] = st.text_input("GeoPackage layer", out["layer_name"], key="ui_layer_name")
-    overlays_raw = st.text_area(
-        "Overlays (name=path per line; vector formats)",
-        "\n".join(f"{k}={val}" for k, val in out["overlays"].items()),
-        key="ui_overlays",
+    if ext in VECTOR_EXTENSIONS:
+        _crs_picker(out)
+        if ext == ".gpkg":
+            out["layer_name"] = st.text_input(
+                "Layer name",
+                out["layer_name"],
+                key="ui_layer_name",
+                help="The layer's name inside the GeoPackage, as GIS software lists it.",
+            )
+        overlays_raw = st.text_area(
+            "Tag routes with polygon layers (overlays)",
+            "\n".join(f"{k}={val}" for k, val in out["overlays"].items()),
+            key="ui_overlays",
+            placeholder="basin=data/nc_river_basins.gpkg",
+            help="One name=file per line. Each route gets a column overlay_<name> holding "
+            "the polygon it falls in, e.g. its river basin. The polygon's label is taken "
+            "from a name, id, or basin column.",
+        )
+        out["overlays"] = _key_values(overlays_raw, "Overlays", split_values=False)
+    out["manifest"] = st.checkbox(
+        "Write manifest",
+        out["manifest"],
+        key="ui_manifest",
+        help="Write <file>.manifest.json beside the output: the profile, release, code "
+        "version, and the counts after each filter, so the file can be traced and rebuilt.",
     )
-    out["overlays"] = _key_values(overlays_raw, "Overlays", split_values=False)
-    out["manifest"] = st.checkbox("Write manifest", out["manifest"], key="ui_manifest")
 
 
 def _show_result(res: dict[str, Any]) -> None:
@@ -443,6 +754,10 @@ def _inspect_run_tab(profile: RunProfile | None, stamp: tuple) -> None:
     if profile is None:
         st.info("Fix the profile errors in the sidebar to inspect or run.")
         return
+    st.caption(
+        "Inspect shows what the profile would produce (row counts at each filter and a "
+        "preview) without writing a file. Run writes the output file."
+    )
     live = st.toggle("Live inspect (re-inspect after every change)", key="ui_live")
     c1, c2 = st.columns(2)
     inspect_clicked = c1.button("Inspect", key="btn_inspect")
@@ -453,8 +768,8 @@ def _inspect_run_tab(profile: RunProfile | None, stamp: tuple) -> None:
                 st.session_state["last_result"] = run_profile(profile).model_dump(mode="json")
         elif inspect_clicked or live:
             st.session_state["last_result"] = _inspect(profile.model_dump_json(), stamp)
-    except Exception as exc:  # shown to the user, not swallowed
-        st.error(f"{'Run' if run_clicked else 'Inspect'} failed: {exc}")
+    except Exception as exc:  # shown and logged, not swallowed
+        _show_failure("Run" if run_clicked else "Inspect", exc)
         return
     if "last_result" in st.session_state:
         _show_result(st.session_state["last_result"])
@@ -492,9 +807,26 @@ def _profile_manager(
 ) -> None:
     """Sidebar: current profile, Open, New, Save, Save as, and the resolved TOML."""
     st.markdown(f"**Profile:** `{path}`" if path else "**Profile:** new, not saved yet")
+    with st.expander("What is a profile?", icon=":material/help:"):
+        st.markdown(
+            "A profile is one `.toml` file holding every setting for one extraction: "
+            "the release, which routes and runs, species, extra columns, and the output "
+            "file. Keep one per project, e.g. `examples/wood_thrush_story_map.toml`.\n\n"
+            "- The tabs edit the open profile.\n"
+            "- Your edits are a **draft**. Inspect and Run use the draft right away; "
+            "**Save profile** writes it to the file.\n"
+            "- The command line runs the same file: `uv run bbs run --config "
+            "profile.toml`.\n\n"
+            "The old pipeline took these settings as options every time you ran it; a "
+            "profile keeps them in a file you can save, reopen, share, and rerun."
+        )
     if profile is not None:
         dirty = saved is None or profile != saved
-        st.caption("Unsaved changes" if dirty else "Saved")
+        st.caption(
+            "Unsaved changes: Inspect and Run use them; Save writes them to the file."
+            if dirty
+            else "Saved"
+        )
         if path is not None and st.button(
             "Save profile", key="btn_save", disabled=not dirty, type="primary"
         ):
@@ -563,20 +895,28 @@ def render_editor() -> None:
     st.session_state["input_errors"] = []
 
     st.title("BBS Run Profile")
+    alerts = st.container()  # filled after the tabs, once the draft has been validated
     values: ProfileValues | None = None
     values_error = None
     try:
-        values = _values(*_value_source(profile_from_data(p)))
+        values = _values(*_value_source(_pick_list_profile(p)))
     except Exception as exc:  # no release yet, or an unreadable guild file
         values_error = str(exc)
+        if st.session_state.get("logged_values_error") != values_error:  # once, not per rerun
+            st.session_state["logged_values_error"] = values_error
+            _log_failure("Reading pick lists", exc)
+    if values_error:
+        alerts.warning(
+            f"Fetch the release or fix the release directory on the Release & Cache tab: "
+            f"{values_error}",
+            title="Pick lists unavailable, using text boxes",
+        )
 
     tabs = st.tabs(
         ["Release & Cache", "Routes & Runs", "Species & Guilds", "Joins & Output", "Inspect & Run"]
     )
     with tabs[0]:
         _source_tab(p)
-        if values_error:
-            st.warning(f"Pick lists unavailable, using text boxes: {values_error}")
     with tabs[1]:
         _routes_runs_tab(p, values)
     with tabs[2]:
@@ -589,15 +929,21 @@ def render_editor() -> None:
         problems = st.session_state["input_errors"]
         if problems:
             st.error("Fix these entries:\n\n" + "\n".join(f"- {m}" for m in problems))
+            alerts.error("\n".join(f"- {m}" for m in problems), title="Fix these entries")
         else:
             try:
                 profile = profile_from_data(p, origin="from the editor")
             except ProfileError as exc:
                 st.error(str(exc))
+                alerts.error(str(exc), title="This profile can't be inspected or run yet")
         _profile_manager(path, profile, saved)
     with tabs[4]:
         stamp = _value_source(profile)[1] if profile is not None else ()
         _inspect_run_tab(profile, stamp)
 
 
-render_editor()
+try:
+    render_editor()
+except Exception as exc:  # st.rerun/st.stop are BaseException, so they pass through
+    _log_failure("Unexpected error", exc)
+    raise  # Streamlit still shows it on the page

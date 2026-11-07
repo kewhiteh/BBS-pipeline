@@ -110,6 +110,27 @@ def parse_state_codes(xml_path: Path) -> pl.DataFrame:
     return codes
 
 
+def parse_code_labels(xml_path: Path, attribute: str) -> dict[int, str]:
+    """Read an enumerated code list (e.g. BCR, Stratum, RunType) from release metadata.
+
+    Returns {code: description}; empty when the metadata has no list for ``attribute``.
+    """
+    root = ET.parse(xml_path).getroot()
+    labels: dict[int, str] = {}
+    for attr in root.iter("attr"):
+        if attr.findtext("attrlabl") != attribute:
+            continue
+        for edom in attr.iter("edom"):
+            code = (edom.findtext("edomv") or "").strip()
+            text = (edom.findtext("edomvd") or "").strip()
+            if not code.lstrip("-").isdigit() or not text:
+                raise ValueError(f"Malformed {attribute} entry '{code}' in '{xml_path.name}'.")
+            if int(code) in labels and labels[int(code)] != text:
+                raise ValueError(f"Conflicting {attribute} code {code} in '{xml_path.name}'.")
+            labels[int(code)] = text
+    return labels
+
+
 def resolve_states(values: list[int | str], regions: pl.DataFrame | None) -> list[int]:
     """Turn StateNums, region names, or postal abbreviations into StateNum codes.
 
