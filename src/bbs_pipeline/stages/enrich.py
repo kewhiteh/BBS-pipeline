@@ -84,6 +84,18 @@ def apply_joins(
     owner: dict[str, str] = {}
     for table in JOIN_TABLES:
         columns = resolve_columns(table, spec.get(table, []), sources.get(table))
+        if spec.get(table) == ["*"]:
+            # "all columns" skips a column an earlier table already joins from the *same*
+            # frame (ObsN: weather and observer), so the values are identical. A clash with
+            # a different frame (a guild trait named Family) or an explicit list still raises
+            source = sources[table]
+            columns = [
+                c
+                for c in columns
+                if not (
+                    c in owner and source is not None and sources[owner[c]].frame is source.frame
+                )
+            ]
         if not columns:
             continue
         for col in columns:
