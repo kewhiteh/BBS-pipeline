@@ -26,7 +26,7 @@ DEFAULT_JOINS: dict[str, list[str]] = {
         "StartWind",
         "EndWind",
     ],
-    "observer": ["is_first_year", "tenure_tier"],
+    "observer": ["is_first_year"],
     "vehicle": [],
     "species": ["English_Common_Name", "Order", "Family", "Genus", "Species"],
     "guilds": ["*"],
@@ -34,15 +34,6 @@ DEFAULT_JOINS: dict[str, list[str]] = {
 
 # The 2020 survey was cancelled (COVID-19); the release has no 2020 runs
 CANCELLED_SURVEY_YEARS: frozenset[int] = frozenset({2020})
-
-
-class ObserverTenureMode(StrEnum):
-    """Observer experience/tenure filtering policy."""
-
-    INCLUDE_ALL = "include_all"
-    DROP_FIRST_YEAR_ON_ROUTE = "drop_first_year_on_route"
-    DROP_NOVICE_OBSERVERS = "drop_novice_observers"
-    VETERAN_ONLY = "veteran_only"
 
 
 class TemporalRoutingMode(StrEnum):
@@ -209,19 +200,9 @@ class ProtocolConfigContract(BaseModel):
         le=1.0,
         description="Minimum fraction of active calendar years a route must be surveyed (0.0..1.0).",
     )
-    observer_tenure_mode: ObserverTenureMode = Field(
-        default=ObserverTenureMode.INCLUDE_ALL,
-        description="Observer tenure filtering mode.",
-    )
-    observer_min_years: int = Field(
-        default=2,
-        ge=1,
-        description="Minimum cumulative years for an observer not to be considered a novice.",
-    )
-    veteran_min_years: int = Field(
-        default=5,
-        ge=1,
-        description="Minimum cumulative years for an observer to be classified as veteran.",
+    drop_observer_first_year: bool = Field(
+        default=False,
+        description="Drop each observer's first year on a route (the USGS start-up effect).",
     )
     temporal_routing_mode: TemporalRoutingMode = Field(
         default=TemporalRoutingMode.FIFTY_STOP_1997_PLUS,

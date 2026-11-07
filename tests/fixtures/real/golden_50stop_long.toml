@@ -21,7 +21,7 @@ file = "guilds/pwrc_species_groups.csv"
 [joins]
 routes = ["RouteName", "BCR"]
 weather = ["Month", "Day", "ObsN"]
-observer = ["is_first_year", "tenure_tier"]
+observer = ["is_first_year"]
 vehicle = ["CarTotal"]
 species = ["English_Common_Name", "Family"]
 guilds = ["breeding_habitat"]

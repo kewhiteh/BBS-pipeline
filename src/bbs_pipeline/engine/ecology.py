@@ -106,7 +106,7 @@ def run_ecological_engine(
 
     sources = join_sources(
         routes_lf,
-        run_sel.tenure_lf,
+        run_sel.weather_lf,
         target_species_lf,
         tables,
         guild_stage.guild_join_df,

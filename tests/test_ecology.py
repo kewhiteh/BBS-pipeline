@@ -6,7 +6,6 @@ import polars as pl
 import pytest
 
 from bbs_pipeline.contracts import (
-    ObserverTenureMode,
     ProtocolConfigContract,
     SpeciesSelectionContract,
     StopAggregationMode,
@@ -15,7 +14,7 @@ from bbs_pipeline.contracts import (
 from bbs_pipeline.engine import run_ecological_engine
 from bbs_pipeline.stages.common import normalize_canonical_keys
 from bbs_pipeline.stages.observations import harmonize_observations
-from bbs_pipeline.stages.runs import compute_observer_tenure
+from bbs_pipeline.stages.runs import flag_observer_first_year
 from bbs_pipeline.stages.species import filter_target_species
 
 
@@ -170,62 +169,39 @@ def test_cancelled_2020_survey_does_not_count_against_continuity() -> None:
     assert df["route_continuity_ratio"].unique().to_list() == [pytest.approx(1.0)]
 
 
-def test_observer_tenure_modes() -> None:
-    """Prove observer tenure modes drop first-year runs, novices, and non-veterans accurately."""
+def test_observer_first_year_is_per_route() -> None:
+    """is_first_year marks an observer's earliest year on *that route*; dropping removes it."""
     weather = pl.DataFrame(
         {
             "StateNum": [63] * 8,
-            "Route": [1] * 8,
-            "Year": [2015, 2016, 2017, 2018, 2019, 2021, 2022, 2023],
-            # Obs 10: 1 year total (novice, first year on route)
-            # Obs 20: 2 years total (intermediate: 2016 is first year, 2017 is second year)
-            # Obs 30: 5 years total (veteran: 2018 is first year, 2019..2023 are subsequent)
-            "ObsN": [10, 20, 20, 30, 30, 30, 30, 30],
+            "Route": [1, 1, 1, 1, 1, 2, 2, 2],
+            "Year": [2015, 2016, 2017, 2018, 2019, 2016, 2017, 2019],
+            # Obs 10: route 1 in 2015-2016, then route 2 from 2016: first year on route 2
+            #         is 2016 even though they started in 2015 on route 1
+            # Obs 30: route 1 from 2017; Obs 40: route 2 from 2019
+            "ObsN": [10, 10, 30, 30, 30, 10, 10, 40],
             "RunType": [1] * 8,
             "QualityCurrentID": [1] * 8,
         }
     )
 
-    p_all = ProtocolConfigContract(
-        year_range=(2015, 2023),
-        observer_tenure_mode=ObserverTenureMode.INCLUDE_ALL,
-        observer_min_years=2,
-        veteran_min_years=5,
-    )
-    df_all = compute_observer_tenure(weather, p_all)
-    assert df_all.height == 8
+    flagged = flag_observer_first_year(
+        weather, ProtocolConfigContract(year_range=(2015, 2019))
+    ).sort(["Route", "Year"])
+    assert flagged.height == 8
+    first = flagged.filter(pl.col("is_first_year")).select("Route", "ObsN", "Year").rows()
+    assert sorted(first) == [(1, 10, 2015), (1, 30, 2017), (2, 10, 2016), (2, 40, 2019)]
 
-    p_no_first = ProtocolConfigContract(
-        year_range=(2015, 2023),
-        observer_tenure_mode=ObserverTenureMode.DROP_FIRST_YEAR_ON_ROUTE,
-        observer_min_years=2,
-        veteran_min_years=5,
+    dropped = flag_observer_first_year(
+        weather, ProtocolConfigContract(year_range=(2015, 2019), drop_observer_first_year=True)
     )
-    df_no_first = compute_observer_tenure(weather, p_no_first)
-    # Drops 2015 (Obs 10 first yr), 2016 (Obs 20 first yr), 2018 (Obs 30 first yr)
-    assert df_no_first["Year"].to_list() == [2017, 2019, 2021, 2022, 2023]
-    assert all(val is False for val in df_no_first["is_first_year"].to_list())
-
-    p_no_novice = ProtocolConfigContract(
-        year_range=(2015, 2023),
-        observer_tenure_mode=ObserverTenureMode.DROP_NOVICE_OBSERVERS,
-        observer_min_years=3,  # Makes Obs 20 (2 yrs) a novice!
-        veteran_min_years=5,
-    )
-    df_no_novice = compute_observer_tenure(weather, p_no_novice)
-    # Obs 10 (1 yr) and Obs 20 (2 yrs < 3) are novice; Obs 30 first year (2018) also dropped
-    assert df_no_novice["Year"].to_list() == [2019, 2021, 2022, 2023]
-    assert set(df_no_novice["tenure_tier"].to_list()) == {"veteran"}
-
-    p_vet = ProtocolConfigContract(
-        year_range=(2015, 2023),
-        observer_tenure_mode=ObserverTenureMode.VETERAN_ONLY,
-        observer_min_years=2,
-        veteran_min_years=5,
-    )
-    df_vet = compute_observer_tenure(weather, p_vet)
-    assert set(df_vet["ObsN"].to_list()) == {30}
-    assert df_vet.height == 5
+    assert sorted(dropped.select("Route", "Year").rows()) == [
+        (1, 2016),
+        (1, 2018),
+        (1, 2019),
+        (2, 2017),
+    ]
+    assert not dropped["is_first_year"].any()
 
 
 def test_hybrid_harmonized_10_stop() -> None:

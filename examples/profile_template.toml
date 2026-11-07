@@ -31,9 +31,7 @@ run_types = [1]               # [] = no RunType filter. 1 = QualityCurrentID 1 +
 quality_current_ids = [1]     # [] = no filter. 1 = BBS weather, date, time, and route-completion criteria met,
                               # including at least 45 of 50 stops completed (the release has no per-run stop count)
 min_continuity = 0.0          # share of non-cancelled years a route must be surveyed (2020 never counts)
-observer_tenure = "include_all"  # include_all | drop_first_year_on_route | drop_novice_observers | veteran_only
-observer_min_years = 2        # fewer survey years than this = novice
-veteran_min_years = 5         # at least this many survey years = veteran
+drop_observer_first_year = false  # true = drop each observer's first year on a route (USGS start-up effect)
 
 [observations]
 source = "50_stop"        # 50_stop (1997+ only) | 10_stop (1966+) | hybrid (10-stop before 1997, 50-stop after)
@@ -67,7 +65,7 @@ routes = ["StateNum", "Route", "RouteName", "Latitude", "Longitude", "Stratum"]
 weather = ["ObsN", "RunType", "QualityCurrentID", "StartTemp", "EndTemp", "StartWind", "EndWind"]
                           # also: RPID, Month, Day, TotalSpp, TempScale, StartSky, EndSky,
                           # StartTime, EndTime, Assistant
-observer = ["is_first_year", "tenure_tier"]   # also: ObsN, obs_total_years
+observer = ["is_first_year"]   # also: ObsN
 vehicle = []              # RecordedCar, CarTotal, NoiseTotal, Car1..Car50, Noise1..Noise50 (1997+)
 species = ["English_Common_Name", "Order", "Family", "Genus", "Species"]
                           # also: Seq, French_Common_Name

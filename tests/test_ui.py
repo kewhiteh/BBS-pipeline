@@ -417,3 +417,15 @@ def test_join_modes_none_some_all(tmp_path: Path, monkeypatch: pytest.MonkeyPatc
 
     joins = load_profile(path).joins
     assert (joins.weather, joins.vehicle, joins.species) == ([], ["CarTotal"], ["*"])
+
+
+def test_observer_first_year_is_one_checkbox(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    at, path = _app(tmp_path, monkeypatch, _profile(tmp_path))
+    assert not any(n.key in ("ui_novice", "ui_veteran") for n in at.number_input)
+
+    at.checkbox(key="ui_drop_first_year").check().run()
+    at.sidebar.button(key="btn_save").click().run()
+
+    assert load_profile(path).runs.drop_observer_first_year is True
