@@ -3,7 +3,7 @@ project: BBS-pipeline
 aliases: [BBS pipeline, BBS ETL]
 state: active
 updated: 2026-11-07
-review: yes   # Kyle confirmed branch protection on main, 2026-11-07 (agent token gets 404 from the API)
+review: yes   # ruleset on main requires a PR (gh api repos/kewhiteh/BBS-pipeline/rules/branches/main), checked 2026-11-07
 last_audit: none recorded
 ---
 # Resume
