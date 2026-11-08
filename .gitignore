@@ -49,3 +49,7 @@ Thumbs.db
 
 # Editor error log
 logs/
+
+# Local AI-agent folders (installed skills, local settings)
+.agents/
+.claude/
