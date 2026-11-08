@@ -23,6 +23,10 @@ All of Kyle's repos use this same structure so any session, human or agent, can 
 - Test counts and "complete/sealed" claims live in one place only: the repo's existing verification doc, or RESUME.md "Checks at stop". Nowhere else.
 - Never apply this standard to an exempt repo (see Exemptions).
 
+## Checking `review`
+
+`gh api repos/<owner>/<repo>/branches/<default>/protection` only reports classic branch protection and returns 404 when a repo uses rulesets. Also run `gh api repos/<owner>/<repo>/rules/branches/<default>`; a `pull_request` rule there means PRs are required (`review: yes`). This repo uses a ruleset.
+
 ## This repo's map
 
 | Role | File in this repo |
