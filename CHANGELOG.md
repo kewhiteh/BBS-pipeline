@@ -7,6 +7,8 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 - Changelog started 2026-11-07; earlier history is in git log.
 
+Tags v1.0.0 and v2.0.0-rc1 below are from the legacy (pre-v3) code, not the current tree (Kyle, 2026-11-07).
+
 ## [2.0.0-rc1] - 2026-09-23
 
 - Tag message: "Release Candidate 1 for v2.0.0 Track B Additive Spatial Upgrade". Details: UNKNOWN (ask Kyle); see git log.
