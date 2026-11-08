@@ -76,6 +76,11 @@ change that discovers or fixes any of it. The phase plan and its decisions live 
   id, ID, basin, BASIN, BCR, bcr`, else the first attribute). A column the file lacks
   fails with the file's columns. Zip uploads are refused if a member would unpack outside
   its folder.
+- **Branches live in `kewhiteh/BBS-pipeline`, not a fork** (Kyle, 2026-11-07). The agent
+  account `kewhitehagent` has write access and pushes feature branches there; a ruleset on
+  `main` requires a PR with 1 approval and blocks force pushes and deletion, so nothing
+  reaches `main` without Kyle's approval. Merged branches are deleted automatically. The
+  old fork `kewhitehagent/BBS-pipeline` (PRs #2–#19) is retired.
 
 ## Known limitations / workarounds
 

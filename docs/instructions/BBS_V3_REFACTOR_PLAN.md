@@ -114,7 +114,7 @@ The run-profile sketch is the same as in original plan §2.2. Final field names 
 Each phase gets its own commit or PR (see D2). Run `ruff check`, `ruff format --check`, and `pytest` before each. **Fast path to usable data: Phases 0–6.**
 
 ### Phase 0 — Repo hygiene (small)
-- `git init`, `.gitignore` (`.venv`, caches, `data/`, `output/`, `.coverage`). **D2 (decided):** v3 replaces `kewhiteh/BBS-pipeline`, with one PR per phase. The Phase 0 PR replaces the tree on top of the existing `main` history (no force-push). The agent account `kewhitehagent` currently has READ access, so PRs come from a fork unless Kyle grants write.
+- `git init`, `.gitignore` (`.venv`, caches, `data/`, `output/`, `.coverage`). **D2 (decided):** v3 replaces `kewhiteh/BBS-pipeline`, with one PR per phase. The Phase 0 PR replaces the tree on top of the existing `main` history (no force-push). The agent account `kewhitehagent` first had READ access, so PRs #2–#19 came from a fork. Since 2026-11-07 it has write access and pushes branches to `kewhiteh/BBS-pipeline` directly (see `docs/STATUS.md`).
 - Run `ruff format` (8 files), as its own commit.
 - Write a short `AGENTS.md`: string-typed ingestion, the zero-fill rules (per D6), no silent `except`, no fabricated values (no (0,0), no placeholder geometry), the ruff gates, and "halt and ask on ambiguity". `CLAUDE.md` points to it.
 - Rename the script to `bbs` (keep `bbs-pipeline` as an alias if Kyle wants).
