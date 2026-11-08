@@ -7,7 +7,7 @@ change that discovers or fixes any of it. The phase plan and its decisions live 
 ## Verified
 
 - `uv run ruff check .`, `uv run ruff format --check .`, `uv run pytest -q` pass
-  (2026-11-07; count in the latest PR).
+  (2026-11-07; results in [RESUME.md "Checks at stop"](RESUME.md)).
 - Pick lists stay up while the draft is briefly invalid (e.g. 1995 with the `50_stop`
   source, mid-edit) and selections are kept: `test_pick_lists_survive_a_briefly_invalid_profile`.
 - Inspect with every join table on "All" works on the 2026 release.

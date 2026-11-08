@@ -10,11 +10,10 @@ last_audit: none recorded
 ## Next
 Kyle reviews the editor help text (observation source, stop layout, first-year wording); docs/STATUS.md "Open items".
 ## Where I left off
-Last merge on main: fd479e2 (kewhiteh/BBS-pipeline#21, ignore .agents/ and .claude/).
-This session: branch `repo-standard-docs`, docs-only repo-standard PR (CHANGELOG, RESUME, REPO_STANDARD, AGENTS rules).
-Remote branch `spike/legacy-prototype` deleted (dead, Kyle, 2026-11-07).
+Last merge on main: ce17190 (kewhiteh/BBS-pipeline#23, ruleset check for RESUME review field).
+This session: branch `standard-core-v1-sync`, docs-only PR syncing docs/REPO_STANDARD.md to core v1.
 ## Checks at stop
-`uv run ruff check .` green; `uv run ruff format --check .` green; `uv run pytest -q` green, 176 passed. 2026-11-07, commit fd479e2.
+`uv run ruff check .` green; `uv run ruff format --check .` green; `uv run pytest -q` green, 176 passed. 2026-11-07, commit ce17190.
 ## Blocked / DECISION needed
 - None.
 ## Read next
