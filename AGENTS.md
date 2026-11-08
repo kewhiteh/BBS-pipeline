@@ -18,11 +18,6 @@ Kyle is the author and makes the decisions. The active plan is
 - Do not guess study-design values (states, years, species, guilds) for Kyle's projects.
 
 ## Repo standard
-This repo follows [docs/REPO_STANDARD.md](docs/REPO_STANDARD.md) (roles and file map).
-- At session start, read `docs/RESUME.md` first, then what it links under "Read next".
-- At the end of every session, OVERWRITE `docs/RESUME.md` (never append history) so a cold start works with no memory of this session.
-- Update `CHANGELOG.md` in the same PR as any user-visible change.
-- Append to the decisions record (here: `docs/STATUS.md` "Decisions", and the plan's decision table) when a design decision is made. Never edit or delete past entries. Never reword Kyle's DECISION entries anywhere.
-- Update `README.md` when setup or usage changes.
-- Test counts and "complete/sealed" claims live in one place only: `docs/STATUS.md` "Verified", or `docs/RESUME.md` "Checks at stop". Nowhere else.
-- Never apply this standard to an exempt repo (UPSF; see `docs/REPO_STANDARD.md` "Exemptions").
+This repo follows [docs/REPO_STANDARD.md](docs/REPO_STANDARD.md); its Agent rules apply here.
+- Decisions record: `docs/STATUS.md` "Decisions" plus the decision table in `docs/instructions/BBS_V3_REFACTOR_PLAN.md` § 5 (no DECISIONS.md).
+- `review`: main is protected by a repository ruleset (`pull_request` rule), not classic protection.
