@@ -8,11 +8,11 @@ last_audit: none recorded
 ---
 # Resume
 ## Next
-Kyle hand-checks the rows marked Not verified in docs/VERIFICATION.md (ArcGIS Pro, his guild CSV, filters on real data); mark each off there with date and evidence.
+Kyle works through the hand-check queue in [VERIFICATION.md](VERIFICATION.md) ("Kyle's hand-check queue", H1–H13); record each result there. Keep this pointer until every item is ticked.
 ## Where I left off
-Last merge on main: kewhiteh/BBS-pipeline#33. Open: kewhiteh/BBS-pipeline#34 (docs: small-screen open item) and branch `validation-script` (scripts/validate_outputs.py V1–V7, docs/VERIFICATION.md).
+Last merge on main: kewhiteh/BBS-pipeline#35 (validation script, VERIFICATION.md). Open: branch `docs-validation-gate` (AGENTS.md: run the validation script after every code change; hand-check queue).
 ## Checks at stop
-`uv run ruff check .` green; `uv run ruff format --check .` green; `uv run pytest -q` green; `uv run python scripts/validate_outputs.py` all PASS (NC 1990–2024; VA MD ON 1980–2025). 2026-11-09, branch `validation-script`.
+`uv run ruff check .` green; `uv run ruff format --check .` green; `uv run pytest -q` green; `uv run python scripts/validate_outputs.py` all PASS (Kyle and Claude, 2026-11-09).
 ## Blocked / DECISION needed
 - None.
 ## Read next

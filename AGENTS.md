@@ -14,6 +14,11 @@ Kyle is the author and makes the decisions. The active plan is
 
 ## Process
 - Before every PR, run `uv run ruff check .`, `uv run ruff format --check .`, and `uv run pytest -q`.
+- **After every change to the code (`src/`, `ui/`, `scripts/`), also run
+  `uv run python scripts/validate_outputs.py`** and require all checks to pass (Kyle,
+  2026-11-09). If a change makes a check out of date (new output columns, a new source or
+  layout, a changed default), update the script in the same PR, and update
+  `docs/VERIFICATION.md` with the date and result. Docs-only PRs are exempt.
 - **Halt and ask on ambiguity.** Anything marked DECISION in the plan is Kyle's call. Do not pick a value.
 - Do not guess study-design values (states, years, species, guilds) for Kyle's projects.
 
