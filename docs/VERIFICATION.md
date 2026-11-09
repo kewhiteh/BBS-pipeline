@@ -16,9 +16,44 @@ the date, and the evidence (a command and its result, a test name, or who checke
 | **Hand** | A person opened or compared something and wrote down what they saw. | As described in the row. |
 | **Not verified** | Built, and maybe unit-tested on synthetic data, but never checked against real data or in the target software. | — |
 
+## Kyle's hand-check queue
+
+Open until every item is checked; docs/RESUME.md "Next" points here until then. When one
+is done, move its result into the feature checklist below (status **Verified (hand)**,
+date, what was seen) and tick it here.
+
+- [ ] **H1 GeoPackage in ArcGIS Pro**: points land on the route starts in the right
+  state; attribute names and types look right (AOU kept as text with its leading zero).
+- [ ] **H2 Other projection in ArcGIS Pro**: export one GeoPackage in EPSG:5070 (Albers);
+  Pro reads the projection and the points still line up.
+- [ ] **H3 FlatGeobuf, GeoJSON, GeoParquet in ArcGIS Pro**: each opens (or note which
+  Pro can't read).
+- [ ] **H4 RunType / QC toggles on real data**: Inspect, then toggle each off; the runs
+  kept at that stage go up, and nothing else changes.
+- [ ] **H5 Continuity on real data**: Inspect at 80% and at 0%; fewer routes at 80%, and
+  a route dropped at 80% really has runs in fewer than 80% of the years.
+- [ ] **H6 Drop observer's first year**: with it ticked, no row has `is_first_year` true;
+  the runs-kept count drops.
+- [ ] **H7 Subspecies lumping**: Dark-eyed Junco with lumping on includes its forms
+  (one row per run); with it off, the forms are separate rows.
+- [ ] **H8 Rolling mean**: for one route and species, the rolling value equals the mean
+  of that year and the previous N−1 calendar years by hand.
+- [ ] **H9 Your guild CSV**: it loads; Inspect's guild report shows the expected matches;
+  one deliberate AOU typo is reported as unmatched; filters keep the right species.
+- [ ] **H10 Boundary polygon**: with a real polygon (e.g. a county), only routes starting
+  inside are kept (compare with the map in Pro).
+- [ ] **H11 Overlays**: a real polygon layer labels each route with the polygon its start
+  point is in.
+- [ ] **H12 Manifest**: rerun from a `<file>.manifest.json` and get an identical file.
+- [ ] **H13 Large extent**: all states, 1966–2025, once: how long it takes and whether
+  memory is fine.
+
 ## Script checks (`scripts/validate_outputs.py`)
 
-Last run 2026-11-09 by Claude, on the 2026 release (1966–2025), both scopes all PASS:
+Kyle ran it 2026-11-09 after merging kewhiteh/BBS-pipeline#35: all PASS (default scope).
+It must be rerun after every code change (AGENTS.md).
+
+Run 2026-11-09 by Claude, on the 2026 release (1966–2025), both scopes all PASS:
 NC 1990–2024 (20 s) and VA + MD + ON 1980–2025 (25 s). The script uses the profile
 defaults (RunType 1, QualityCurrentID 1, continuity 0.8, zero-fill on) with subspecies
 lumping **off**, so its raw comparison is one AOU to one AOU.
