@@ -17,6 +17,7 @@ start_year = 1995
 end_year = 2025
 run_types = []             # no RunType filter
 quality_current_ids = []   # no QualityCurrentID filter
+min_continuity = 0.0       # no continuity filter (the default is 0.8)
 
 [observations]
 source = "10_stop"         # covers 1995-1996, before the 50-stop data begins

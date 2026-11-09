@@ -113,7 +113,7 @@ class RunsSection(_Section):
     end_year: int = 2024
     run_types: list[int] = Field(default_factory=lambda: [1])
     quality_current_ids: list[int] = Field(default_factory=lambda: [1])
-    min_continuity: float = Field(default=0.0, ge=0.0, le=1.0)
+    min_continuity: float = Field(default=0.8, ge=0.0, le=1.0)  # Kyle, 2026-11-09 (U7)
     drop_observer_first_year: bool = False  # USGS start-up effect: first year on a route
 
     @model_validator(mode="before")

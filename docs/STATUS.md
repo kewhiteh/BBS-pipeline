@@ -25,6 +25,11 @@ change that discovers or fixes any of it. The phase plan and its decisions live 
 
 ## Decisions
 
+- **`runs.min_continuity` defaults to 0.8** (was 0.0): routes must have a kept run in at
+  least 80% of non-cancelled years unless a profile says otherwise (Kyle, 2026-11-09,
+  plan U7: academic-rigour files without opening the setting every time). Profiles that
+  omit it now filter at 80%; `examples/wood_thrush_story_map.toml` (which keeps every
+  run on purpose) now sets `min_continuity = 0.0` so its output is unchanged.
 - **`observations.source` defaults to `10_stop`** (was `50_stop`), and the editor lists
   it first: 10-stop data cover 1966 on, 50-stop only 1997 on, so the widest option is the
   default (Kyle, 2026-11-09). Profiles that omit `source` now read 10-stop data; set
