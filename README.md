@@ -52,7 +52,7 @@ Everything the CLI does can be done in the editor:
 | `bbs run` | **Run** |
 
 Failures in the editor (fetch, inspect, run, unexpected errors) are written with their
-full traceback to `logs/ui_errors.log`. After pulling or switching branches, restart
+full traceback to `logs/ui_errors.log`; the Settings page shows, downloads and clears it. After pulling or switching branches, restart
 Streamlit; a running server keeps the old library code loaded.
 
 Edits stay in a draft until **Save profile** or **Save as** (which will not overwrite an

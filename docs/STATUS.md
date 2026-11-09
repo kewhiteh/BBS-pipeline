@@ -47,7 +47,10 @@ change that discovers or fixes any of it. The phase plan and its decisions live 
 - **Editor failures are logged** to `logs/ui_errors.log` (git-ignored) with time,
   profile and traceback: Fetch, Inspect, Run, pick-list read errors (once per distinct
   error), and unexpected page errors. The error box names the log and has a
-  "Technical details" expander, so errors never need copying off the screen.
+  "Technical details" expander, so errors never need copying off the screen. The
+  Settings page's **Error Log** shows the latest 20 entries newest first (time, action,
+  last line; expand for the traceback), with Download and Clear (confirmed):
+  `test_error_log_is_readable_and_clearable_on_settings`.
 - **Output projection list** (`CRS_CHOICES` in `ui/app.py`): EPSG:4326, 4269, 5070,
   32119 (NC State Plane, meters), 3857, plus "Other" for any EPSG code. The v2 GUI
   offered 4326, 5070, 3857 and `nc_state_plane`. The v3 config takes EPSG codes only,
@@ -60,7 +63,10 @@ change that discovers or fixes any of it. The phase plan and its decisions live 
   started, and appear after the built-ins in every profile. The file is not
   git-ignored: commit it to share the list, or leave it local. The **Settings** page
   lists the saved projections and adds, renames (Enter saves) and removes them, writing
-  the file at once; nobody has to edit it by hand (Kyle, 2026-11-09):
+  the file at once; nobody has to edit it by hand (Kyle, 2026-11-09). **Add a
+  projection** searches every current EPSG projected and lat/long system by code or name
+  (5,974 in pyproj 3.x's bundled EPSG database, deprecated ones dropped; no internet),
+  shows where it applies, and links to its epsg.io page:
   `test_projections_are_added_renamed_and_removed_on_settings`.
 
 - **Observer experience matches USGS trend analysis: first year on a route, or not**

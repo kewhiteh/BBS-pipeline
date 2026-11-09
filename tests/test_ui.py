@@ -635,20 +635,47 @@ def test_projections_are_added_renamed_and_removed_on_settings(
     at.button(key="btn_to_settings").click().run()
     assert any("None saved yet" in c.value for c in at.caption)
 
-    at.text_input(key="ui_proj_new_code").set_value("26917").run()
+    search = at.selectbox(key="ui_proj_new_code")
+    assert "EPSG:26917 · NAD83 / UTM zone 17N" in search.options  # the full EPSG list
+    search.set_value("EPSG:26917").run()
     assert any("NAD83 / UTM zone 17N" in c.value for c in at.caption)
+    assert any("North Carolina" in c.value for c in at.caption)  # where it applies
     at.button(key="btn_proj_add").click().run()
     assert not at.exception, at.exception
     assert '"EPSG:26917" = "NAD83 / UTM zone 17N, metre"' in saved.read_text(encoding="utf-8")
-    assert at.text_input(key="ui_proj_new_code").value == ""  # cleared for the next one
+    assert at.selectbox(key="ui_proj_new_code").value is None  # cleared for the next one
 
     at.text_input(key="ui_proj_name_EPSG:26917").set_value("UTM 17N (east NC)").run()
     assert '"EPSG:26917" = "UTM 17N (east NC)"' in saved.read_text(encoding="utf-8")
 
-    at.text_input(key="ui_proj_new_code").set_value("nonsense").run()
-    assert any("not a known EPSG code" in c.value for c in at.caption)
+    at.selectbox(key="ui_proj_new_code").set_value("EPSG:26917").run()
+    assert any("already in your list" in c.value for c in at.caption)
     assert at.button(key="btn_proj_add").disabled
 
     at.button(key="btn_proj_remove_EPSG:26917").click().run()
     assert "EPSG:26917" not in saved.read_text(encoding="utf-8")
     assert any("None saved yet" in c.value for c in at.caption)
+
+
+def test_error_log_is_readable_and_clearable_on_settings(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    at, _ = _app(tmp_path, monkeypatch, _profile(tmp_path))
+    monkeypatch.chdir(tmp_path)
+    log = tmp_path / "logs" / "ui_errors.log"
+    log.parent.mkdir()
+    log.write_text(
+        "--- 2026-11-09T10:00:00 Inspect (profile: a.toml)\nTraceback...\nValueError: old one\n\n"
+        "--- 2026-11-09T11:00:00 Run (profile: a.toml)\nTraceback...\nOSError: new one\n\n",
+        encoding="utf-8",
+    )
+    at.button(key="btn_to_settings").click().run()
+
+    labels = [e.label for e in at.expander if "2026-11-09" in e.label]
+    assert labels[0].startswith("2026-11-09T11:00:00 Run") and "OSError: new one" in labels[0]
+    assert "ValueError: old one" in labels[1]  # newest first
+    assert any("OSError: new one" in c.value for c in at.code)
+
+    at.button(key="btn_log_clear").click().run()
+    assert not log.exists()
+    assert any("No errors logged" in c.value for c in at.caption)
