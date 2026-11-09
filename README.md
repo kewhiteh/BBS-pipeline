@@ -48,8 +48,8 @@ Everything the CLI does can be done in the editor:
 | `bbs validate` | Validation messages at the top of the page and the **Profile TOML** view in the Profile menu (with download) |
 | `bbs values` | Pick lists for states, BCRs, strata (with names from the release metadata), routes (narrowed to the chosen states and BCRs), species, families, orders, guild traits, and each table's join columns |
 | `--set key=value` | Change the field and Inspect/Run without saving |
-| `bbs inspect` | **Inspect** (or *Live inspect*): stage counts, exact output columns, guild report, preview |
-| `bbs run` | **Run** |
+| `bbs inspect` | **Inspect**: stage counts, exact output columns, guild report, preview; marked out of date after any edit |
+| `bbs run` | **Run**: writes the file, then offers it as a download |
 
 Failures in the editor (fetch, inspect, run, unexpected errors) are written with their
 full traceback to `logs/ui_errors.log`; the Settings page shows, downloads and clears it. After pulling or switching branches, restart

@@ -1,6 +1,6 @@
 # Editor (Streamlit) redesign plan
 
-Status: **mock-up signed off by Kyle, 2026-11-09.** The final mock-up (version 19) is the
+Status: **built, 2026-11-09 (PRs kewhiteh/BBS-pipeline#27, #28, #29 and redesign PR 3).** The final mock-up (version 19) is the
 target for the build (rule: GUI changes get a clickable mock-up first).
 
 Mock-up (private to Kyle): https://claude.ai/artifact/8TPjBea1pDvYzkEqj9G7aV
@@ -42,8 +42,7 @@ was one page with Run and download at the bottom, and he preferred that flow.
 
 1. Settings page and header toolbar; remove sidebar and checklist. **Done on branch `ui-redesign-1-settings-header`.**
 2. Build page cards and Output strip; U6 toggles; U7 default (config + template + docs). **Done on branch `ui-redesign-2-build-cards`.**
-3. Check-and-run area (Inspect / stale marker / Run + download), wide layout, light theme in
-   `.streamlit/config.toml`.
+3. Check-and-run area (Inspect / stale marker / Run + download), wide layout, dark earthy theme (U16) and gold headings (U17) in `.streamlit/config.toml`. **Done on branch `ui-redesign-3-theme-run`.**
 
 Each PR keeps the existing `ui_*` widget keys where the widget survives so the UI tests
 carry over; tests that look for tabs or the checklist are rewritten.

@@ -1,0 +1,20 @@
+# Editor theme: dark, earthy (redesign plan U16) with muted gold headings (U17).
+# Streamlit reads this when `streamlit run` starts from the repo root. Colours only; no CSS.
+[theme]
+base = "dark"
+backgroundColor = "#1E2318"          # dark olive-charcoal (Kyle works at night, lights off)
+secondaryBackgroundColor = "#2C3324" # input fields, code blocks
+textColor = "#E4DCC6"                # parchment
+borderColor = "#434B37"              # muted olive
+linkColor = "#B7CF8F"                # light moss
+primaryColor = "#C2553A"             # brick red: sliders, radios, toggles, primary buttons
+# Alerts and badges (st.info / st.warning / st.success, :yellow[...] text)
+blueBackgroundColor = "#2D3A29"      # info: dark sage
+blueTextColor = "#CFE0BB"
+yellowBackgroundColor = "#4A3F1C"    # warning: mustard
+yellowTextColor = "#D4B86A"          # muted gold: also every heading, via :yellow[...]
+yellowColor = "#D4B86A"
+greenBackgroundColor = "#2B4026"     # success
+greenTextColor = "#C5E0B0"
+orangeBackgroundColor = "#4A3420"    # the Unsaved badge
+orangeTextColor = "#E8B07A"
