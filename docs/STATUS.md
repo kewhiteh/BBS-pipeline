@@ -267,6 +267,13 @@ change that discovers or fixes any of it. The phase plan and its decisions live 
   import with JSON To Features. FlatGeobuf: not readable in Pro (use QGIS, or
   GeoPackage). The editor's format descriptions say so.
 
+- **Fixed 2026-11-09 (H7): a pick could vanish when its label changed.** Streamlit
+  sends multiselect picks back from the browser by label; turning lumping off relabels
+  05677 ("Dark-eyed Junco" -> "(unid. race) Dark-eyed Junco"), so the species pick was
+  silently cleared and Inspect ran on every species. `_pick` now re-sets the picks from
+  the draft whenever the labels change. AppTest skips the browser, so the browser case
+  is confirmed by hand (H7 rerun); a headless browser needs `libatomic1` etc. (sudo).
+
 ## Environment notes
 
 - Moving the project folder breaks `.venv`: its scripts keep the old absolute Python

@@ -201,6 +201,16 @@ def _pick(
         message = f"{label}: not in this release, dropped from the list: {missing}"
         _show("warning", message)
         _log_warning("Pick dropped", f"{message} (widget key {key})")
+    # The browser sends a multiselect's picks back as their labels. When an earlier
+    # choice relabels the options (lumping off: 05677 "Dark-eyed Junco" becomes
+    # "(unid. race) Dark-eyed Junco"), the old label matches nothing and Streamlit
+    # silently clears the pick (H7, 2026-11-09). So when the labels change, set the
+    # picks again from the draft, by value.
+    labels = [fmt(o) for o in options]
+    labels_key = f"_pick_labels_{key}"
+    if key in st.session_state and st.session_state.get(labels_key) not in (None, labels):
+        st.session_state[key] = [c for c in current if c in options]
+    st.session_state[labels_key] = labels
     return st.multiselect(
         label,
         options,
