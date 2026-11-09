@@ -34,7 +34,7 @@ uv run bbs run      --config project.toml --offline # writes the output file + m
 ## Editor
 
 ```bash
-uv run streamlit run ui/app.py                       # open a profile from the sidebar
+uv run streamlit run ui/app.py                       # open a profile from the header
 BBS_PROFILE=project.toml uv run streamlit run ui/app.py
 ```
 
@@ -42,10 +42,10 @@ Everything the CLI does can be done in the editor:
 
 | CLI | Editor |
 |---|---|
-| `bbs fetch` | **Fetch release** button (Release & Cache tab) |
-| `--config FILE` | Sidebar **Open / new**: profiles found in the project, or any path; **New profile**; **Start from an example** (also in the **Getting started** checklist at the top) |
-| editing the TOML | Every setting, including download settings under **Advanced** |
-| `bbs validate` | Sidebar validation messages and the **Profile TOML** view (with download) |
+| `bbs fetch` | **Fetch release** button (**Settings** page) |
+| `--config FILE` | Header **Profile** menu: profiles found in the project, or any path; **New profile**; **Start from an example** |
+| editing the TOML | Every setting: the dataset on the **Build** page; release, folders and download settings on the **Settings** page |
+| `bbs validate` | Validation messages at the top of the page and the **Profile TOML** view in the Profile menu (with download) |
 | `bbs values` | Pick lists for states, BCRs, strata (with names from the release metadata), routes (narrowed to the chosen states and BCRs), species, families, orders, guild traits, and each table's join columns |
 | `--set key=value` | Change the field and Inspect/Run without saving |
 | `bbs inspect` | **Inspect** (or *Live inspect*): stage counts, exact output columns, guild report, preview |
@@ -57,7 +57,7 @@ Streamlit; a running server keeps the old library code loaded.
 
 Edits stay in a draft until **Save profile** or **Save as** (which will not overwrite an
 existing file unless you tick *Overwrite*). Entries the editor cannot read (a malformed
-overlay or filter line, a non-number in a number list) are listed in the sidebar and
+overlay or filter line, a non-number in a number list) are listed at the top of the page and
 block saving and running until fixed. Guild traits without a pick list (free-text
 columns) can be filtered in the *Other trait filters* box.
 

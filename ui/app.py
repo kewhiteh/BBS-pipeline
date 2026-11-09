@@ -1,12 +1,14 @@
 """Streamlit editor for BBS run profiles (TOML): open, edit, inspect, save, and run.
 
-    uv run streamlit run ui/app.py                       # pick a profile in the sidebar
+    uv run streamlit run ui/app.py                       # open profiles from the header
     BBS_PROFILE=project.toml uv run streamlit run ui/app.py
 
-Everything the CLI does is available here: open/new/save/save-as profiles, fetch the
-release, every profile setting, the resolved TOML (`bbs validate`), pick lists
-(`bbs values`), inspect, and run. Edits go into a draft until a save. Pick lists come
-from the release cache; without a fetched release, list fields fall back to text boxes.
+Two pages: Build (the dataset settings, inspect and run) and Settings (the release,
+folders, and download settings: the profile's [source] section, set about once a year).
+The header on both pages shows the open profile, Save, and a Profile menu (open, new,
+example, save as, TOML). Everything the CLI does is available here. Edits go into a
+draft until a save. Pick lists come from the release cache; without a fetched release,
+list fields fall back to text boxes. Layout plan: docs/instructions/UI_REDESIGN_PLAN.md.
 """
 
 from __future__ import annotations
@@ -377,21 +379,60 @@ def _overlays_editor(out: dict[str, Any]) -> None:
     out["overlays"] = overlays
 
 
-# --- tabs ----------------------------------------------------------------------------
+# --- pages and tabs ----------------------------------------------------------------------------
 
 
-def _source_tab(p: dict[str, Any]) -> None:
+def _release_status(p: dict[str, Any]) -> tuple[bool, str]:
+    """(fetched, one-line status) for the release named in the draft."""
+    src = p["source"]
+    fetched = (Path(src["raw_dir"]) / RELEASE_JSON).exists()
+    manifest = Path(src["cache_dir"]) / CACHE_MANIFEST
+    if manifest.is_file():
+        data = json.loads(manifest.read_text(encoding="utf-8"))
+        title = data.get("release", {}).get("title") or src["release"]
+        return fetched, f"{title} · cache built {data.get('built_at')}"
+    if fetched:
+        return True, f"{src['release']} · fetched, cache builds on the first run"
+    return False, f"{src['release']} · not fetched yet"
+
+
+def _settings_page_body(p: dict[str, Any]) -> None:
+    """The profile's [source] section and machine-level lists: set about once a year."""
     src = p["source"]
     st.caption(
-        "Which BBS data release to use and where it lives on disk. Start here: fetch the "
-        "release once, and the other tabs get pick lists with names instead of codes."
+        "The BBS release and where it lives on disk. USGS publishes about one release a "
+        "year, so these rarely change. They are saved in the open profile's [source] "
+        "section, like every other setting."
     )
+    st.subheader("BBS Release")
+    fetched, status = _release_status(p)
+    (st.success if fetched else st.info)(status)
     src["release"] = st.text_input(
         "Release DOI or ScienceBase item id",
         src["release"],
         key="ui_release",
         help="The USGS BBS dataset release, e.g. 10.5066/P144YU3S (the 1966–2025 release).",
     )
+    raw_dir = Path(src["raw_dir"])
+    if not (raw_dir / RELEASE_JSON).exists():
+        st.caption(f"No {RELEASE_JSON} in {raw_dir}: fetch the release to get pick lists.")
+        if st.button("Fetch release", key="btn_fetch", type="primary"):
+            try:
+                with st.spinner("Downloading from ScienceBase..."):
+                    info = fetch_release(src["release"], raw_dir)
+            except Exception as exc:  # shown and logged, not swallowed
+                _show_failure("Fetch release", exc)
+            else:
+                st.success(f"Fetched {info.title}")
+                st.rerun()
+    src["rebuild_cache"] = st.checkbox(
+        "Rebuild cache on next run",
+        src["rebuild_cache"],
+        key="ui_rebuild_cache",
+        help="Rebuild the cache from the release files, e.g. after replacing them.",
+    )
+
+    st.subheader("Data Folders")
     src["raw_dir"] = st.text_input(
         "Release directory",
         src["raw_dir"],
@@ -404,56 +445,48 @@ def _source_tab(p: dict[str, Any]) -> None:
         key="ui_cache_dir",
         help="Where the cleaned, typed copy of the release is kept so runs start fast.",
     )
+
+    st.subheader("Download Settings")
     src["offline"] = st.checkbox(
         "Offline (never download)",
         src["offline"],
         key="ui_offline",
         help="Use only files already on disk; fail instead of reaching ScienceBase.",
     )
-    src["rebuild_cache"] = st.checkbox(
-        "Rebuild cache on next run",
-        src["rebuild_cache"],
-        key="ui_rebuild_cache",
-        help="Rebuild the cache from the release files, e.g. after replacing them.",
+    c1, c2, c3 = st.columns(3)
+    src["http_timeout_seconds"] = float(
+        c1.number_input(
+            "HTTP timeout (seconds)",
+            min_value=1.0,
+            value=float(src["http_timeout_seconds"]),
+            key="ui_http_timeout",
+        )
     )
-    with st.expander("Advanced: download settings"):
-        src["http_timeout_seconds"] = float(
-            st.number_input(
-                "HTTP timeout (seconds)",
-                min_value=1.0,
-                value=float(src["http_timeout_seconds"]),
-                key="ui_http_timeout",
-            )
+    src["http_retries"] = int(
+        c2.number_input("HTTP retries", 0, 10, int(src["http_retries"]), key="ui_http_retries")
+    )
+    src["http_backoff_seconds"] = float(
+        c3.number_input(
+            "Retry backoff (seconds, doubles each retry)",
+            min_value=0.0,
+            value=float(src["http_backoff_seconds"]),
+            key="ui_http_backoff",
         )
-        src["http_retries"] = int(
-            st.number_input("HTTP retries", 0, 10, int(src["http_retries"]), key="ui_http_retries")
+    )
+
+    st.subheader("Saved Projections")
+    saved = _saved_projections()
+    if saved:
+        st.dataframe(
+            pl.DataFrame({"code": list(saved), "name": list(saved.values())}), hide_index=True
         )
-        src["http_backoff_seconds"] = float(
-            st.number_input(
-                "Retry backoff (seconds, doubles each retry)",
-                min_value=0.0,
-                value=float(src["http_backoff_seconds"]),
-                key="ui_http_backoff",
-            )
-        )
-    raw_dir = Path(src["raw_dir"])
-    if not (raw_dir / RELEASE_JSON).exists():
-        st.info(f"No {RELEASE_JSON} in {raw_dir}: fetch the release to get pick lists.")
-        if st.button("Fetch release", key="btn_fetch"):
-            try:
-                with st.spinner("Downloading from ScienceBase..."):
-                    info = fetch_release(src["release"], raw_dir)
-            except Exception as exc:  # shown and logged, not swallowed
-                _show_failure("Fetch release", exc)
-            else:
-                st.success(f"Fetched {info.title}")
-                st.rerun()
-    manifest = Path(src["cache_dir"]) / CACHE_MANIFEST
-    if manifest.is_file():
-        data = json.loads(manifest.read_text(encoding="utf-8"))
-        st.caption(
-            f"Cache built {data.get('built_at')} from {data.get('release', {}).get('title')}"
-        )
+    st.caption(
+        f'Projections added with "Add to my list" on the Build page are kept in '
+        f"`{PROJECTIONS_FILE}` for every profile. Edit that file to rename or remove one."
+    )
+
+    st.subheader("Logs")
+    st.caption(f"Editor errors are written to `{ERROR_LOG}` with the full traceback.")
 
 
 def _routes_runs_tab(p: dict[str, Any], v: ProfileValues | None) -> None:
@@ -994,7 +1027,7 @@ def _show_result(res: dict[str, Any]) -> None:
 
 def _inspect_run_tab(profile: RunProfile | None, stamp: tuple) -> None:
     if profile is None:
-        st.info("Fix the profile errors in the sidebar to inspect or run.")
+        st.info("Fix the problems shown at the top of the page to inspect or run.")
         return
     st.caption(
         "Inspect shows what the profile would produce (row counts at each filter and a "
@@ -1076,23 +1109,19 @@ def _switch_to(path: Path | None, draft: dict[str, Any]) -> None:
         del st.session_state[key]
     st.session_state.pop("last_result", None)
     st.session_state.pop("ran", None)
-    st.session_state["started"] = True  # opened, new or from an example: step 1 is done
     st.session_state["profile_path"] = str(path) if path is not None else None
     st.session_state["draft"] = draft
     st.rerun()
 
 
-def _profile_manager(
-    path: Path | None, profile: RunProfile | None, saved: RunProfile | None
-) -> None:
-    """Sidebar: current profile, Open, New, Save, Save as, and the resolved TOML."""
-    st.markdown(f"**Profile:** `{path}`" if path else "**Profile:** new, not saved yet")
+def _profile_menu(path: Path | None, profile: RunProfile | None) -> None:
+    """The header's Profile menu: Open, New, examples, Save as, and the resolved TOML."""
     with st.expander("What is a profile?", icon=":material/help:"):
         st.markdown(
             "A profile is one `.toml` file holding every setting for one extraction: "
             "the release, which routes and runs, species, extra columns, and the output "
             "file. Keep one per project, e.g. `examples/wood_thrush_story_map.toml`.\n\n"
-            "- The tabs edit the open profile.\n"
+            "- The Build and Settings pages edit the open profile.\n"
             "- Your edits are a **draft**. Inspect and Run use the draft right away; "
             "**Save profile** writes it to the file.\n"
             "- The command line runs the same file: `uv run bbs run --config "
@@ -1100,20 +1129,6 @@ def _profile_manager(
             "The old pipeline took these settings as options every time you ran it; a "
             "profile keeps them in a file you can save, reopen, share, and rerun."
         )
-    if profile is not None:
-        dirty = saved is None or profile != saved
-        st.caption(
-            "Unsaved changes: Inspect and Run use them; Save writes them to the file."
-            if dirty
-            else "Saved"
-        )
-        if path is not None and st.button(
-            "Save profile", key="btn_save", disabled=not dirty, type="primary"
-        ):
-            save_profile(profile, path)
-            st.toast(f"Saved {path}")
-            st.rerun()
-
     with st.expander("Save as", expanded=path is None):
         target = st.text_input(
             "Save as file", value=str(path or "profiles/new_profile.toml"), key="sb_save_as"
@@ -1161,86 +1176,55 @@ def _profile_manager(
             )
 
 
-# --- getting started -----------------------------------------------------------------
-
-
-def _getting_started(
-    p: dict[str, Any], path: Path | None, profile: RunProfile | None, saved: RunProfile | None
-) -> None:
-    """A checklist of the steps from nothing to an output file, ticked from the draft."""
-    rt, rn, sp, out = p["routes"], p["runs"], p["species"], p["output"]
-    fetched = (Path(p["source"]["raw_dir"]) / RELEASE_JSON).exists()
-    where = rt["states"] or rt["bcrs"] or rt["strata"] or rt["route_ids"] or rt["boundary"]
-    which = sp["aous"] or sp["common_names"] or sp["families"] or sp["orders"]
-    inspected = "last_result" in st.session_state
-    is_saved = path is not None and profile is not None and profile == saved
-    steps = [
-        (
-            (path is not None and path.exists()) or bool(st.session_state.get("started")),
-            "Open a profile",
-            "Sidebar **Open / new**, or start from an example below. A profile is one file "
-            "holding every setting.",
-        ),
-        (
-            fetched,
-            "Get the data",
-            "**Release & Cache** tab: **Fetch release** (once). Pick lists need it.",
-        ),
-        (
-            bool(where),
-            "Choose where",
-            "**Routes & Runs** tab: states, BCRs, strata, routes or a boundary. Optional: "
-            "empty keeps every route.",
-        ),
-        (
-            True,
-            "Choose which surveys",
-            f"**Routes & Runs** tab: years {rn['start_year']}–{rn['end_year']}, RunType "
-            f"{rn['run_types'] or 'any'}, QualityCurrentID {rn['quality_current_ids'] or 'any'}.",
-        ),
-        (
-            bool(which),
-            "Choose species",
-            "**Species & Guilds** tab. Optional: empty keeps every species.",
-        ),
-        (True, "Choose the output file", f"**Joins & Output** tab: now `{out['path']}`."),
-        (
-            inspected,
-            "Inspect",
-            "**Inspect & Run** tab: counts after each filter and a preview; writes nothing.",
-        ),
-        (is_saved, "Save the profile", "Sidebar **Save profile** or **Save as**."),
-        (bool(st.session_state.get("ran")), "Run", "**Inspect & Run** tab: writes the file."),
-    ]
-    done = sum(ok for ok, _, _ in steps)
-    with st.expander(
-        f"Getting started ({done} of {len(steps)} done)",
-        expanded=not is_saved,
-        icon=":material/checklist:",
-    ):
-        for number, (ok, title, how) in enumerate(steps, start=1):
-            mark = ":green[:material/check_circle:]" if ok else ":material/radio_button_unchecked:"
-            st.markdown(f"{mark} **{number}. {title}.** {how}")
-        _example_picker("guide_example")
-
-
 # --- page ----------------------------------------------------------------------------
 
 
-def render_editor() -> None:
-    st.set_page_config(page_title="BBS Run Profile", layout="wide")
-    if "profile_path" not in st.session_state:
-        st.session_state["profile_path"] = os.environ.get("BBS_PROFILE", "profile.toml")
-    path = Path(st.session_state["profile_path"]) if st.session_state["profile_path"] else None
-    saved = load_profile(path) if path is not None and path.exists() else None
-    if "draft" not in st.session_state:
-        st.session_state["draft"] = (saved or RunProfile()).model_dump(mode="json")
-    p = _draft()
-    st.session_state["input_errors"] = []
+PAGES: dict[str, Any] = {}  # "build" / "settings" -> st.Page, set in render_editor
 
-    st.title("BBS Run Profile")
-    guide = st.container()  # filled last, once inspect/run state for this rerun is known
+
+def _header(
+    path: Path | None, profile: RunProfile | None, saved: RunProfile | None, page: str
+) -> None:
+    """Title, release status, the open profile, Save, the Profile menu, and page switch."""
+    p = _draft()
+    with st.container(horizontal=True, vertical_alignment="center"):
+        st.title("BBS Dataset Builder", width="stretch")
+        if page == "build":
+            if st.button("Settings", key="btn_to_settings", icon=":material/settings:"):
+                st.switch_page(PAGES["settings"])
+        elif st.button("Back to builder", key="btn_to_build", icon=":material/arrow_back:"):
+            st.switch_page(PAGES["build"])
+    fetched, status = _release_status(p)
+    with st.container(horizontal=True, vertical_alignment="center"):
+        st.badge(
+            f"Release {status}" if fetched else "No release fetched",
+            icon=":material/check:" if fetched else ":material/warning:",
+            color="green" if fetched else "orange",
+        )
+        st.markdown(f"**Profile:** `{path}`" if path else "**Profile:** new, not saved yet")
+        if profile is not None:
+            dirty = saved is None or profile != saved
+            st.badge("Unsaved changes" if dirty else "Saved", color="orange" if dirty else "gray")
+            if path is not None and st.button(
+                "Save profile", key="btn_save", disabled=not dirty, type="primary"
+            ):
+                save_profile(profile, path)
+                st.toast(f"Saved {path}")
+                st.rerun()
+        with st.popover("Profile", icon=":material/folder_open:"):
+            _profile_menu(path, profile)
+
+
+def _build_page() -> None:
+    p = _draft()
     alerts = st.container()  # filled after the tabs, once the draft has been validated
+    if not _release_status(p)[0]:
+        with st.container(border=True):
+            st.subheader("Fetch the BBS Release")
+            st.caption(
+                "Pick lists and runs need the USGS release on disk. Fetch it once per "
+                "release (about once a year) on the Settings page."
+            )
     values: ProfileValues | None = None
     values_error = None
     try:
@@ -1252,41 +1236,67 @@ def render_editor() -> None:
             _log_failure("Reading pick lists", exc)
     if values_error:
         alerts.warning(
-            f"Fetch the release or fix the release directory on the Release & Cache tab: "
-            f"{values_error}",
+            f"Fetch the release or fix the release directory on the Settings page: {values_error}",
             title="Pick lists unavailable, using text boxes",
         )
 
-    tabs = st.tabs(
-        ["Release & Cache", "Routes & Runs", "Species & Guilds", "Joins & Output", "Inspect & Run"]
-    )
+    tabs = st.tabs(["Routes & Runs", "Species & Guilds", "Joins & Output", "Inspect & Run"])
     with tabs[0]:
-        _source_tab(p)
-    with tabs[1]:
         _routes_runs_tab(p, values)
-    with tabs[2]:
+    with tabs[1]:
         _species_tab(p, values)
-    with tabs[3]:
+    with tabs[2]:
         _joins_output_tab(p, values)
-
-    profile: RunProfile | None = None
-    with st.sidebar:
-        problems = st.session_state["input_errors"]
-        if problems:
-            st.error("Fix these entries:\n\n" + "\n".join(f"- {m}" for m in problems))
-            alerts.error("\n".join(f"- {m}" for m in problems), title="Fix these entries")
-        else:
-            try:
-                profile = profile_from_data(p, origin="from the editor")
-            except ProfileError as exc:
-                st.error(str(exc))
-                alerts.error(str(exc), title="This profile can't be inspected or run yet")
-        _profile_manager(path, profile, saved)
-    with tabs[4]:
+    profile = _validated(alerts)
+    with tabs[3]:
         stamp = _value_source(profile)[1] if profile is not None else ()
         _inspect_run_tab(profile, stamp)
-    with guide:
-        _getting_started(p, path, profile, saved)
+
+
+def _settings_page() -> None:
+    alerts = st.container()
+    _settings_page_body(_draft())
+    _validated(alerts)
+
+
+def _validated(alerts: Any) -> RunProfile | None:
+    """The draft as a profile, or None with the reasons shown in ``alerts``."""
+    problems = st.session_state["input_errors"]
+    if problems:
+        alerts.error("\n".join(f"- {m}" for m in problems), title="Fix these entries")
+        return None
+    try:
+        return profile_from_data(_draft(), origin="from the editor")
+    except ProfileError as exc:
+        alerts.error(str(exc), title="This profile can't be inspected or run yet")
+        return None
+
+
+def render_editor() -> None:
+    st.set_page_config(
+        page_title="BBS Dataset Builder", page_icon=":material/travel_explore:", layout="wide"
+    )
+    if "profile_path" not in st.session_state:
+        st.session_state["profile_path"] = os.environ.get("BBS_PROFILE", "profile.toml")
+    path = Path(st.session_state["profile_path"]) if st.session_state["profile_path"] else None
+    saved = load_profile(path) if path is not None and path.exists() else None
+    if "draft" not in st.session_state:
+        st.session_state["draft"] = (saved or RunProfile()).model_dump(mode="json")
+    st.session_state["input_errors"] = []
+
+    PAGES["build"] = st.Page(_build_page, title="Build", url_path="build", default=True)
+    PAGES["settings"] = st.Page(_settings_page, title="Settings", url_path="settings")
+    page = st.navigation(list(PAGES.values()), position="hidden")
+    header = st.container()  # filled after the page, once the draft has been validated
+    page.run()
+    profile: RunProfile | None = None
+    if not st.session_state["input_errors"]:
+        try:
+            profile = profile_from_data(_draft(), origin="from the editor")
+        except ProfileError:
+            profile = None  # the page already shows why
+    with header:
+        _header(path, profile, saved, "build" if page.url_path in ("", "build") else "settings")
 
 
 try:

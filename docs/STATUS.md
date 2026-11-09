@@ -71,12 +71,14 @@ change that discovers or fixes any of it. The phase plan and its decisions live 
   The golden 50-stop expected CSV lost only its `tenure_tier` column; every other value
   is unchanged.
 
-- **Getting started.** A checklist at the top of the editor (open while the profile is
-  unsaved) ticks the steps off from the draft. **Start from an example** copies an
-  `examples/*.toml` profile into a new, unsaved draft, so examples are never
-  overwritten; Save as keeps the copy. Steps 4 (surveys) and 6 (output) are always
-  ticked: they have defaults and are shown so they get checked, not because there's
-  anything to do.
+- **Editor pages (redesign PR 1, 2026-11-09).** Two pages, no sidebar: **Build** (the
+  dataset settings, still in tabs until redesign PR 2) and **Settings** (release,
+  folders, download settings, saved projections, logs). The header on both shows the
+  release status, the open profile, an Unsaved/Saved badge, Save, and a **Profile**
+  menu (open, new, start from an example, save as, TOML). The Getting started checklist
+  is gone (U9). **Start from an example** copies an `examples/*.toml` profile into a new,
+  unsaved draft, so examples are never overwritten. Edits on either page share one
+  draft: `test_settings_page_holds_the_release_and_build_page_does_not`.
 - **Fixed 2026-11-07:** a profile without a guild file read "Unsaved changes" right
   after opening, because the editor cleared the default `joins.guilds = ["*"]` to `[]`.
 - **Overlay and boundary files** (Kyle asked for a file picker, 2026-11-07). Overlays
