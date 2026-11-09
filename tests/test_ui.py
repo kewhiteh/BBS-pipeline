@@ -88,10 +88,10 @@ def test_editor_shows_names_for_coded_filters(
     at, _ = _app(tmp_path, monkeypatch, _profile(tmp_path))
 
     bcrs = at.multiselect(key="ui_bcrs")
-    assert bcrs.options == [  # with how many routes each keeps
-        "27 · Southeastern Coastal Plain (4 routes)",
-        "28 · Appalachian Mountains (4 routes)",
-        "29 · Piedmont (4 routes)",
+    assert bcrs.options == [  # labels never carry live counts (they'd lose picks)
+        "27 · Southeastern Coastal Plain",
+        "28 · Appalachian Mountains",
+        "29 · Piedmont",
     ]
     assert bcrs.help
     assert all(" · " in o for o in at.multiselect(key="ui_strata").options)
@@ -104,7 +104,7 @@ def test_editor_offers_pick_lists_and_saves_only_on_save(
     before = path.read_text(encoding="utf-8")
 
     # labelled pick lists from the release
-    assert at.multiselect(key="ui_states").options == ["NC · North Carolina (12 routes)"]
+    assert at.multiselect(key="ui_states").options == ["NC · North Carolina"]
     assert "63_024 · ARCOLA" in at.multiselect(key="ui_route_ids").options
     assert "07550 · Wood Thrush" in at.multiselect(key="ui_aous").options
     at.multiselect(key="ui_states").set_value([63])
@@ -901,3 +901,40 @@ def test_settings_page_is_one_row_of_cards_then_the_error_log(
         ":yellow[Saved Projections]",
         ":yellow[Error Log]",
     ]
+
+
+def test_picking_a_bcr_after_a_state_keeps_the_state(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Kyle, 2026-11-09: NC then BCR 29 dropped NC as 'not in this release'.
+
+    Labels that change with the other picks (route counts) broke Streamlit's matching
+    of the earlier selection, so the state came back as its label text.
+    """
+    at, _ = _app(tmp_path, monkeypatch, _profile(tmp_path))
+    at.multiselect(key="ui_states").set_value([63]).run()
+    labels = {k: list(at.multiselect(key=k).options) for k in ("ui_states", "ui_strata")}
+    at.multiselect(key="ui_bcrs").set_value([29]).run()
+    # the browser matches picks by label: a picked value's label must not change
+    assert at.multiselect(key="ui_states").options == labels["ui_states"]
+    assert set(at.multiselect(key="ui_strata").options) <= set(labels["ui_strata"])
+    assert any("4 routes match these picks" in c.value for c in at.caption)
+    assert not at.warning, [w.value for w in at.warning]
+    assert not any("removed" in i.value for i in at.info)
+    assert at.multiselect(key="ui_states").value == [63]
+    assert at.multiselect(key="ui_bcrs").value == [29]
+    routes = at.session_state["draft"]["routes"]
+    assert (routes["states"], routes["bcrs"]) == (["NC"], [29])
+
+
+def test_a_state_label_handed_back_as_the_pick_is_mapped_to_its_code(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """What the browser sent in Kyle's bug: the label text instead of StateNum 63."""
+    at, _ = _app(tmp_path, monkeypatch, _profile(tmp_path))
+    at.session_state["ui_states"] = ["NC · North Carolina (113 routes)"]
+    at.run()
+    assert not at.warning, [w.value for w in at.warning]
+    assert at.session_state["draft"]["routes"]["states"] == ["NC"]
+    log = (tmp_path / "logs" / "ui_errors.log").read_text(encoding="utf-8")
+    assert "Warning: State picks came back as labels" in log  # worked around, and logged

@@ -195,7 +195,9 @@ def _pick(
         return _int_list(raw, label) if as_int else _csv_list(raw)
     missing = [c for c in current if c not in options]
     if missing:
-        st.warning(f"{label}: not in this release, dropped from the list: {missing}")
+        message = f"{label}: not in this release, dropped from the list: {missing}"
+        st.warning(message)
+        _log_warning("Pick dropped", f"{message} (widget key {key})")
     return st.multiselect(
         label,
         options,
@@ -205,6 +207,25 @@ def _pick(
         help=help,
         filter_mode=filter_mode,  # type: ignore[arg-type]
     )
+
+
+def _log_warning(action: str, message: str) -> None:
+    """Log something unexpected the editor worked around (no crash, so no traceback).
+
+    Once per distinct message per session, so reruns don't repeat it. Kyle,
+    2026-11-09: a pick silently dropped as "not in this release" left no trace.
+    """
+    seen = st.session_state.setdefault("logged_warnings", set())
+    if (action, message) in seen:
+        return
+    seen.add((action, message))
+    ERROR_LOG.parent.mkdir(parents=True, exist_ok=True)
+    stamp = datetime.now().isoformat(timespec="seconds")
+    with ERROR_LOG.open("a", encoding="utf-8") as log:
+        log.write(
+            f"--- {stamp} Warning: {action} (profile: {st.session_state.get('profile_path')})\n"
+        )
+        log.write(f"{message}\n\n")
 
 
 def _log_failure(action: str, exc: BaseException) -> None:
@@ -552,12 +573,28 @@ def _area_choices(rt: dict[str, Any], names: dict[int, Any], regions: Any) -> di
     except ValueError as exc:
         st.warning(str(exc))
         states = []
-    return {
+    chosen = {
         "StateNum": st.session_state.get("ui_states", states),
         "BCR": st.session_state.get("ui_bcrs", rt["bcrs"]),
         "Stratum": st.session_state.get("ui_strata", rt["strata"]),
         "route_id": st.session_state.get("ui_route_ids", rt["route_ids"]),
     }
+    # Safety net: a widget can hand back its label ("NC · North Carolina") instead of
+    # the code if a label ever changes between reruns; map it back rather than letting
+    # it read as a pick that matches no route.
+    by_label = {f"{s['abbreviation'] or c} · {s['StateName']}": c for c, s in names.items()}
+    fixed = [
+        by_label.get(c.split(" (")[0], c) if isinstance(c, str) else c for c in chosen["StateNum"]
+    ]
+    if fixed != chosen["StateNum"]:
+        _log_warning(
+            "State picks came back as labels",
+            f"widget returned {chosen['StateNum']}; mapped to StateNum {fixed}",
+        )
+        if "ui_states" in st.session_state:
+            st.session_state["ui_states"] = fixed  # before the widget draws
+    chosen["StateNum"] = fixed
+    return chosen
 
 
 AREA_WIDGETS = {
@@ -637,10 +674,10 @@ def _study_area_card(p: dict[str, Any], v: ProfileValues | None) -> None:
         )
     options = area_options(v.routes, chosen)
     counts = area_counts(v.routes, chosen)
-
-    def routes_note(field: str, value: Any) -> str:
-        n = counts[field].get(value, 0)
-        return f" ({n} route{'s' if n != 1 else ''})"
+    # Labels must never change with the other picks: the browser matches a selection
+    # by its label text, so a label carrying a live route count ("NC (113 routes)")
+    # lost the pick as soon as a BCR changed the count (Kyle, 2026-11-09). Counts go
+    # in captions instead.
 
     # Only states with routes (some regions have none); a saved pick always stays listed
     state_options = sorted(
@@ -653,12 +690,9 @@ def _study_area_card(p: dict[str, Any], v: ProfileValues | None) -> None:
         state_options,
         chosen["StateNum"],
         "ui_states",
-        lambda c: (
-            f"{names[c]['abbreviation'] or c} · {names[c]['StateName']}"
-            + routes_note("StateNum", c)
-        ),
+        lambda c: f"{names[c]['abbreviation'] or c} · {names[c]['StateName']}",
         help="Type the postal abbreviation (NC, VA, ON). Only states with routes that "
-        "fit the other picks are offered; the count is how many. Empty = all.",
+        "fit the other picks are offered. Empty = all.",
         filter_mode="prefix",  # "nc" finds only NC, not every name with n...c in it
     )
     rt["states"] = [names[c]["abbreviation"] or c for c in codes]
@@ -667,11 +701,14 @@ def _study_area_card(p: dict[str, Any], v: ProfileValues | None) -> None:
         options["BCR"],
         chosen["BCR"],
         "ui_bcrs",
-        lambda c: v.label("BCR", c) + routes_note("BCR", c),
+        lambda c: v.label("BCR", c),
         help="NABCI ecological regions with similar bird communities and habitats. Only "
-        "BCRs with routes that fit the other picks are offered; the count is how many. "
-        "Empty = all.",
+        "BCRs with routes that fit the other picks are offered. Empty = all.",
     )
+    matching = sum(
+        1 for r in v.routes if all(not chosen[f] or r.get(f) in chosen[f] for f in chosen)
+    )
+    st.caption(f"{matching:,} route{'s' if matching != 1 else ''} match these picks.")
     rt["boundary"] = _gis_file_picker(
         "Boundary polygon file (start point inside)",
         rt["boundary"] or "",
@@ -684,12 +721,18 @@ def _study_area_card(p: dict[str, Any], v: ProfileValues | None) -> None:
             options["Stratum"],
             chosen["Stratum"],
             "ui_strata",
-            lambda c: v.label("Stratum", c) + routes_note("Stratum", c),
+            lambda c: v.label("Stratum", c),
             help="The BBS's own physiographic regions (older than BCRs). Only strata with "
-            "routes that fit the other picks are offered; the count is how many. BCR and "
-            "strata lines differ, so a few edge routes pair unlikely names (one Piedmont "
-            "route, Elamsville VA, is in the Blue Ridge stratum). Empty = all.",
+            "routes that fit the other picks are offered. BCR and strata lines differ, so "
+            "a few edge routes pair unlikely names (one Piedmont route, Elamsville VA, is "
+            "in the Blue Ridge stratum); the route counts below show them. Empty = all.",
         )
+        if chosen["StateNum"] or chosen["BCR"] or chosen["route_id"]:
+            per = sorted(counts["Stratum"].items(), key=lambda kv: -kv[1])
+            st.caption(
+                "Routes per stratum with the other picks: "
+                + "; ".join(f"{v.label('Stratum', c)}: {n}" for c, n in per)
+            )
         rt["route_ids"] = _pick(
             "Route ids (only routes that fit the states, BCRs and strata)",
             options["route_id"],
