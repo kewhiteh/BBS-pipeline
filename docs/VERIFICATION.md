@@ -22,8 +22,7 @@ Open until every item is checked; docs/RESUME.md "Next" points here until then. 
 is done, move its result into the feature checklist below (status **Verified (hand)**,
 date, what was seen) and tick it here.
 
-- [ ] **H1 GeoPackage in ArcGIS Pro**: points land on the route starts in the right
-  state; attribute names and types look right (AOU kept as text with its leading zero).
+- [x] **H1 GeoPackage in ArcGIS Pro**: done 2026-11-09; result in the checklist below.
 - [ ] **H2 Other projection in ArcGIS Pro**: export one GeoPackage in EPSG:5070 (Albers);
   Pro reads the projection and the points still line up.
 - [ ] **H3 FlatGeobuf, GeoJSON, GeoParquet in ArcGIS Pro**: each opens (or note which
@@ -94,7 +93,7 @@ holds 6 NC runs from before 1997.
 | Boundary polygon filter | Tests only | `tests/test_spatial_integrity.py`; not checked with a real polygon |
 | Overlays (route labels from polygons) | Tests only | not checked with a real layer |
 | Other projections (e.g. EPSG:5070 Albers) | Tests only | multi-CRS end-to-end test on fixture data; **not opened in ArcGIS Pro** |
-| GeoPackage opens correctly in ArcGIS Pro | **Not verified** | Kyle to check: points on the route starts, attribute names and types |
+| GeoPackage opens correctly in ArcGIS Pro | **Verified (hand)** 2026-11-09 | Kyle, ArcGIS Pro: all routes 2015–2024 (RunType 1, QC 1, continuity 0.8), EPSG:4326, 1,489,901 points on 1,635 routes. Points on the route starts across the US and Canada; AOU is a Text field with leading zeros; field names fine. Claude checked the same file: every point equals its route's Latitude/Longitude in the release (max difference 0.0) |
 | FlatGeobuf, GeoJSON, GeoParquet open in ArcGIS Pro | **Not verified** | Pro's support for these is unconfirmed |
 | Manifest reproduces the same file | **Not verified** | rerun from `<file>.manifest.json` and compare |
 | Large extent (all states, 1966–2025): time and memory | **Verified (hand)** 2026-11-09, with a limit | Kyle, H13 profile (RunType 1, continuity 0, zero-fill, 10-stop bins, all joins, 151 columns). Speed is fine: 20 states (4.69 M rows) Inspect 5.4 s. Memory is the limit: attempt 1 (all states) ran WSL (15.4 GB) out of memory and crashed it; attempt 2 peaks 1 / 10 / 20 states = 5.2 / 7.0 / 13.25 GB. After kewhiteh/BBS-pipeline#44 a 20-state Run peaks 10.5 GB. All states with everything on (~13.7 M rows, ~15 GB table) does not fit; the memory check (kewhiteh/BBS-pipeline#43) stops it in 2 s instead of crashing. Whole-country builds in chunks: future item in STATUS.md |
