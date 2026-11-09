@@ -207,5 +207,9 @@ change that discovers or fixes any of it. The phase plan and its decisions live 
 uv sync --extra dev
 uv run ruff check . && uv run ruff format --check . && uv run pytest -q
 uv run bbs values --config project.toml routes.bcrs   # codes with names
-uv run streamlit run ui/app.py                        # Routes & Runs tab: named BCRs/strata
+uv run streamlit run ui/app.py                        # Build page: named BCRs/strata
+uv run python scripts/validate_outputs.py             # outputs vs the raw release (V1-V7)
 ```
+
+Per-feature verification status (script / tests / hand / not verified):
+[VERIFICATION.md](VERIFICATION.md).
