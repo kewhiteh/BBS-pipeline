@@ -22,6 +22,15 @@ Kyle is the author and makes the decisions. The active plan is
 - **Halt and ask on ambiguity.** Anything marked DECISION in the plan is Kyle's call. Do not pick a value.
 - Do not guess study-design values (states, years, species, guilds) for Kyle's projects.
 
+## Troubleshooting the editor
+- When Kyle says something happened in the editor, **read `logs/ui_activity.log` first**
+  (newest lines last) before asking for screenshots. One JSON line per event: `action`
+  (with the full `profile_toml` at that moment), `edit` (field: from -> to), `info` /
+  `warning` / `error` (every message box shown, when it appeared), `result` (Inspect/Run
+  counts), plus `session`, `page` and `profile`. Errors also carry the traceback, and
+  `logs/ui_errors.log` holds errors and warnings only. Rerun the logged `profile_toml`
+  to reproduce. (Kyle, 2026-11-09: no screenshots or copy-paste needed.)
+
 ## Repo standard
 This repo follows [docs/REPO_STANDARD.md](docs/REPO_STANDARD.md); its Agent rules apply here.
 - Decisions record: `docs/STATUS.md` "Decisions" plus the decision table in `docs/instructions/BBS_V3_REFACTOR_PLAN.md` § 5 (no DECISIONS.md).

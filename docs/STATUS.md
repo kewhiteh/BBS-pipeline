@@ -59,6 +59,16 @@ change that discovers or fixes any of it. The phase plan and its decisions live 
   the old label back instead of StateNum 63. Fix: labels carry no live counts (a caption
   shows them), a label handed back is mapped to its code, and both that and the "not in
   this release" warning are now written to the error log.
+- **Activity log (2026-11-09).** `logs/ui_activity.log` (git-ignored, JSON lines,
+  rolls over to `.1` at 5 MB) records everything that happens in the editor so a
+  problem can be reconstructed without screenshots: actions (Inspect, Run, Save, Save
+  as, Open, New, example, Fetch, Clear area, projections, clear log) with the full
+  profile TOML at that moment; every setting edit as field: from → to; every
+  error / warning / info box shown, when it appears; Inspect/Run results (counts after
+  each filter, columns, files); crashes with tracebacks. Each line has time, session,
+  page and profile. `BBS_UI_ACTIVITY_LOG` moves it (the tests use a temp file):
+  `test_activity_log_records_what_happened`. The Settings page's Error Log still shows
+  errors and warnings only.
 - **The error log records warnings, not only crashes (2026-11-09).** Before, only
   exceptions were logged, so a pick silently dropped left no trace. Now anything the
   editor works around unexpectedly is logged as `Warning: <what>` with a message (once
