@@ -26,8 +26,7 @@ date, what was seen) and tick it here.
 - [x] **H2 Other projection in ArcGIS Pro**: done 2026-11-09; result in the checklist below.
 - [x] **H3 FlatGeobuf, GeoJSON, GeoParquet in ArcGIS Pro**: done 2026-11-09; result in the checklist below.
 - [x] **H4 RunType / QC toggles on real data**: done 2026-11-09; result in the checklist below.
-- [ ] **H5 Continuity on real data**: Inspect at 80% and at 0%; fewer routes at 80%, and
-  a route dropped at 80% really has runs in fewer than 80% of the years.
+- [x] **H5 Continuity on real data**: done 2026-11-09; result in the checklist below.
 - [ ] **H6 Drop observer's first year**: with it ticked, no row has `is_first_year` true;
   the runs-kept count drops.
 - [ ] **H7 Subspecies lumping**: Dark-eyed Junco with lumping on includes its forms
@@ -82,7 +81,7 @@ holds 6 NC runs from before 1997.
 | CSV, Parquet, GeoPackage agree; points in the right place | **Verified (script)** | V7 (EPSG:4326 only) |
 | Golden slice of the real release reproduces exactly | **Verified (tests)** | `tests/test_golden.py`, 12 NC routes, all years, including `test_golden_counts_match_the_raw_fifty_stop_file` |
 | RunType / QualityCurrentID filters keep the right runs | **Verified (hand)** 2026-11-09 + tests | Kyle, editor Inspect, NC 2015–2024, continuity 0: both on 581 runs / 79 routes; QC off 581 / 79 (no change: every RunType 1 run has QualityCurrentID 1, D11); both off 676 / 90. Routes before run filters stayed 5,845 / 113. Claude matched every count against the raw weather table (NC 2015–2024: RunType 1 + QC 1 = 581, RunType 0 + QC 1 = 72, RunType 0 + QC 0 = 23). QC on with RunType off (653 runs) not tried by hand. Tests: `test_user_run_filters_are_not_overridden`, `test_excluded_run_never_contributes_counts` |
-| Continuity filter (default 0.8) | Tests only | `test_cancelled_2020_survey_does_not_count_against_continuity`; not hand-checked on real routes |
+| Continuity filter (default 0.8) | **Verified (hand)** 2026-11-09 + tests | Kyle, editor Inspect, NC 2015–2024, standard runs: 0% = 581 runs / 79 routes; 80% = 432 runs / 50 routes. Claude matched both against the raw weather table: 2020 has no runs and is left out of the denominator (9 years; the preview's 0.8889 = 8/9), so 80% needs 8 of 9 years; 50 routes have 8 or 9 (432 runs). Dropped example: 63_226, runs in 2017–2019 and 2021–2024 = 7 of 9 = 0.778. Test: `test_cancelled_2020_survey_does_not_count_against_continuity` |
 | Drop observer's first year / `is_first_year` | Tests only | `test_observer_first_year_is_per_route`; not hand-checked on real data |
 | Subspecies lumping | Tests only | `tests/test_taxonomy.py` (forms counted under the species); **not checked against the raw release** (the script runs with lumping off) |
 | Rolling mean | Tests only | `test_rolling_mean_uses_calendar_years_not_rows`; values not hand-checked on real data |
