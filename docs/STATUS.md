@@ -274,6 +274,11 @@ change that discovers or fixes any of it. The phase plan and its decisions live 
   the draft whenever the labels change. AppTest skips the browser, so the browser case
   was confirmed in a real browser 2026-11-09 (old code clears the pick, fixed code keeps it).
 
+- **Rolling mean starts at the first year of the build (H8, 2026-11-09).** The window
+  holds only years inside `runs.start_year`..`end_year`, so the first N−1 years average
+  fewer years (`rolling_n_years` says how many), even when earlier runs exist. Widen
+  the years and trim afterwards if full windows are needed from the start.
+
 ## Environment notes
 
 - **Browser checks (2026-11-09).** Headless Chromium is installed (Kyle ran `sudo apt-get
