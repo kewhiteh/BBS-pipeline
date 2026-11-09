@@ -1,0 +1,45 @@
+# Editor (Streamlit) redesign plan
+
+Status: **waiting for Kyle's sign-off on the clickable mock-up.** No app code changes until
+then (rule: GUI changes get a clickable mock-up first, 2026-11-09).
+
+Mock-up (private to Kyle): https://claude.ai/artifact/8TPjBea1pDvYzkEqj9G7aV
+(Build page and Settings page; the numbers in it are illustrative, not real counts).
+
+## Why
+
+The editor today is a profiles sidebar plus five tabs that mirror the profile file's
+sections (`[source]`, `[routes]`, ...), not the way a dataset is built. Release & Cache
+(changes about once a year) sits at the same level as the year range. A change on one
+tab can act on another (the 50_stop auto-switch note shows on Species & Guilds when the
+years change on Routes & Runs). Kyle's v2 app (tag v2.0.0-rc1, `src/bbs_pipeline/ui/app.py`)
+was one page with Run and download at the bottom, and he preferred that flow.
+
+## Decisions (Kyle, 2026-11-09)
+
+| # | Decision | Reason |
+|---|----------|--------|
+| U1 | One **Build** page: cards *Where*, *When & how counted*, *Which birds*, then *Output*, then *Check and run*. No tabs, no sidebar. | Reads top to bottom like the task; fewer clicks to one file. |
+| U2 | Release, folders, download settings, cache rebuild, saved projections, logs move to a **second Settings page**. Build page shows a one-line release status; a "fetch the release" card appears only when none is fetched. | Settings change once a year; there are enough of them to need a page, not a dialog. |
+| U3 | Profiles move to a header toolbar: picker, Unsaved badge, Save, a menu (Save as, New, Start from example, Open, View/download TOML). | Frees the sidebar; profile actions stay one click away. |
+| U4 | **Run writes the file and offers a download.** | Both are wanted. |
+| U5 | **Inspect stays a button**; after any edit the last counts are marked out of date. | Kyle likes the explicit check; each Inspect is a real data pass. |
+| U6 | RunType and QualityCurrentID are **visible toggles** ("standard runs only", "passed QC only"), not hidden. On = `[1]`, off = all. | Only codes 0 and 1 exist; cheap to show. |
+| U7 | `runs.min_continuity` sits under "More" and **defaults to 0.8**. | Kyle wants academic-rigour files without opening it every time. Changes the config default for the CLI too (GUI/CLI parity); profiles that omit it will filter at 80%. |
+| U8 | Years, source and stop layout share one card; source and layout are segmented buttons; 50_stop only offered from 1997, "all 50 stops" only with 50_stop. | The auto-switch note appears next to the control that caused it. |
+| U9 | The Getting started checklist is removed. | The single page is the checklist; the no-release card covers the one prerequisite. |
+| U10 | Every profile option stays reachable in the editor; profile format and CLI are unchanged except U7's default. | GUI/CLI parity rule. |
+
+## Build order (after sign-off)
+
+1. Settings page and header toolbar; remove sidebar and checklist.
+2. Build page cards and Output strip; U6 toggles; U7 default (config + template + docs).
+3. Check-and-run area (Inspect / stale marker / Run + download), wide layout, light theme in
+   `.streamlit/config.toml`.
+
+Each PR keeps the existing `ui_*` widget keys where the widget survives so the UI tests
+carry over; tests that look for tabs or the checklist are rewritten.
+
+## Open questions
+
+- Anything Kyle changes after clicking through the mock-up.
