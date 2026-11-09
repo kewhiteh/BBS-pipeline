@@ -26,6 +26,7 @@ from bbs_pipeline.stages.runs import select_runs
 from bbs_pipeline.stages.species import apply_guilds, resolve_target_species, subspecies_lump_map
 from bbs_pipeline.usage import check_memory
 
+OBSERVATION_TABLES = ("ten_stop", "fifty_stop")
 MEMORY_SAMPLE_ROWS = 20_000  # rows sized to estimate the output's bytes per row
 
 
@@ -40,6 +41,38 @@ class EcologicalEngineResult:
     wide_index: list[str] = field(default_factory=list)
     # Species recorded on surviving runs that have no guild row (when a guild file is used)
     species_without_guild: list[dict[str, str]] = field(default_factory=list)
+
+
+def _observations_for_routes(
+    tables: dict[str, pl.LazyFrame | pl.DataFrame], runs_lf: pl.LazyFrame
+) -> dict[str, pl.LazyFrame | pl.DataFrame]:
+    """The tables, with the observation tables limited to routes that have surviving runs.
+
+    Filters on the raw integer StateNum / Route when present, so the filter applies while
+    the table is read rather than after every row's route_id string is built.
+    """
+    route_ids = runs_lf.select("route_id").unique().collect()["route_id"]
+    parts = route_ids.str.split_exact("_", 1).struct.unnest()
+    route_keys = (
+        parts["field_0"].cast(pl.Int64) * 1000 + parts["field_1"].cast(pl.Int64)
+    ).implode()
+    limited = dict(tables)
+    for name in OBSERVATION_TABLES:
+        if name not in tables:
+            continue
+        lf = to_lazy(tables[name])
+        if {"StateNum", "Route"} <= set(lf.collect_schema().names()):
+            lf = lf.filter(
+                (pl.col("StateNum").cast(pl.Int64) * 1000 + pl.col("Route").cast(pl.Int64)).is_in(
+                    route_keys
+                )
+            )
+            limited[name] = normalize_canonical_keys(lf)
+        else:
+            limited[name] = normalize_canonical_keys(lf).filter(
+                pl.col("route_id").is_in(route_ids.implode())
+            )
+    return limited
 
 
 def run_ecological_engine(
@@ -79,8 +112,13 @@ def run_ecological_engine(
     mapping = subspecies_lump_map(tables, protocol.lump_subspecies_and_hybrids)
     target_species_lf, target_aous_df = resolve_target_species(species_raw_lf, species, mapping)
 
+    # Observations only for routes that still have runs (memory: grouping the whole
+    # release cost ~2 GB even for one state). Zero-fill history is per route, so it is
+    # unchanged by this filter.
+    obs_tables = _observations_for_routes(tables, run_sel.runs_lf)
+
     harmonized_obs_lf = harmonize_observations(
-        tables=tables,
+        tables=obs_tables,
         protocol=protocol,
         lump_subspecies_and_hybrids=protocol.lump_subspecies_and_hybrids,
     )
@@ -101,11 +139,16 @@ def run_ecological_engine(
     target_aous_df = guild_stage.target_aous_df
 
     matrix_lf = build_matrix(
-        tables, run_sel.runs_lf, run_obs_lf, count_cols, target_aous_df, protocol
+        obs_tables, run_sel.runs_lf, run_obs_lf, count_cols, target_aous_df, protocol
     )
-    zero_filled_matrix_rows = int(matrix_lf.select(pl.len()).collect().item())
     if protocol.rolling_window_years:
         matrix_lf = add_rolling_mean(matrix_lf, protocol.rolling_window_years)
+    # Collect the narrow matrix once (it was recomputed for the count, the memory sample
+    # and the output) and sort it here: the joins keep this order, so the wide output
+    # needs no sort (a second full copy at the peak).
+    matrix_df = matrix_lf.sort(["route_id", "Year", "AOU"]).collect()
+    zero_filled_matrix_rows = matrix_df.height
+    matrix_lf = matrix_df.lazy()
 
     sources = join_sources(
         routes_lf,
@@ -124,7 +167,8 @@ def run_ecological_engine(
         check_memory(zero_filled_matrix_rows, sample.width, sample.estimated_size() / sample.height)
     del sample
 
-    observations_df = final_lf.sort(["route_id", "Year", "AOU"]).collect()
+    del matrix_df
+    observations_df = final_lf.collect()
     final_output_rows = int(observations_df.height)
     if final_output_rows != zero_filled_matrix_rows:
         raise AssertionError(

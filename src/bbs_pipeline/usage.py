@@ -113,8 +113,9 @@ def available_memory_bytes() -> int:
 
 
 # Peak while building the output ~= memory in use + PEAK_TABLE_COPIES x final table.
-# Calibrated 2026-11-09 on H13 (151 columns, ~1.2 KB/row): 10 states grew 1.5x the
-# table, 20 states 1.76x (13.25 GB peak of 15.4). The extra copy is the final sort.
+# Recalibrated 2026-11-09 after the memory cuts (H13 profile, 151 columns, ~1.2 KB/row,
+# in use measured after the narrow matrix is built): 10 states grew 1.77x the table,
+# 20 states 1.40x. The left joins that add the columns cost the extra.
 PEAK_TABLE_COPIES = 1.8
 # Stop when the estimate needs more than this share of what is free plus in use.
 MEMORY_HEADROOM = 0.95
