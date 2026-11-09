@@ -24,6 +24,9 @@ from bbs_pipeline.stages.observations import add_rolling_mean, build_matrix, har
 from bbs_pipeline.stages.routes import select_routes
 from bbs_pipeline.stages.runs import select_runs
 from bbs_pipeline.stages.species import apply_guilds, resolve_target_species, subspecies_lump_map
+from bbs_pipeline.usage import check_memory
+
+MEMORY_SAMPLE_ROWS = 20_000  # rows sized to estimate the output's bytes per row
 
 
 @dataclass(frozen=True)
@@ -113,6 +116,13 @@ def run_ecological_engine(
         guilds.traits if guilds is not None else [],
     )
     final_lf, joined, wide_index = enrich(matrix_lf, sources, protocol.join_columns)
+
+    # H13: a full-extent build ran WSL out of memory. Size a sample of the real output
+    # and stop before the big collect if it can't fit.
+    sample = final_lf.head(MEMORY_SAMPLE_ROWS).collect()
+    if sample.height:
+        check_memory(zero_filled_matrix_rows, sample.width, sample.estimated_size() / sample.height)
+    del sample
 
     observations_df = final_lf.sort(["route_id", "Year", "AOU"]).collect()
     final_output_rows = int(observations_df.height)

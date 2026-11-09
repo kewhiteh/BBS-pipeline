@@ -999,3 +999,20 @@ def test_multiple_runs_stop_shows_a_fix_not_a_crash(
     assert at.toggle(key="ui_run_types").value is True
     at.button(key="btn_save").click().run()
     assert load_profile(path).runs.run_types == [1]
+
+
+def test_too_big_build_stops_with_a_warning_not_a_crash(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from bbs_pipeline import usage
+
+    monkeypatch.setattr(usage, "available_memory_bytes", lambda: 1)  # nothing free
+    at, _ = _app(tmp_path, monkeypatch, _profile(tmp_path))
+
+    at.button(key="btn_inspect").click().run()
+
+    assert not at.exception, at.exception
+    assert not at.error
+    assert any("Stopped before running out" in w.value for w in at.warning)
+    log = (tmp_path / "logs" / "ui_activity.log").read_text(encoding="utf-8")
+    assert '"kind": "warning"' in log

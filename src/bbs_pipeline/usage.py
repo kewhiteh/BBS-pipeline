@@ -98,3 +98,56 @@ def measure(
         thread.join(timeout=2)
         usage.peak_rss_bytes = max(usage.peak_rss_bytes, rss_bytes())
         usage.elapsed_s = time.perf_counter() - start
+
+
+def available_memory_bytes() -> int:
+    """Memory the OS can still give out now (Linux MemAvailable; 0 where unknown)."""
+    try:
+        with open("/proc/meminfo", encoding="ascii") as meminfo:
+            for line in meminfo:
+                if line.startswith("MemAvailable:"):
+                    return int(line.split()[1]) * 1024
+    except OSError:
+        pass
+    return 0
+
+
+# Peak while building the output ~= memory in use + PEAK_TABLE_COPIES x final table.
+# Calibrated 2026-11-09 on H13 (151 columns, ~1.2 KB/row): 10 states grew 1.5x the
+# table, 20 states 1.76x (13.25 GB peak of 15.4). The extra copy is the final sort.
+PEAK_TABLE_COPIES = 1.8
+# Stop when the estimate needs more than this share of what is free plus in use.
+MEMORY_HEADROOM = 0.95
+
+
+class MemoryEstimateError(RuntimeError):
+    """The build would need more memory than this machine has free (checked before it)."""
+
+    def __init__(self, rows: int, columns: int, table_bytes: float, peak: float, limit: float):
+        self.rows, self.columns = rows, columns
+        self.table_gb, self.peak_gb, self.limit_gb = table_bytes / GB, peak / GB, limit / GB
+        super().__init__(
+            f"This build would make {rows:,} rows x {columns} columns (about "
+            f"{self.table_gb:.1f} GB) and need about {self.peak_gb:.1f} GB of memory at its "
+            f"peak; about {self.limit_gb:.1f} GB is available. Stopped before running out. "
+            "Choose fewer states or years, fewer species, or fewer join columns."
+        )
+
+
+def check_memory(rows: int, columns: int, bytes_per_row: float, in_use: int | None = None) -> None:
+    """Raise MemoryEstimateError if building the output would likely run out of memory.
+
+    in_use: this process's memory before sizing the sample (the sample's own scratch
+    memory is reused by the build, so counting it again overstates the peak).
+    """
+    available = available_memory_bytes()
+    if not available:  # unknown platform: no basis to stop
+        return
+    table = rows * bytes_per_row
+    now = rss_bytes()
+    in_use = now if in_use is None else min(in_use, now)
+    available += now - in_use  # memory the sample holds is free for the build too
+    peak = in_use + PEAK_TABLE_COPIES * table
+    limit = (in_use + available) * MEMORY_HEADROOM
+    if peak > limit:
+        raise MemoryEstimateError(rows, columns, table, peak, limit)

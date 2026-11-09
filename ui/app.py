@@ -49,7 +49,7 @@ from bbs_pipeline.sources.release import RELEASE_JSON, fetch_release
 from bbs_pipeline.spatial.files import save_gis_upload
 from bbs_pipeline.spatial.geometry import automatic_overlay_column
 from bbs_pipeline.stages.runs import MultipleRunsError
-from bbs_pipeline.usage import GB, measure, total_memory_bytes
+from bbs_pipeline.usage import GB, MemoryEstimateError, measure, total_memory_bytes
 from bbs_pipeline.values import ProfileValues, area_counts, area_options, collect_values
 
 PROFILE_DIRS: tuple[str, ...] = (".", "examples", "profiles")
@@ -1698,6 +1698,11 @@ def _inspect_run_section(profile: RunProfile | None, stamp: tuple) -> None:
             icon=":material/build:",
             on_click=_keep_standard_runs,
         )
+        return
+    except MemoryEstimateError as exc:  # stopped on purpose before running out of memory
+        action = "Run" if run_clicked else "Inspect"
+        _log_warning(action, str(exc))
+        _show("warning", str(exc), title=f"{action} stopped: too big", icon=":material/memory:")
         return
     except Exception as exc:  # shown and logged, not swallowed
         _show_failure("Run" if run_clicked else "Inspect", exc)

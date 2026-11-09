@@ -30,3 +30,23 @@ def test_summary_reads_plainly() -> None:
     assert usage.summary() == "Took 3 min 12 s; peak memory 9.8 GB of 16 GB."
     assert usage.as_dict()["peak_rss_gb"] == 9.8
     assert rss_bytes() > 0 and total_memory_bytes() > 0
+
+
+def test_check_memory_stops_a_build_that_cannot_fit(monkeypatch) -> None:
+    import pytest
+
+    from bbs_pipeline import usage
+
+    monkeypatch.setattr(usage, "available_memory_bytes", lambda: 4 * 1024**3)
+    monkeypatch.setattr(usage, "rss_bytes", lambda: 3 * 1024**3)
+    usage.check_memory(1_000_000, 151, 1200)  # ~1.1 GB table, ~5.2 GB peak of 6.65: fits
+    with pytest.raises(usage.MemoryEstimateError, match="fewer states or years") as info:
+        usage.check_memory(4_700_000, 151, 1200)
+    assert info.value.rows == 4_700_000 and info.value.peak_gb > info.value.limit_gb
+
+
+def test_check_memory_skips_when_free_memory_is_unknown(monkeypatch) -> None:
+    from bbs_pipeline import usage
+
+    monkeypatch.setattr(usage, "available_memory_bytes", lambda: 0)
+    usage.check_memory(10**9, 500, 10_000)

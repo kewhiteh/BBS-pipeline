@@ -11,6 +11,8 @@ from bbs_pipeline.config import ProfileError, RunProfile, dump_profile, load_pro
 from bbs_pipeline.contracts import PipelineExecutionResult
 from bbs_pipeline.pipeline import run_profile
 from bbs_pipeline.sources.release import fetch_release
+from bbs_pipeline.stages.runs import MultipleRunsError
+from bbs_pipeline.usage import MemoryEstimateError
 
 STAGE_LABELS: tuple[tuple[str, str], ...] = (
     ("total_routes_raw", "routes in release"),
@@ -158,7 +160,7 @@ def main(argv: list[str] | None = None) -> int:
         for path in result.exported_files:
             print(f"wrote {path}")
         return 0
-    except (ProfileError, KeyError) as exc:
+    except (ProfileError, KeyError, MultipleRunsError, MemoryEstimateError) as exc:
         print(exc.args[0] if isinstance(exc, KeyError) else exc, file=sys.stderr)
         return 2
 
