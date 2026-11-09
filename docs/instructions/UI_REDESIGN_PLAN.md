@@ -26,7 +26,10 @@ was one page with Run and download at the bottom, and he preferred that flow.
 | U5 | **Inspect stays a button**; after any edit the last counts are marked out of date. | Kyle likes the explicit check; each Inspect is a real data pass. |
 | U6 | RunType and QualityCurrentID are **visible toggles** ("standard runs only", "passed QC only"), not hidden. On = `[1]`, off = all. | Only codes 0 and 1 exist; cheap to show. |
 | U7 | `runs.min_continuity` sits under "More" and **defaults to 0.8**. | Kyle wants academic-rigour files without opening it every time. Changes the config default for the CLI too (GUI/CLI parity); profiles that omit it will filter at 80%. |
-| U8 | Years, source and stop layout share one card; source and layout are segmented buttons; 50_stop only offered from 1997, "all 50 stops" only with 50_stop. | The auto-switch note appears next to the control that caused it. |
+| U8 | Years, source and stop layout share one card; 50_stop only offered from 1997, "all 50 stops" only with 50_stop. | The auto-switch note appears next to the control that caused it. |
+| U11 | Small single choices (source, stop layout, output shape long/wide) are **horizontal radio buttons** (`st.radio(..., horizontal=True)`), not segmented buttons or a checkbox. | Kyle, mock-up review: cleaner, more compact, and it is obvious which one is selected. |
+| U12 | Years are **one two-handle range slider** (start, end), as `st.slider` with a tuple value. | Kyle, mock-up review: two sliders waste space. |
+| U13 | The output file-name box is narrow (~340 px), not full row width. | Kyle, mock-up review. |
 | U9 | The Getting started checklist is removed. | The single page is the checklist; the no-release card covers the one prerequisite. |
 | U10 | Every profile option stays reachable in the editor; profile format and CLI are unchanged except U7's default. | GUI/CLI parity rule. |
 
