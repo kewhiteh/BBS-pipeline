@@ -1139,9 +1139,17 @@ OUTPUT_FORMATS: tuple[tuple[str, str, str], ...] = (
     ("CSV", ".csv", "opens in Excel, R, or any spreadsheet"),
     ("Parquet", ".parquet", "compact and fast, for R or Python"),
     ("GeoPackage", ".gpkg", "GIS layer of route start points (ArcGIS, QGIS)"),
-    ("GeoParquet", ".geoparquet", "Parquet with route start points"),
-    ("FlatGeobuf", ".fgb", "fast GIS layer of route start points"),
-    ("GeoJSON", ".geojson", "web-map layer of route start points"),
+    (
+        "GeoParquet",
+        ".geoparquet",
+        "Parquet with route start points; for ArcGIS Pro, rename to .parquet",
+    ),
+    ("FlatGeobuf", ".fgb", "fast GIS layer of route start points (QGIS; ArcGIS Pro can't read it)"),
+    (
+        "GeoJSON",
+        ".geojson",
+        "web-map layer of route start points (ArcGIS Pro: use JSON To Features)",
+    ),
 )
 VECTOR_EXTENSIONS = frozenset({".gpkg", ".geoparquet", ".fgb", ".geojson"})
 
