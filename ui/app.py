@@ -17,6 +17,7 @@ import json
 import os
 import tomllib
 import traceback
+import uuid
 import zipfile  # for BadZipFile from uploads
 from datetime import datetime
 from pathlib import Path
@@ -196,7 +197,7 @@ def _pick(
     missing = [c for c in current if c not in options]
     if missing:
         message = f"{label}: not in this release, dropped from the list: {missing}"
-        st.warning(message)
+        _show("warning", message)
         _log_warning("Pick dropped", f"{message} (widget key {key})")
     return st.multiselect(
         label,
@@ -209,6 +210,85 @@ def _pick(
     )
 
 
+# The activity log: everything that happens in the editor, one JSON line per event, so
+# Kyle can say "something happened, check the log" and it can be reconstructed without
+# screenshots (Kyle, 2026-11-09). The Error Log on Settings stays errors and warnings.
+ACTIVITY_LOG = Path(os.environ.get("BBS_UI_ACTIVITY_LOG") or Path("logs") / "ui_activity.log")
+ACTIVITY_MAX_BYTES = 5_000_000  # then the file moves to .1 and a new one starts
+
+
+def _activity(kind: str, message: str, **extra: Any) -> None:
+    """Append one event: kind is action, edit, error, warning, info, validation or result."""
+    entry = {
+        "time": datetime.now().isoformat(timespec="seconds"),
+        "session": st.session_state.setdefault("session_id", uuid.uuid4().hex[:8]),
+        "page": st.session_state.get("page_name"),
+        "profile": st.session_state.get("profile_path"),
+        "kind": kind,
+        "message": message,
+        **extra,
+    }
+    try:
+        ACTIVITY_LOG.parent.mkdir(parents=True, exist_ok=True)
+        if ACTIVITY_LOG.is_file() and ACTIVITY_LOG.stat().st_size > ACTIVITY_MAX_BYTES:
+            ACTIVITY_LOG.replace(ACTIVITY_LOG.with_suffix(".log.1"))
+        with ACTIVITY_LOG.open("a", encoding="utf-8") as log:
+            log.write(json.dumps(entry, default=str, ensure_ascii=False) + "\n")
+    except OSError as exc:  # logging must never break the editor; say so on screen
+        st.toast(f"Couldn't write the activity log: {exc}")
+
+
+def _draft_toml() -> str:
+    """The draft as profile TOML, for action entries (exactly what would be run)."""
+    try:
+        return dump_profile(profile_from_data(_draft(), origin="from the editor"))
+    except ProfileError as exc:
+        return f"# draft is not a valid profile: {exc}\n{json.dumps(_draft(), default=str)}"
+
+
+def _action(name: str, **extra: Any) -> None:
+    """Log a button press with the full profile at that moment."""
+    _activity("action", name, profile_toml=_draft_toml(), **extra)
+
+
+def _show_in(where: Any, kind: str, body: Any, **kwargs: Any) -> None:
+    """Show an error / warning / info box and log it when it appears.
+
+    A box redrawn on every rerun is logged once per appearance: when it shows and
+    wasn't on screen in the previous rerun.
+    """
+    getattr(where, kind)(body, **kwargs)
+    text = f"{kwargs.get('title', '')}: {body}" if kwargs.get("title") else str(body)
+    st.session_state.setdefault("shown_now", set()).add((kind, text))
+    if (kind, text) not in st.session_state.get("shown_before", set()):
+        _activity(kind, text)
+
+
+def _show(kind: str, body: Any, **kwargs: Any) -> None:
+    _show_in(st, kind, body, **kwargs)
+
+
+def _log_draft_edits() -> None:
+    """Log what changed in the draft since the last rerun, as field: old -> new."""
+    now = json.loads(json.dumps(_draft(), default=str))
+    before = st.session_state.get("logged_draft")
+    st.session_state["logged_draft"] = now
+    if before is None or before == now:
+        return
+    changes = {}
+    for section in sorted(set(before) | set(now)):
+        old, new = before.get(section, {}), now.get(section, {})
+        if not isinstance(old, dict) or not isinstance(new, dict):
+            if old != new:
+                changes[section] = {"from": old, "to": new}
+            continue
+        for field in sorted(set(old) | set(new)):
+            if old.get(field) != new.get(field):
+                changes[f"{section}.{field}"] = {"from": old.get(field), "to": new.get(field)}
+    if changes:
+        _activity("edit", ", ".join(changes), changes=changes)
+
+
 def _log_warning(action: str, message: str) -> None:
     """Log something unexpected the editor worked around (no crash, so no traceback).
 
@@ -219,6 +299,7 @@ def _log_warning(action: str, message: str) -> None:
     if (action, message) in seen:
         return
     seen.add((action, message))
+    _activity("warning", f"{action}: {message}")
     ERROR_LOG.parent.mkdir(parents=True, exist_ok=True)
     stamp = datetime.now().isoformat(timespec="seconds")
     with ERROR_LOG.open("a", encoding="utf-8") as log:
@@ -233,6 +314,7 @@ def _log_failure(action: str, exc: BaseException) -> None:
     ERROR_LOG.parent.mkdir(parents=True, exist_ok=True)
     stamp = datetime.now().isoformat(timespec="seconds")
     trace = "".join(traceback.format_exception(exc))
+    _activity("error", f"{action} failed: {exc}", traceback=trace, profile_toml=_draft_toml())
     with ERROR_LOG.open("a", encoding="utf-8") as log:
         log.write(f"--- {stamp} {action} (profile: {st.session_state.get('profile_path')})\n")
         log.write(trace + "\n")
@@ -241,7 +323,7 @@ def _log_failure(action: str, exc: BaseException) -> None:
 def _show_failure(action: str, exc: BaseException) -> None:
     """An error box with the message, the traceback on demand, and where it was logged."""
     _log_failure(action, exc)
-    st.error(f"{exc}\n\nFull details saved to `{ERROR_LOG}`.", title=f"{action} failed")
+    _show("error", f"{exc}\n\nFull details saved to `{ERROR_LOG}`.", title=f"{action} failed")
     with st.expander("Technical details"):
         st.code("".join(traceback.format_exception(exc)), language=None)
 
@@ -349,9 +431,9 @@ def _gis_file_picker(label: str, current: str, key: str, help: str) -> str:
             args=(key,),
         )
     if f"{key}_upload_error" in st.session_state:
-        st.error(st.session_state[f"{key}_upload_error"], title="Upload failed")
+        _show("error", st.session_state[f"{key}_upload_error"], title="Upload failed")
     if choice and not Path(choice).exists():
-        st.warning(f"`{choice}` doesn't exist.")
+        _show("warning", f"`{choice}` doesn't exist.")
     return choice
 
 
@@ -377,7 +459,7 @@ def _overlay_card(row: int, name: str, spec: dict[str, Any]) -> tuple[str, dict[
             try:
                 columns, features = _gis_columns(file, Path(file).stat().st_mtime)
             except (OSError, ValueError, pyogrio.errors.DataSourceError) as exc:
-                st.error(f"Can't read `{file}`: {exc}")
+                _show("error", f"Can't read `{file}`: {exc}")
                 return name, {"file": file, "column": column}, remove
             auto = automatic_overlay_column(columns)
             options = [None, *columns]
@@ -485,6 +567,7 @@ def _release_card(src: dict[str, Any], p: dict[str, Any]) -> None:
     if not (raw_dir / RELEASE_JSON).exists():
         st.caption(f"No {RELEASE_JSON} in {raw_dir}: fetch the release to get pick lists.")
         if st.button("Fetch release", key="btn_fetch", type="primary"):
+            _action("Fetch release", release=src["release"], dest=str(raw_dir))
             try:
                 with st.spinner("Downloading from ScienceBase..."):
                     info = fetch_release(src["release"], raw_dir)
@@ -559,7 +642,8 @@ def _narrow(label: str, current: list[Any], options: list[Any], key: str, why: s
     if dropped:
         if key in st.session_state:
             st.session_state[key] = keep
-        st.info(
+        _show(
+            "info",
             f"{label} removed: {', '.join(str(d) for d in dropped)} ({why}).",
             icon=":material/filter_alt:",
         )
@@ -571,7 +655,7 @@ def _area_choices(rt: dict[str, Any], names: dict[int, Any], regions: Any) -> di
     try:
         states = resolve_states(rt["states"], regions) if rt["states"] else []
     except ValueError as exc:
-        st.warning(str(exc))
+        _show("warning", str(exc))
         states = []
     chosen = {
         "StateNum": st.session_state.get("ui_states", states),
@@ -608,6 +692,9 @@ AREA_WIDGETS = {
 def _clear_area() -> None:
     """on_click: drop every Study Area pick (states, BCRs, strata, routes, boundary)."""
     rt = _draft()["routes"]
+    _activity(
+        "action", "Clear area", before={f: rt[f] for f in (*AREA_WIDGETS.values(), "boundary")}
+    )
     for key, field in AREA_WIDGETS.items():
         rt[field] = []
         st.session_state[key] = []
@@ -791,7 +878,8 @@ def _survey_card(p: dict[str, Any], v: ProfileValues | None) -> None:
     first, last = v.years if (v and v.years) else (1966, 2026)
     years = (min(max(rn["start_year"], first), last), max(min(rn["end_year"], last), first))
     if years != (rn["start_year"], rn["end_year"]):
-        st.info(
+        _show(
+            "info",
             f"Years set to {years[0]}–{years[1]}: this release covers {first}–{last}.",
             icon=":material/date_range:",
         )
@@ -811,7 +899,8 @@ def _survey_card(p: dict[str, Any], v: ProfileValues | None) -> None:
         sources.remove("50_stop")
         if obs["source"] == "50_stop":
             _switch_choice(obs, "source", "ui_obs_source", "10_stop")
-            st.info(
+            _show(
+                "info",
                 f"Source switched to 10-stop: the years start in {start_year}, and "
                 f"50-stop data only exist from {FIFTY_STOP_FIRST_YEAR}.",
                 icon=":material/sync_alt:",
@@ -831,7 +920,8 @@ def _survey_card(p: dict[str, Any], v: ProfileValues | None) -> None:
         layouts.remove("stops")
         if obs["stops"] == "stops":
             _switch_choice(obs, "stops", "ui_stops", "ten_stop_bins")
-            st.info(
+            _show(
+                "info",
                 "Stop layout switched to 10-stop bins: all 50 stops need the 50-stop source.",
                 icon=":material/sync_alt:",
             )
@@ -891,7 +981,8 @@ def _survey_card(p: dict[str, Any], v: ProfileValues | None) -> None:
         )
         if not obs["zero_fill"] and obs["rolling_years"]:
             _switch_choice(obs, "rolling_years", "ui_rolling", 0)
-            st.info(
+            _show(
+                "info",
                 "Rolling mean turned off: it needs zero-fill, or the mean would cover only "
                 "the years a species was seen.",
                 icon=":material/sync_alt:",
@@ -900,8 +991,10 @@ def _survey_card(p: dict[str, Any], v: ProfileValues | None) -> None:
         if one_year:
             _switch_choice(obs, "rolling_years", "ui_rolling", 2)
         if st.session_state.pop("rolling_note", False) or one_year:
-            st.info(
-                "Rolling mean set to 2 years: 1 year is not a window.", icon=":material/sync_alt:"
+            _show(
+                "info",
+                "Rolling mean set to 2 years: 1 year is not a window.",
+                icon=":material/sync_alt:",
             )
         obs["rolling_years"] = int(
             st.number_input(
@@ -1066,7 +1159,7 @@ def _output_path_picker(out: dict[str, Any]) -> str:
     extensions = [ext for _, ext, _ in OUTPUT_FORMATS]
     suffix = path.suffix.lower()
     if suffix not in extensions:
-        st.warning(f"'{path.name}' has no supported format; choose one below.")
+        _show("warning", f"'{path.name}' has no supported format; choose one below.")
     c1, c2 = st.columns(2)  # folder and name side by side, format below (Kyle, 2026-11-09)
     folder = c1.text_input(
         "Folder", str(path.parent), key="ui_output_folder", help="Created if it doesn't exist."
@@ -1103,7 +1196,10 @@ def _saved_projections() -> dict[str, str]:
     try:
         data = tomllib.loads(PROJECTIONS_FILE.read_text(encoding="utf-8"))
     except tomllib.TOMLDecodeError as exc:
-        st.error(f"{PROJECTIONS_FILE} is not valid TOML, so saved projections are not shown: {exc}")
+        _show(
+            "error",
+            f"{PROJECTIONS_FILE} is not valid TOML, so saved projections are not shown: {exc}",
+        )
         return {}
     table = data.get("projections", {})
     return {str(code): str(label) for code, label in table.items()}
@@ -1204,6 +1300,7 @@ def _log_viewer() -> None:
         with st.popover("Clear log", icon=":material/delete:"):
             st.caption("Deletes every logged error. This can't be undone.")
             if st.button("Clear all errors", key="btn_log_clear", type="primary"):
+                _activity("action", "Clear error log")
                 ERROR_LOG.unlink(missing_ok=True)
                 st.toast("Error log cleared")
                 st.rerun()
@@ -1232,6 +1329,7 @@ def _projections_manager() -> None:
                 help="Press Enter to save the new name.",
             )
             if st.button("Remove", key=f"btn_proj_remove_{code}", icon=":material/delete:"):
+                _activity("action", "Remove projection", code=code)
                 _write_projections({c: t for c, t in saved.items() if c != code})
                 st.toast(f"Removed {code}")
                 st.rerun()
@@ -1271,6 +1369,7 @@ def _projections_manager() -> None:
             icon=":material/open_in_new:",
         )
     if add and name:
+        _activity("action", "Add projection", code=code, name=label.strip() or name)
         _save_projection(code, label.strip() or name)
         st.toast(f"Added {code}")
         st.session_state.pop("ui_proj_new_code", None)
@@ -1351,7 +1450,8 @@ def _joins_card(p: dict[str, Any], v: ProfileValues | None) -> None:
     st.caption("Extra columns added to every row. Inspect shows the exact columns you'll get.")
     joins = p["joins"]
     if not p["guilds"]["file"] and joins["guilds"] not in ([], ["*"]):
-        st.info(
+        _show(
+            "info",
             f"Guild trait columns removed ({', '.join(joins['guilds'])}): there is no guild "
             "file. Choose one under Species & Guilds to join its traits.",
             icon=":material/sync_alt:",
@@ -1396,7 +1496,8 @@ def _output_card(p: dict[str, Any]) -> None:
         rolling_on = p["observations"]["rolling_years"] >= 2
         if out["wide_value"] == "rolling_mean" and not rolling_on:
             _switch_choice(out, "wide_value", "ui_wide_value", "route_total")
-            st.info(
+            _show(
+                "info",
                 "Year columns switched to the count: the rolling mean is off.",
                 icon=":material/sync_alt:",
             )
@@ -1452,10 +1553,12 @@ def _show_result(res: dict[str, Any]) -> None:
     if report:
         st.markdown(f"**Guild file**: {report['matched_rows']} of {report['rows']} rows matched")
         if report["unmatched_rows"]:
-            st.warning(f"{len(report['unmatched_rows'])} guild rows match no BBS species")
+            _show("warning", f"{len(report['unmatched_rows'])} guild rows match no BBS species")
             st.dataframe(pl.DataFrame(report["unmatched_rows"]), hide_index=True)
         if report["species_without_guild"]:
-            st.info(f"{len(report['species_without_guild'])} recorded species have no guild row")
+            _show(
+                "info", f"{len(report['species_without_guild'])} recorded species have no guild row"
+            )
             st.dataframe(pl.DataFrame(report["species_without_guild"]), hide_index=True)
     if res.get("preview_records"):
         st.markdown("**Preview (first 50 rows)**")
@@ -1472,6 +1575,18 @@ def _show_result(res: dict[str, Any]) -> None:
                     key=f"btn_download_output_{number}",
                     icon=":material/download:",
                 )
+
+
+def _log_result(action: str, res: dict[str, Any]) -> None:
+    """The counts after each filter, output size and files written, for the activity log."""
+    _activity(
+        "result",
+        f"{action}: {res.get('output_rows')} rows, {len(res.get('output_columns', []))} columns",
+        funnel=res.get("funnel_metrics"),
+        output_columns=res.get("output_columns"),
+        exported_files=res.get("exported_files"),
+        guild_report=res.get("guild_report"),
+    )
 
 
 def _inspect_run_section(profile: RunProfile | None, stamp: tuple) -> None:
@@ -1494,18 +1609,22 @@ def _inspect_run_section(profile: RunProfile | None, stamp: tuple) -> None:
     current = profile.model_dump_json() if profile is not None else None
     try:
         if run_clicked and profile is not None:
+            _action("Run")
             with st.spinner("Running..."):
                 st.session_state["last_result"] = run_profile(profile).model_dump(mode="json")
             st.session_state["last_result_for"] = current
             st.session_state["ran"] = True
+            _log_result("Run", st.session_state["last_result"])
         elif inspect_clicked and profile is not None:
+            _action("Inspect")
             st.session_state["last_result"] = _inspect(current, stamp)
             st.session_state["last_result_for"] = current
+            _log_result("Inspect", st.session_state["last_result"])
     except Exception as exc:  # shown and logged, not swallowed
         _show_failure("Run" if run_clicked else "Inspect", exc)
         return
     if profile is None:
-        st.info("Fix the problems shown at the top of the page to inspect or run.")
+        _show("info", "Fix the problems shown at the top of the page to inspect or run.")
     result = st.session_state.get("last_result")
     if result is None:
         st.caption(
@@ -1515,7 +1634,8 @@ def _inspect_run_section(profile: RunProfile | None, stamp: tuple) -> None:
         )
         return
     if st.session_state.get("last_result_for") != current:
-        st.warning(
+        _show(
+            "warning",
             "Settings changed since the last Inspect or Run: these results are out of "
             "date. Inspect again to update them.",
             icon=":material/history:",
@@ -1572,6 +1692,7 @@ def _example_picker(key: str) -> None:
             help="Copies the example into a new, unsaved profile. Use Save as to keep it.",
         )
         if st.button("Use example", key=f"btn_{key}", icon=":material/content_copy:"):
+            _activity("action", "Start from example", target=choice)
             _switch_to(None, load_profile(Path(choice)).model_dump(mode="json"))
 
 
@@ -1581,6 +1702,7 @@ def _switch_to(path: Path | None, draft: dict[str, Any]) -> None:
         del st.session_state[key]
     st.session_state.pop("last_result", None)
     st.session_state.pop("last_result_for", None)
+    st.session_state.pop("logged_draft", None)  # a new profile is not a list of edits
     st.session_state.pop("ran", None)
     st.session_state["profile_path"] = str(path) if path is not None else None
     st.session_state["draft"] = draft
@@ -1610,11 +1732,12 @@ def _profile_menu(path: Path | None, profile: RunProfile | None) -> None:
         if st.button("Save as", key="btn_save_as", disabled=profile is None):
             new_path = Path(target.strip())
             if new_path.suffix.lower() != ".toml":
-                st.error("A profile file name must end in .toml")
+                _show("error", "A profile file name must end in .toml")
             elif new_path.exists() and not overwrite and new_path != path:
-                st.error(f"{new_path} exists; tick 'Overwrite if it exists' to replace it.")
+                _show("error", f"{new_path} exists; tick 'Overwrite if it exists' to replace it.")
             else:
                 assert profile is not None
+                _action("Save as", target=str(new_path))
                 save_profile(profile, new_path)
                 st.session_state["profile_path"] = str(new_path)
                 st.toast(f"Saved {new_path}")
@@ -1626,13 +1749,15 @@ def _profile_menu(path: Path | None, profile: RunProfile | None) -> None:
         typed = st.text_input("…or a file path", key="sb_open_path")
         if st.button("Open", key="btn_open", disabled=not (typed.strip() or choice)):
             target_path = Path(typed.strip() or choice)
+            _activity("action", "Open", target=str(target_path))
             try:
                 opened = load_profile(target_path)
             except ProfileError as exc:
-                st.error(str(exc))
+                _show("error", str(exc))
             else:
                 _switch_to(target_path, opened.model_dump(mode="json"))
         if st.button("New profile (defaults)", key="btn_new"):
+            _activity("action", "New profile (defaults)")
             _switch_to(None, RunProfile().model_dump(mode="json"))
         _example_picker("sb_example")
 
@@ -1681,6 +1806,7 @@ def _header(
             if path is not None and st.button(
                 "Save profile", key="btn_save", disabled=not dirty, type="primary"
             ):
+                _action("Save", target=str(path))
                 save_profile(profile, path)
                 st.toast(f"Saved {path}")
                 st.rerun()
@@ -1708,7 +1834,9 @@ def _build_page() -> None:
             st.session_state["logged_values_error"] = values_error
             _log_failure("Reading pick lists", exc)
     if values_error:
-        alerts.warning(
+        _show_in(
+            alerts,
+            "warning",
             f"Fetch the release or fix the release directory on the Settings page: {values_error}",
             title="Pick lists unavailable, using text boxes",
         )
@@ -1740,12 +1868,12 @@ def _validated(alerts: Any) -> RunProfile | None:
     """The draft as a profile, or None with the reasons shown in ``alerts``."""
     problems = st.session_state["input_errors"]
     if problems:
-        alerts.error("\n".join(f"- {m}" for m in problems), title="Fix these entries")
+        _show_in(alerts, "error", "\n".join(f"- {m}" for m in problems), title="Fix these entries")
         return None
     try:
         return profile_from_data(_draft(), origin="from the editor")
     except ProfileError as exc:
-        alerts.error(str(exc), title="This profile can't be inspected or run yet")
+        _show_in(alerts, "error", str(exc), title="This profile can't be inspected or run yet")
         return None
 
 
@@ -1765,7 +1893,10 @@ def render_editor() -> None:
     PAGES["settings"] = st.Page(_settings_page, title="Settings", url_path="settings")
     page = st.navigation(list(PAGES.values()), position="hidden")
     header = st.container()  # filled after the page, once the draft has been validated
+    st.session_state["page_name"] = "settings" if page.url_path == "settings" else "build"
     page.run()
+    _log_draft_edits()
+    st.session_state["shown_before"] = st.session_state.pop("shown_now", set())
     profile: RunProfile | None = None
     if not st.session_state["input_errors"]:
         try:

@@ -938,3 +938,37 @@ def test_a_state_label_handed_back_as_the_pick_is_mapped_to_its_code(
     assert at.session_state["draft"]["routes"]["states"] == ["NC"]
     log = (tmp_path / "logs" / "ui_errors.log").read_text(encoding="utf-8")
     assert "Warning: State picks came back as labels" in log  # worked around, and logged
+
+
+def _activity_entries(tmp_path: Path) -> list[dict]:
+    import json
+
+    log = tmp_path / "logs" / "ui_activity.log"
+    return [json.loads(line) for line in log.read_text(encoding="utf-8").splitlines()]
+
+
+def test_activity_log_records_what_happened(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Kyle, 2026-11-09: "say something happened, check the log" with no screenshots."""
+    at, _ = _app(tmp_path, monkeypatch, _profile(tmp_path))
+    at.multiselect(key="ui_states").set_value([63]).run()
+    at.slider(key="ui_years").set_value((1995, 2024)).run()  # 50-stop -> 10-stop note
+    at.button(key="btn_inspect").click().run()
+
+    entries = _activity_entries(tmp_path)
+    kinds = [e["kind"] for e in entries]
+    assert {"edit", "info", "action", "result"} <= set(kinds)
+    assert all(e["session"] and e["page"] == "build" for e in entries)
+
+    edits = [e for e in entries if e["kind"] == "edit"]
+    assert any(e["changes"].get("routes.states") == {"from": [], "to": ["NC"]} for e in edits)
+    assert any("runs.start_year" in e["changes"] for e in edits)
+    assert any("Source switched to 10-stop" in e["message"] for e in entries if e["kind"] == "info")
+
+    inspect = next(e for e in entries if e["kind"] == "action" and e["message"] == "Inspect")
+    assert 'states = ["NC"]' in inspect["profile_toml"]  # enough to rerun exactly
+    result = next(e for e in entries if e["kind"] == "result")
+    assert result["message"].startswith("Inspect:") and result["funnel"]
+    # a message shown on every rerun is logged once, not once per rerun
+    assert sum("Source switched" in e["message"] for e in entries) == 1
