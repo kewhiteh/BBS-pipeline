@@ -34,10 +34,9 @@ date, what was seen) and tick it here.
   of that year and the previous N−1 calendar years by hand.
 - [ ] **H9 Your guild CSV**: it loads; Inspect's guild report shows the expected matches;
   one deliberate AOU typo is reported as unmatched; filters keep the right species.
-- [ ] **H10 Boundary polygon**: with a real polygon (e.g. a county), only routes starting
-  inside are kept (compare with the map in Pro).
-- [ ] **H11 Overlays**: a real polygon layer labels each route with the polygon its start
-  point is in.
+  *Deferred (Kyle, 2026-11-09): last, once Kyle's research guild file is built.*
+- [x] **H10 Boundary polygon**: done 2026-11-09 (Claude); result in the checklist below.
+- [x] **H11 Overlays**: done 2026-11-09 (Claude); result in the checklist below.
 - [ ] **H12 Manifest**: rerun from a `<file>.manifest.json` and get an identical file.
 - [x] **H13 Large extent**: done 2026-11-09; result in the checklist below ("Large
   extent").
@@ -85,8 +84,8 @@ holds 6 NC runs from before 1997.
 | Subspecies lumping | **Verified (hand + script run)** 2026-11-09 + tests | NC 2015–2024, standard runs, continuity 0.8. Lumping on, Dark-eyed Junco (05677): 79 rows, one per run, 493 birds. Lumping off: every NC junco record is the Slate-colored form (05670): the same 79 runs, 493 birds; per-run totals equal in all 79 runs; 05677 alone gives 0 rows. Kyle's editor run found a bug (turning lumping off silently cleared the species pick), fixed in kewhiteh/BBS-pipeline#52 and confirmed in a real browser (Playwright): the old code clears the pick on the next Inspect (43,046 rows, all species), the fixed code keeps it. Tests: `tests/test_taxonomy.py`, `test_species_pick_survives_turning_lumping_off` |
 | Rolling mean | Tests only | `test_rolling_mean_uses_calendar_years_not_rows`; values not hand-checked on real data |
 | Guild file: matching, filters, trait joins | Tests only | `tests/test_guilds.py`; **Kyle's own guild CSV not yet checked** (try one deliberate AOU typo: it should be reported as unmatched) |
-| Boundary polygon filter | Tests only | `tests/test_spatial_integrity.py`; not checked with a real polygon |
-| Overlays (route labels from polygons) | Tests only | not checked with a real layer |
+| Boundary polygon filter | **Verified (script run, by Claude)** 2026-11-09 + tests | US Census 2023 counties (`cb_2023_us_county_500k`), Craven County NC as the boundary, no state filter: the pipeline selected exactly the 7 routes whose start points an independent geopandas point-in-polygon test puts in Craven (63_202, 211, 311, 319, 419, 902, 915) out of 5,845; 3 have standard runs 2015–2024; none outside. Files in `C:\ArcGIS\BBS_pipeline_test` (`craven_county.gpkg`, `h10_craven.gpkg`). Tests: `tests/test_spatial_integrity.py` |
+| Overlays (route labels from polygons) | **Verified (script run, by Claude)** 2026-11-09 | NC 2015–2024, standard runs, overlay = all 100 NC counties (column NAME): all 79 routes' `overlay_county` equals the county an independent point-in-polygon test gives (0 mismatches). Files: `nc_counties_2023.gpkg`, `h11_overlay.gpkg` in `C:\ArcGIS\BBS_pipeline_test` |
 | Other projections (e.g. EPSG:5070 Albers) | **Verified (hand)** 2026-11-09 (EPSG:5070) | Kyle, ArcGIS Pro: NC 2015–2024 GeoPackage in EPSG:5070; Pro reads NAD 1983 Contiguous USA Albers, WKID 5070; points sit exactly on the H1 (EPSG:4326) points. Claude checked the file: 43,046 points on 50 NC routes, reprojected back to 4326 they equal the release Latitude/Longitude (max difference 2e-14 degrees). Other EPSG codes: tests only. At 1:212 Pro draws the 4326 and 5070 points about 1 m apart: a datum shift, see STATUS.md "EPSG:4326 output is NAD83 numbers" |
 | GeoPackage opens correctly in ArcGIS Pro | **Verified (hand)** 2026-11-09 | Kyle, ArcGIS Pro: all routes 2015–2024 (RunType 1, QC 1, continuity 0.8), EPSG:4326, 1,489,901 points on 1,635 routes. Points on the route starts across the US and Canada; AOU is a Text field with leading zeros; field names fine. Claude checked the same file: every point equals its route's Latitude/Longitude in the release (max difference 0.0) |
 | FlatGeobuf, GeoJSON, GeoParquet open in ArcGIS Pro | **Verified (hand)** 2026-11-09, ArcGIS Pro 3.7.3 | Kyle: GeoParquet is not listed as `.geoparquet`; a copy renamed `.parquet` adds directly (Pro draws it with feature binning until binning is turned off) and its points equal the EPSG:5070 GeoPackage's. GeoJSON is not listed; **JSON To Features** imports it with the same points. FlatGeobuf is not listed: Pro 3.7 can't read it. Claude checked the files: all three hold the same 43,046 points as the GeoPackage (EPSG:5070, identical coordinates per route/year/AOU; FlatGeobuf stores rows in spatial-index order), AOU as text. The editor's format list now says this |
