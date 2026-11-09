@@ -47,7 +47,7 @@ from bbs_pipeline.sources.regions import resolve_states
 from bbs_pipeline.sources.release import RELEASE_JSON, fetch_release
 from bbs_pipeline.spatial.files import save_gis_upload
 from bbs_pipeline.spatial.geometry import automatic_overlay_column
-from bbs_pipeline.values import ProfileValues, collect_values
+from bbs_pipeline.values import ProfileValues, area_options, collect_values
 
 PROFILE_DIRS: tuple[str, ...] = (".", "examples", "profiles")
 # BBS_UI_ERROR_LOG lets the test suite log elsewhere; its deliberate failures used to
@@ -524,32 +524,57 @@ def _narrow(label: str, current: list[Any], options: list[Any], key: str, why: s
     return keep
 
 
+def _area_choices(rt: dict[str, Any], names: dict[int, Any], regions: Any) -> dict[str, list[Any]]:
+    """Current area picks: this rerun's widget values where set, else the draft's."""
+    try:
+        states = resolve_states(rt["states"], regions) if rt["states"] else []
+    except ValueError as exc:
+        st.warning(str(exc))
+        states = []
+    return {
+        "StateNum": st.session_state.get("ui_states", states),
+        "BCR": st.session_state.get("ui_bcrs", rt["bcrs"]),
+        "Stratum": st.session_state.get("ui_strata", rt["strata"]),
+        "route_id": st.session_state.get("ui_route_ids", rt["route_ids"]),
+    }
+
+
+AREA_WIDGETS = {
+    "ui_states": "states",
+    "ui_bcrs": "bcrs",
+    "ui_strata": "strata",
+    "ui_route_ids": "route_ids",
+}
+
+
+def _clear_area() -> None:
+    """on_click: drop every Study Area pick (states, BCRs, strata, routes, boundary)."""
+    rt = _draft()["routes"]
+    for key, field in AREA_WIDGETS.items():
+        rt[field] = []
+        st.session_state[key] = []
+    rt["boundary"] = None
+    st.session_state["ui_boundary"] = ""
+
+
 def _study_area_card(p: dict[str, Any], v: ProfileValues | None) -> None:
     """Where: states, BCRs and a boundary; strata and single routes under More."""
     rt = p["routes"]
     st.subheader(_heading("Study Area"))
-    st.caption("Each filter narrows the previous ones; empty keeps every route.")
-    codes: list[int] = []
-    if v is not None:
-        names = {s["StateNum"]: s for s in v.states}
-        regions = pl.DataFrame(
-            {"StateNum": list(names), "StateName": [s["StateName"] for s in v.states]}
-        )
-        try:
-            current = resolve_states(rt["states"], regions) if rt["states"] else []
-        except ValueError as exc:
-            st.warning(str(exc))
-            current = []
-        codes = _pick(
-            "States / provinces",
-            list(names),
-            current,
-            "ui_states",
-            lambda c: f"{names[c]['abbreviation'] or c} · {names[c]['StateName']}",
-            help="Keep routes in these states or provinces. Empty = all.",
-        )
-        rt["states"] = [names[c]["abbreviation"] or c for c in codes]
-    else:
+    st.caption(
+        "Each list offers only what fits the other picks, so every combination matches "
+        "routes. Empty keeps every route."
+    )
+    picked = any(rt[f] for f in AREA_WIDGETS.values()) or bool(rt["boundary"])
+    st.button(
+        "Clear area",
+        key="btn_clear_area",
+        icon=":material/filter_alt_off:",
+        on_click=_clear_area,
+        disabled=not picked,
+        help="Remove every Study Area pick (states, BCRs, strata, routes, boundary) to start over.",
+    )
+    if v is None:  # no release: plain text boxes, nothing to cross-check
         rt["states"] = _pick(
             "States / provinces",
             None,
@@ -557,26 +582,66 @@ def _study_area_card(p: dict[str, Any], v: ProfileValues | None) -> None:
             "ui_states",
             help="Names, postal abbreviations, or StateNum codes. Empty = all.",
         )
-    # Each filter offers only what fits the earlier ones: BCRs in the chosen states,
-    # strata in those states and BCRs, routes in all three (Kyle, 2026-11-09).
-    in_states = [r for r in v.routes if not codes or r["StateNum"] in codes] if v else []
-    bcr_options = sorted({r["BCR"] for r in in_states if r.get("BCR") is not None})
-    if v is not None:
-        rt["bcrs"] = _narrow(
-            "BCRs", rt["bcrs"], bcr_options, "ui_bcrs", "no routes in the chosen states"
+        rt["bcrs"] = _pick(
+            "Bird Conservation Regions (BCRs)", None, rt["bcrs"], "ui_bcrs", as_int=True
         )
+        rt["boundary"] = _gis_file_picker(
+            "Boundary polygon file (start point inside)",
+            rt["boundary"] or "",
+            "ui_boundary",
+            "Optional. Keeps only routes whose start point falls inside the polygon(s).",
+        )
+        with st.expander("More: strata and individual routes", key="ui_more_area"):
+            rt["strata"] = _pick(
+                "BBS physiographic strata", None, rt["strata"], "ui_strata", as_int=True
+            )
+            rt["route_ids"] = _pick("Route ids", None, rt["route_ids"], "ui_route_ids")
+        return
+
+    names = {s["StateNum"]: s for s in v.states}
+    regions = pl.DataFrame(
+        {"StateNum": list(names), "StateName": [s["StateName"] for s in v.states]}
+    )
+    chosen = _area_choices(rt, names, regions)
+    # A saved profile can hold an impossible mix (NC + BCR 1). Keep the states and drop
+    # whatever no longer fits, in order BCR, stratum, route, saying which and why.
+    for field, label, key in (
+        ("BCR", "BCRs", "ui_bcrs"),
+        ("Stratum", "Strata", "ui_strata"),
+        ("route_id", "Routes", "ui_route_ids"),
+    ):
+        options = area_options(v.routes, chosen)[field]
+        chosen[field] = _narrow(
+            label, chosen[field], options, key, "no routes match the other picks"
+        )
+    options = area_options(v.routes, chosen)
+    no_other_picks = not (chosen["BCR"] or chosen["Stratum"] or chosen["route_id"])
+    state_options = (
+        list(names)
+        if no_other_picks
+        else sorted({*options["StateNum"], *chosen["StateNum"]}, key=list(names).index)
+    )
+    route_info = {r["route_id"]: r for r in v.routes}
+
+    codes = _pick(
+        "States / provinces",
+        state_options,
+        chosen["StateNum"],
+        "ui_states",
+        lambda c: f"{names[c]['abbreviation'] or c} · {names[c]['StateName']}",
+        help="Keep routes in these states or provinces. Only states with routes that "
+        "fit the other picks are offered. Empty = all.",
+    )
+    rt["states"] = [names[c]["abbreviation"] or c for c in codes]
     rt["bcrs"] = _pick(
         "Bird Conservation Regions (BCRs)",
-        bcr_options if v else None,
-        rt["bcrs"],
+        options["BCR"],
+        chosen["BCR"],
         "ui_bcrs",
-        (lambda c: v.label("BCR", c)) if v else str,
-        as_int=True,
-        help="NABCI ecological regions with similar bird communities and habitats. "
-        "Keep routes in these BCRs. Only BCRs with routes in the chosen states are "
-        "offered. Empty = all.",
+        lambda c: v.label("BCR", c),
+        help="NABCI ecological regions with similar bird communities and habitats. Only "
+        "BCRs with routes that fit the other picks are offered. Empty = all.",
     )
-    in_bcrs = [r for r in in_states if not rt["bcrs"] or r.get("BCR") in rt["bcrs"]]
     rt["boundary"] = _gis_file_picker(
         "Boundary polygon file (start point inside)",
         rt["boundary"] or "",
@@ -584,49 +649,23 @@ def _study_area_card(p: dict[str, Any], v: ProfileValues | None) -> None:
         "Optional. Keeps only routes whose start point falls inside the polygon(s).",
     )
     with st.expander("More: strata and individual routes", key="ui_more_area"):
-        strata_options = sorted({r["Stratum"] for r in in_bcrs if r.get("Stratum") is not None})
-        if v is not None:
-            rt["strata"] = _narrow(
-                "Strata",
-                rt["strata"],
-                strata_options,
-                "ui_strata",
-                "no routes in the chosen states and BCRs",
-            )
         rt["strata"] = _pick(
             "BBS physiographic strata",
-            strata_options if v else None,
-            rt["strata"],
+            options["Stratum"],
+            chosen["Stratum"],
             "ui_strata",
-            (lambda c: v.label("Stratum", c)) if v else str,
-            as_int=True,
-            help="The BBS's own physiographic regions (older than BCRs). Keep routes in "
-            "these strata. Only strata with routes in the chosen states and BCRs are "
-            "offered. Empty = all.",
+            lambda c: v.label("Stratum", c),
+            help="The BBS's own physiographic regions (older than BCRs). Only strata with "
+            "routes that fit the other picks are offered. Empty = all.",
         )
-        route_options = None
-        route_info: dict[str, Any] = {}
-        if v is not None:
-            route_info = {
-                r["route_id"]: r
-                for r in in_bcrs
-                if not rt["strata"] or r.get("Stratum") in rt["strata"]
-            }
-            route_options = list(route_info)
-            rt["route_ids"] = _narrow(
-                "Routes",
-                rt["route_ids"],
-                route_options,
-                "ui_route_ids",
-                "outside the chosen states, BCRs and strata",
-            )
         rt["route_ids"] = _pick(
-            "Route ids (narrowed to the chosen states, BCRs and strata)",
-            route_options,
-            rt["route_ids"],
+            "Route ids (only routes that fit the states, BCRs and strata)",
+            options["route_id"],
+            chosen["route_id"],
             "ui_route_ids",
-            (lambda r: f"{r} · {route_info[r]['RouteName']}") if v else str,
-            help="Pick individual routes. Empty = every route that passes the filters above.",
+            lambda r: f"{r} · {route_info[r]['RouteName']}",
+            help="Pick individual routes. Picking routes also limits the other lists to "
+            "theirs. Empty = every route that passes the filters above.",
         )
 
 

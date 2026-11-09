@@ -727,25 +727,60 @@ def test_theme_is_dark_and_earthy() -> None:
 # --- filters that depend on each other ------------------------------------------------
 
 
-def test_area_filters_narrow_each_other(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    """BCRs fit the states, strata fit the BCRs, routes fit all three (fixture: NC only).
+def test_area_options_respect_every_other_pick() -> None:
+    """Any order of picks: BCR first limits states, a stratum limits BCRs, and so on."""
+    from bbs_pipeline.values import area_options
 
-    BCR 28 holds only stratum 23 and routes 63_031, 63_228, 63_906, 63_910.
-    """
-    profile = _profile(tmp_path, routes={"strata": [3], "route_ids": ["63_101"]})
-    at, _ = _app(tmp_path, monkeypatch, profile)
+    routes = [
+        {"route_id": "03_001", "StateNum": 3, "BCR": 2, "Stratum": 70},  # Alaska
+        {"route_id": "63_001", "StateNum": 63, "BCR": 29, "Stratum": 11},
+        {"route_id": "63_002", "StateNum": 63, "BCR": 28, "Stratum": 23},
+        {"route_id": "63_003", "StateNum": 63, "BCR": 27, "Stratum": 4},
+    ]
+    none = {"StateNum": [], "BCR": [], "Stratum": [], "route_id": []}
+    assert area_options(routes, none)["StateNum"] == [3, 63]
+
+    bcr_first = area_options(routes, {**none, "BCR": [29]})
+    assert bcr_first["StateNum"] == [63]  # no Alaska after picking BCR 29
+    assert bcr_first["Stratum"] == [11]
+    assert bcr_first["BCR"] == [2, 27, 28, 29]  # a field never limits itself
+
+    stratum_first = area_options(routes, {**none, "Stratum": [23]})
+    assert stratum_first["BCR"] == [28] and stratum_first["StateNum"] == [63]
+
+    alaska = area_options(routes, {**none, "StateNum": [3]})
+    assert alaska["BCR"] == [2] and alaska["Stratum"] == [70]
+
+    route_first = area_options(routes, {**none, "route_id": ["63_003"]})
+    assert route_first == {**route_first, "StateNum": [63], "BCR": [27], "Stratum": [4]}
+
+
+def test_area_lists_follow_each_other_in_the_editor(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Fixture (NC only): BCR 28 holds stratum 23 only; stratum 3 is only in BCR 27."""
+    at, _ = _app(tmp_path, monkeypatch, _profile(tmp_path))
     assert len(at.multiselect(key="ui_strata").options) == 4
 
-    at.multiselect(key="ui_bcrs").set_value([28]).run()
-    assert not at.error
-    strata = at.multiselect(key="ui_strata")
-    assert [o.split(" ")[0] for o in strata.options] == ["23"]
-    assert strata.value == []  # stratum 3 has no routes in BCR 28
-    assert at.multiselect(key="ui_route_ids").value == []  # 63_101 is in BCR 27
+    at.multiselect(key="ui_strata").set_value([3]).run()  # stratum first
+    assert [o.split(" ")[0] for o in at.multiselect(key="ui_bcrs").options] == ["27"]
+
+    at.multiselect(key="ui_strata").set_value([]).run()
+    at.multiselect(key="ui_bcrs").set_value([28]).run()  # BCR first
+    assert [o.split(" ")[0] for o in at.multiselect(key="ui_strata").options] == ["23"]
     assert len(at.multiselect(key="ui_route_ids").options) == 4
-    notes = " ".join(i.value for i in at.info)
-    assert "Strata removed: 3" in notes and "Routes removed: 63_101" in notes
-    assert at.session_state["draft"]["routes"]["strata"] == []
+    assert not at.error
+
+
+def test_an_impossible_saved_area_mix_is_trimmed(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A saved NC + BCR 29 + stratum 3 matches nothing: keep states, drop BCR 29, say so."""
+    profile = _profile(tmp_path, routes={"states": ["NC"], "bcrs": [29], "strata": [3]})
+    at, _ = _app(tmp_path, monkeypatch, profile)
+    assert any("BCRs removed: 29" in i.value for i in at.info)
+    assert at.session_state["draft"]["routes"]["bcrs"] == []
+    assert at.session_state["draft"]["routes"]["strata"] == [3]
 
 
 def test_years_stay_inside_the_release(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -811,3 +846,25 @@ def test_a_new_guild_file_offers_its_traits_at_once(
     assert not any(m.key == "ui_guild_breeding_habitat" for m in at.multiselect)
     at.text_input(key="ui_guild_file").set_value(str(GUILDS)).run()  # one rerun only
     assert any(m.key == "ui_guild_breeding_habitat" for m in at.multiselect)
+
+
+def test_clear_area_removes_every_area_pick(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    profile = _profile(tmp_path, routes={"states": ["NC"], "bcrs": [28], "strata": [23]})
+    at, _ = _app(tmp_path, monkeypatch, profile)
+    at.multiselect(key="ui_route_ids").set_value(["63_031"]).run()
+
+    at.button(key="btn_clear_area").click().run()
+    assert not at.exception, at.exception
+    for key in ("ui_states", "ui_bcrs", "ui_strata", "ui_route_ids"):
+        assert at.multiselect(key=key).value == []
+    routes = at.session_state["draft"]["routes"]
+    assert (routes["states"], routes["bcrs"], routes["strata"], routes["route_ids"]) == (
+        [],
+        [],
+        [],
+        [],
+    )
+    assert len(at.multiselect(key="ui_strata").options) == 4  # every option is back
+    assert at.button(key="btn_clear_area").disabled

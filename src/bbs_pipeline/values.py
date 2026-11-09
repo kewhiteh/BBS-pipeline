@@ -91,6 +91,29 @@ def _code_labels(raw_dir: Path) -> dict[str, dict[int, str]]:
     return {a: parse_code_labels(xml_files[0], a) for a in LABELED_CODES}
 
 
+AREA_FIELDS = ("StateNum", "BCR", "Stratum", "route_id")
+
+
+def area_options(
+    routes: list[dict[str, object]], chosen: dict[str, list[object]]
+) -> dict[str, list[object]]:
+    """For each area field, the values that still match a route given the OTHER picks.
+
+    ``routes`` are ``ProfileValues.routes``; ``chosen`` maps each of AREA_FIELDS to the
+    picked values (empty = no filter). Every filter respects every other one, so a
+    state, BCR, stratum or route that is offered always leaves at least one route:
+    pick BCR 29 and only states with BCR 29 routes are offered, and the other way round.
+    """
+
+    def fits(route: dict[str, object], skip: str) -> bool:
+        return all(not chosen.get(f) or route.get(f) in chosen[f] for f in AREA_FIELDS if f != skip)
+
+    return {
+        f: sorted({r[f] for r in routes if r.get(f) is not None and fits(r, f)})  # type: ignore[type-var]
+        for f in AREA_FIELDS
+    }
+
+
 def collect_values(profile: RunProfile) -> ProfileValues:
     """Read the release (building the cache if needed) and list every valid value."""
     bundle = profile.to_bundle()

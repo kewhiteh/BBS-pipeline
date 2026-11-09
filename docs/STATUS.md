@@ -107,9 +107,13 @@ change that discovers or fixes any of it. The phase plan and its decisions live 
   and join modes are radio buttons.
 - **Dependent choices adjust instead of erroring (2026-11-09).** Every cross-field rule
   in `config.py` is handled in the editor, with a blue note saying what changed and why:
-  BCR options are only those with routes in the chosen states, strata only those in the
-  chosen states and BCRs, routes only those in all three; a selection an earlier choice
-  rules out is removed (`test_area_filters_narrow_each_other`). Years stay inside the
+  each area list (states, BCRs, strata, routes) offers only values that still match a
+  route given **all the other** picks, in any order: BCR 29 first limits the states,
+  a stratum first limits the BCRs (`bbs_pipeline.values.area_options`,
+  `test_area_options_respect_every_other_pick`). A saved impossible mix keeps its
+  states and drops BCRs, then strata, then routes that no longer fit, with a note
+  (`test_an_impossible_saved_area_mix_is_trimmed`). **Clear area** removes every
+  Study Area pick, boundary included, in one click. Years stay inside the
   release (1966–2025 now; from `ProfileValues.years`). 50-stop before 1997 → 10-stop;
   "all 50 stops" without 50-stop → 10-stop bins. Zero-fill off → rolling mean off and
   its box disabled; rolling 1 → 2; wide "rolling mean" values only offered with a
