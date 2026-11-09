@@ -45,14 +45,8 @@ date, what was seen) and tick it here.
 - [ ] **H11 Overlays**: a real polygon layer labels each route with the polygon its start
   point is in.
 - [ ] **H12 Manifest**: rerun from a `<file>.manifest.json` and get an identical file.
-- [ ] **H13 Large extent**: all states, 1966–2025, once: how long it takes and whether
-  memory is fine. *2026-11-09 attempt 1: out of memory, WSL crashed (see STATUS.md
-  "Full extent runs out of memory"). Retry once the time/memory log is merged; read the
-  numbers from `logs/ui_activity.log`.* *2026-11-09 attempt 2 (Inspect, RunType 1,
-  continuity 0, zero-fill, 10-stop bins, all joins = 152 columns, 1966–2025): 1 state
-  230,044 rows 1.7 s peak 5.16 GB; 10 states 2,385,181 rows 3.0 s 6.97 GB; 20 states
-  4,687,331 rows 5.4 s 13.25 GB (of 15.4 GB). Stopped there; the full extent does not
-  fit. Speed is fine; memory is the limit.*
+- [x] **H13 Large extent**: done 2026-11-09; result in the checklist below ("Large
+  extent").
 
 ## Script checks (`scripts/validate_outputs.py`)
 
@@ -103,6 +97,6 @@ holds 6 NC runs from before 1997.
 | GeoPackage opens correctly in ArcGIS Pro | **Not verified** | Kyle to check: points on the route starts, attribute names and types |
 | FlatGeobuf, GeoJSON, GeoParquet open in ArcGIS Pro | **Not verified** | Pro's support for these is unconfirmed |
 | Manifest reproduces the same file | **Not verified** | rerun from `<file>.manifest.json` and compare |
-| Large extent (all states, 1966–2025): time and memory | **Not verified** | one full run to time it |
+| Large extent (all states, 1966–2025): time and memory | **Verified (hand)** 2026-11-09, with a limit | Kyle, H13 profile (RunType 1, continuity 0, zero-fill, 10-stop bins, all joins, 151 columns). Speed is fine: 20 states (4.69 M rows) Inspect 5.4 s. Memory is the limit: attempt 1 (all states) ran WSL (15.4 GB) out of memory and crashed it; attempt 2 peaks 1 / 10 / 20 states = 5.2 / 7.0 / 13.25 GB. After kewhiteh/BBS-pipeline#44 a 20-state Run peaks 10.5 GB. All states with everything on (~13.7 M rows, ~15 GB table) does not fit; the memory check (kewhiteh/BBS-pipeline#43) stops it in 2 s instead of crashing. Whole-country builds in chunks: future item in STATUS.md |
 | CSV opened in Excel keeps AOU leading zeros | **Known limitation** | Excel turns `07550` into `7550`; import the AOU column as text. R, Python and ArcGIS keep them. |
 | Editor: every setting behaves as labelled | Tests + hand | `tests/test_ui.py` (54 tests; AppTest passes picks by value, so browser-only bugs need hands-on use). Kyle's use 2026-11-09 found and got fixed: state search, area cross-checks, layout, NC then BCR 29 dropping NC |
