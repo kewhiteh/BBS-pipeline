@@ -1057,3 +1057,49 @@ def test_open_manifest_starts_an_unsaved_draft_with_its_settings(
     assert any("from manifest" in m.value for m in at.markdown)
     assert path.read_text(encoding="utf-8") == before  # nothing written
     assert manifest.read_text(encoding="utf-8").startswith("{")  # manifest untouched
+
+
+def test_guild_file_page_builds_a_file_the_pipeline_uses(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Blank file -> trait -> paste and match -> assign -> check -> save -> Inspect."""
+    at, _ = _app(tmp_path, monkeypatch, _profile(tmp_path))
+    at.button(key="btn_to_guilds").click().run()
+    at.radio(key="gw_start_choice").set_value("blank").run()
+    out = tmp_path / "guilds" / "mine.csv"
+    at.text_input(key="gw_save_path").set_value(str(out)).run()
+    at.button(key="gw_begin").click().run()
+    assert at.session_state["gw"]["step"] == 2
+
+    at.text_input(key="gw_new_trait").set_value("forest_guild").run()
+    at.button(key="gw_add_trait").click().run()
+    at.multiselect(key="gw_tv_forest_guild").set_value(["Interior", "edge"]).run()
+    assert at.session_state["gw"]["draft"]["traits"]["forest_guild"] == ["interior", "edge"]
+
+    at.button(key="gw_next").click().run()
+    at.text_area(key="gw_paste_text").set_value(
+        "Wood Thrush\nDendroica cerulea\nNo Such Bird"
+    ).run()
+    at.button(key="gw_match").click().run()
+    kinds = [m["kind"] for m in at.session_state["gw"]["matches"]]
+    assert kinds == ["exact", "old", "none"]
+    at.selectbox(key="gw_bulk_trait").set_value("forest_guild").run()
+    at.selectbox(key="gw_bulk_value").set_value("interior").run()
+    at.text_input(key="gw_bulk_note").set_value("Whitcomb et al. 1981").run()
+    at.button(key="gw_add_paste").click().run()
+    rows = at.session_state["gw"]["draft"]["rows"]
+    assert [(r["aou"], r["forest_guild"]) for r in rows] == [
+        ("07550", "interior")
+    ]  # the old name was not ticked
+
+    at.button(key="gw_next").click().run()
+    assert not at.exception, at.exception
+    at.button(key="gw_save").click().run()
+    assert not at.exception, at.exception
+    assert out.exists() and "07550,Wood Thrush" in out.read_text(encoding="utf-8")
+    assert at.session_state["draft"]["guilds"]["file"] == str(out)
+
+    at.button(key="btn_to_build").click().run()
+    at.button(key="btn_inspect").click().run()
+    assert not at.exception, at.exception
+    assert not at.error, [e.value for e in at.error]

@@ -304,8 +304,9 @@ change that discovers or fixes any of it. The phase plan and its decisions live 
 
 - Guild File wizard: mock-up signed off 2026-11-09; plan and decisions G1–G12 in
   [instructions/GUILD_WIZARD_PLAN.md](instructions/GUILD_WIZARD_PLAN.md). Build step 1
-  (matcher, checks, `bbs guilds match|check`, `guilds/name_changes.csv`) done 2026-11-09;
-  the editor page (steps 2–4) not built yet.
+  (matcher, checks, `bbs guilds match|check`, `guilds/name_changes.csv`) and the editor's
+  Guild File page done 2026-11-09; next: Kyle uses it to build the GHY 5812/5818 file
+  (then H9). The working copy lives in the browser session only: Save before closing.
   Kyle's research guild file comes after it; H9 waits for that.
 
 - H13 memory: count the file write (GeoPackage via geopandas) in the estimate for Run.

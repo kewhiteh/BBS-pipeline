@@ -224,7 +224,7 @@ class GuildChecks:
         return bool(self.outside_values or self.duplicates)
 
 
-def _row_aou(index: SpeciesIndex, row: dict[str, str | None]) -> str | None:
+def row_aou(index: SpeciesIndex, row: dict[str, str | None]) -> str | None:
     for col in IDENTIFIER_COLUMNS:
         value = row.get(col)
         if value:
@@ -247,7 +247,7 @@ def check_guild_rows(
     unmatched: list[dict[str, str]] = []
     empty = 0
     for row in table.iter_rows(named=True):
-        aou = _row_aou(index, row)
+        aou = row_aou(index, row)
         if aou is None:
             unmatched.append({c: row[c] for c in ids if row[c]})
             continue

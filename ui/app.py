@@ -43,8 +43,29 @@ from bbs_pipeline.config import (
     save_profile,
 )
 from bbs_pipeline.contracts import JOIN_TABLES
+from bbs_pipeline.guild_builder import (
+    SpeciesIndex,
+    check_guild_rows,
+    match_names,
+    recorded_species,
+)
+from bbs_pipeline.guild_draft import (
+    STARTER,
+    add_species,
+    blank_draft,
+    clean_value,
+    draft_from_csv,
+    draft_table,
+    has_row,
+    remove_trait,
+    rename_trait,
+    would_overwrite,
+    write_draft,
+)
+from bbs_pipeline.guilds import IDENTIFIER_COLUMNS
 from bbs_pipeline.pipeline import run_profile
 from bbs_pipeline.sources.cache import CACHE_MANIFEST
+from bbs_pipeline.sources.loader import load_sources
 from bbs_pipeline.sources.regions import resolve_states
 from bbs_pipeline.sources.release import RELEASE_JSON, fetch_release
 from bbs_pipeline.spatial.files import save_gis_upload
@@ -1893,7 +1914,526 @@ def _profile_menu(path: Path | None, profile: RunProfile | None) -> None:
 # --- page ----------------------------------------------------------------------------
 
 
-PAGES: dict[str, Any] = {}  # "build" / "settings" -> st.Page, set in render_editor
+# --- guild file page (docs/instructions/GUILD_WIZARD_PLAN.md) -------------------------
+
+GUILD_STEPS: tuple[tuple[str, str], ...] = (
+    ("Start", "blank, starter or existing"),
+    ("Traits", "columns and their values"),
+    ("Add Species", "search, study area, paste"),
+    ("Classify & Check", "assign, check, save"),
+)
+START_CHOICES = {
+    "blank": "Blank file",
+    "starter": "USGS Patuxent starter",
+    "csv": "Open an existing CSV",
+}
+# Names a trait can't take: they are already output columns
+RESERVED_COLUMNS = frozenset(
+    {
+        "RouteDataID",
+        "route_id",
+        "Year",
+        "AOU",
+        "route_total",
+        "is_zero_filled",
+        "Family",
+        "Order",
+        "Genus",
+        "Species",
+        "English_Common_Name",
+        "RouteName",
+        "StateNum",
+        "Route",
+    }
+)
+
+
+@st.cache_resource(show_spinner="Reading the species list...")
+def _species_index(raw_dir: str, cache_dir: str, _stamp: float | None) -> SpeciesIndex:
+    """The release's species list for matching; ``_stamp`` = the cache manifest's mtime."""
+    profile = profile_from_data(
+        {"source": {"raw_dir": raw_dir, "cache_dir": cache_dir, "offline": True}}
+    )
+    tables = load_sources(profile.to_bundle().protocol).tables
+    return SpeciesIndex.from_species(tables["species"].collect())
+
+
+@st.cache_data(show_spinner="Finding species recorded in the study area...")
+def _recorded(profile_json: str, _stamp: tuple) -> list[dict[str, Any]]:
+    return recorded_species(RunProfile.model_validate_json(profile_json)).to_dicts()
+
+
+def _gw() -> dict[str, Any]:
+    """The wizard's state: step, start choice, paths, the draft, pasted matches."""
+    return st.session_state.setdefault(
+        "gw",
+        {
+            "step": 1,
+            "start": "starter",
+            "save_path": "guilds/my_guilds.csv",
+            "open_path": "",
+            "draft": None,
+            "started_from": None,
+            "matches": None,
+            "recorded": None,
+        },
+    )
+
+
+def _guild_page() -> None:
+    gw = _gw()
+    p = _draft()
+    try:
+        index = _species_index(
+            p["source"]["raw_dir"],
+            p["source"]["cache_dir"],
+            _mtime(str(Path(p["source"]["cache_dir"]) / CACHE_MANIFEST)),
+        )
+    except Exception as exc:  # no release yet
+        _log_failure("Guild File: reading the species list", exc)
+        _show("warning", f"Fetch the release on the Settings page first: {exc}")
+        return
+    with st.container(border=True):
+        st.subheader(_heading("Guild File"))
+        st.caption(
+            "Make or edit a guild file: a CSV that tags species with your traits (habitat, "
+            "forest guild, nest type…). The Build page can then filter on those traits and "
+            "add them as columns. Format: `docs/guild_file.md`."
+        )
+        cols = st.columns(len(GUILD_STEPS))
+        for i, (col, (name, sub)) in enumerate(zip(cols, GUILD_STEPS, strict=True), start=1):
+            done = gw["draft"] is not None and i < gw["step"]
+            label = f"{'✓' if done else i}  {name}"
+            if col.button(
+                label,
+                key=f"gw_step_{i}",
+                help=sub,
+                type="primary" if i == gw["step"] else "secondary",
+                disabled=i > 1 and gw["draft"] is None,
+                width="stretch",
+            ):
+                gw["step"] = i
+                st.rerun()
+    with st.container(border=True):
+        [_gw_start, _gw_traits, _gw_add, _gw_check][gw["step"] - 1](gw, index)
+    with st.container(horizontal=True):
+        if st.button("Back", key="gw_back", disabled=gw["step"] == 1):
+            gw["step"] -= 1
+            st.rerun()
+        st.space("stretch")
+        if gw["step"] < len(GUILD_STEPS) and st.button(
+            "Next", key="gw_next", type="primary", disabled=gw["draft"] is None
+        ):
+            gw["step"] += 1
+            st.rerun()
+
+
+def _gw_start(gw: dict[str, Any], index: SpeciesIndex) -> None:
+    st.subheader(_heading("Start"))
+    gw["start"] = st.radio(
+        "Start from",
+        list(START_CHOICES),
+        list(START_CHOICES).index(gw["start"]),
+        format_func=START_CHOICES.get,
+        horizontal=True,
+        key="gw_start_choice",
+        help="Blank: only the traits you define. Starter: 412 species tagged with breeding "
+        "habitat, nest type, migration and nest location (USGS Patuxent groupings), copied "
+        "under your new name. Existing: continue a guild file you started earlier.",
+    )
+    if gw["start"] == "csv":
+        gw["open_path"] = st.text_input(
+            "CSV to open", gw["open_path"], key="gw_open_path", placeholder="guilds/my_guilds.csv"
+        )
+    gw["save_path"] = st.text_input(
+        "Save as",
+        gw["save_path"],
+        key="gw_save_path",
+        help="Where Save writes the guild file. The starter itself is never overwritten.",
+    )
+    if gw["draft"] is not None:
+        _show(
+            "info",
+            f"Working on: {gw['started_from']}, {len(gw['draft']['rows'])} rows. "
+            "Starting again replaces it.",
+            icon=":material/edit_note:",
+        )
+    sure = gw["draft"] is None or st.checkbox("Replace the current working copy", key="gw_replace")
+    if st.button("Start", key="gw_begin", type="primary", disabled=not sure):
+        try:
+            if gw["start"] == "blank":
+                draft, origin = blank_draft(), "a blank file"
+            elif gw["start"] == "starter":
+                draft, origin = draft_from_csv(STARTER, index), f"the starter ({STARTER.name})"
+            else:
+                path = Path(gw["open_path"].strip())
+                draft, origin = draft_from_csv(path, index), str(path)
+                gw["save_path"] = str(path)
+                st.session_state["gw_save_path"] = str(path)
+        except (OSError, ValueError) as exc:
+            _show("error", str(exc))
+            return
+        gw.update(draft=draft, started_from=origin, step=2, matches=None)
+        st.session_state.pop("gw_replace", None)
+        _activity(
+            "action", "Guild File: start", start=gw["start"], source=origin, rows=len(draft["rows"])
+        )
+        st.rerun()
+
+
+def _gw_traits(gw: dict[str, Any], index: SpeciesIndex) -> None:
+    draft = gw["draft"]
+    st.subheader(_heading("Traits"))
+    st.caption(
+        "Each trait is a column. Give it a fixed list of values, so every species gets one "
+        "of those and a typo can't make a new guild. Values are stored lower case with "
+        "underscores (`Interior Edge` → `interior_edge`)."
+    )
+    for name in list(draft["traits"]):
+        with st.container(border=True):
+            left, right = st.columns([1, 3])
+            new = left.text_input("Trait", name, key=f"gw_tn_{name}").strip()
+            filled = sum(1 for r in draft["rows"] if r.get(name))
+            left.caption(f"{filled} rows filled")
+            if new and new != name:
+                if new in draft["traits"] or new in RESERVED_COLUMNS:
+                    left.error(f"'{new}' is taken; pick another name.")
+                else:
+                    rename_trait(draft, name, new)
+                    _activity("edit", "Guild File: rename trait", old=name, new=new)
+                    st.rerun()
+            values = right.multiselect(
+                "Allowed values (type a new one and press Enter)",
+                draft["traits"][name],
+                draft["traits"][name],
+                key=f"gw_tv_{name}",
+                accept_new_options=True,
+            )
+            cleaned = list(dict.fromkeys(clean_value(v) for v in values if v.strip()))
+            if cleaned != draft["traits"][name]:
+                draft["traits"][name] = cleaned
+                st.session_state.pop(f"gw_tv_{name}", None)
+                st.rerun()
+            if right.button("Remove trait", key=f"gw_tr_{name}", icon=":material/delete:"):
+                remove_trait(draft, name)
+                _activity("edit", "Guild File: remove trait", trait=name)
+                st.rerun()
+    with st.container(horizontal=True, vertical_alignment="bottom"):
+        new = st.text_input("New trait name", key="gw_new_trait", placeholder="e.g. forest_guild")
+        if st.button("Add trait", key="gw_add_trait", disabled=not new.strip()):
+            name = new.strip()
+            if name in draft["traits"] or name in RESERVED_COLUMNS or name in IDENTIFIER_COLUMNS:
+                _show("error", f"'{name}' is already a column; pick another name.")
+            else:
+                draft["traits"][name] = []
+                for row in draft["rows"]:
+                    row.setdefault(name, "")
+                _activity("edit", "Guild File: add trait", trait=name)
+                st.session_state.pop("gw_new_trait", None)
+                st.rerun()
+
+
+def _species_label(index: SpeciesIndex, aou: str) -> str:
+    row = index.by_aou.get(aou)
+    return f"{aou} · {row['English_Common_Name']} · {row['scientific_name']}" if row else aou
+
+
+def _gw_add(gw: dict[str, Any], index: SpeciesIndex) -> None:
+    draft = gw["draft"]
+    st.subheader(_heading("Add Species"))
+    st.caption("Use any mix. A species already in the file is never added twice.")
+    search, area, paste = st.tabs(
+        ["Search the release", "Recorded in my study area", "Paste a list from a paper"]
+    )
+    with search:
+        options = [a for a in index.by_aou if not has_row(draft, a)]
+        picked = st.multiselect(
+            "Species (search by common name, scientific name or AOU)",
+            options,
+            key="gw_search",
+            format_func=lambda a: _species_label(index, a),
+        )
+        if st.button("Add selected", key="gw_add_search", type="primary", disabled=not picked):
+            add_species(draft, picked, index)
+            _activity("action", "Guild File: add from search", aous=picked)
+            st.session_state.pop("gw_search", None)
+            st.toast(f"Added {len(picked)} species")
+            st.rerun()
+    with area:
+        _gw_area(gw, draft, index)
+    with paste:
+        _gw_paste(gw, draft, index)
+
+
+def _gw_area(gw: dict[str, Any], draft: dict[str, Any], index: SpeciesIndex) -> None:
+    profile = _validated(st.container())
+    if profile is None:
+        st.caption("Fix the open profile on the Build page to use its study area.")
+        return
+    r = profile.routes
+    where = ", ".join(r.states) or "all states"
+    st.caption(
+        f"Uses the open profile: {where}, {profile.runs.start_year}–{profile.runs.end_year}, "
+        "its run filters and continuity. Species recorded on those runs with no row yet:"
+    )
+    if st.button("Find recorded species", key="gw_find_area"):
+        gw["recorded"] = _recorded(profile.model_dump_json(), _value_source(profile)[1])
+        _activity("action", "Guild File: recorded species", found=len(gw["recorded"]))
+    if gw["recorded"] is None:
+        return
+    missing = [s for s in gw["recorded"] if not has_row(draft, s["AOU"])]
+    if not missing:
+        st.success("Every species recorded in the study area has a row.")
+        return
+    table = st.data_editor(
+        pl.DataFrame(missing)
+        .with_columns(pl.lit(True).alias("add"))
+        .select("add", "AOU", "English_Common_Name", "runs"),
+        key="gw_area_table",
+        hide_index=True,
+        disabled=["AOU", "English_Common_Name", "runs"],
+        column_config={"runs": st.column_config.NumberColumn("Runs recorded on")},
+    )
+    chosen = [a for a, keep in zip(table["AOU"], table["add"], strict=True) if keep]
+    if st.button("Add selected", key="gw_add_area", type="primary", disabled=not chosen):
+        add_species(draft, chosen, index)
+        _activity("action", "Guild File: add from study area", aous=chosen)
+        st.toast(f"Added {len(chosen)} species from the study area")
+        st.rerun()
+
+
+EMPTY = "—"  # shown for an empty trait cell (Streamlit shows "" as "None")
+KIND_LABELS = {
+    "exact": "match",
+    "old": "old name",
+    "spelling": "check spelling",
+    "none": "no match",
+}
+
+
+def _gw_paste(gw: dict[str, Any], draft: dict[str, Any], index: SpeciesIndex) -> None:
+    text = st.text_area(
+        "One species per line: common or scientific name, old or current, or AOU",
+        key="gw_paste_text",
+        height=200,
+        placeholder="Wood Thrush\nDendroica cerulea\n06740",
+    )
+    if st.button("Match names", key="gw_match", disabled=not text.strip()):
+        gw["matches"] = [m.__dict__ for m in match_names(text.splitlines(), index)]
+        _activity(
+            "action",
+            "Guild File: match names",
+            lines=len(gw["matches"]),
+            kinds=[m["kind"] for m in gw["matches"]],
+        )
+    if not gw["matches"]:
+        return
+    rows = [
+        {
+            "use": m["kind"] == "exact",
+            "pasted": m["text"],
+            "match": "; ".join(_species_label(index, a) for a in m["aous"]) or "—",
+            "status": KIND_LABELS[m["kind"]] + (f": {m['why']}" if m["why"] else ""),
+        }
+        for m in gw["matches"]
+    ]
+    table = st.data_editor(
+        pl.DataFrame(rows),
+        key=f"gw_match_table_{len(rows)}_{hash(tuple(r['pasted'] for r in rows))}",
+        hide_index=True,
+        disabled=["pasted", "match", "status"],
+        column_config={"use": st.column_config.CheckboxColumn("Use", help="Tick to confirm")},
+    )
+    use = [
+        a
+        for m, keep in zip(gw["matches"], table["use"], strict=True)
+        if keep and m["aous"]
+        for a in m["aous"]
+    ]
+    unconfirmed = sum(
+        1
+        for m, keep in zip(gw["matches"], table["use"], strict=True)
+        if m["kind"] in ("old", "spelling") and not keep
+    )
+    nomatch = [m["text"] for m in gw["matches"] if m["kind"] == "none"]
+    if nomatch:
+        st.caption(
+            f"Not in this release's species list (search for them, or leave out): "
+            f"{', '.join(nomatch)}"
+        )
+    with st.container(border=True):
+        st.markdown("**Assign to the ticked species**")
+        c1, c2, c3 = st.columns([1, 1, 2])
+        traits = list(draft["traits"])
+        trait = c1.selectbox("Trait", ["(none)", *traits], key="gw_bulk_trait")
+        values = draft["traits"].get(trait, [])
+        value = c2.selectbox("Value", values, key="gw_bulk_value", disabled=not values)
+        note = c3.text_input(
+            "Note / citation", key="gw_bulk_note", placeholder="Whitcomb et al. 1981"
+        )
+        assign = {trait: value} if trait != "(none)" and value else {}
+        unique = list(dict.fromkeys(use))
+        st.caption(
+            f"{len(unique)} species"
+            + (f" get {trait} = {value}" if assign else "")
+            + (f"; {unconfirmed} suggestion(s) not ticked are left out" if unconfirmed else "")
+        )
+        clash = would_overwrite(draft, unique, assign)
+        ok = True
+        if clash:
+            st.warning(
+                "These already have a different value:\n"
+                + "\n".join(f"- {index.label(a)}: {t} {old} → {new}" for a, t, old, new in clash)
+            )
+            ok = st.checkbox("Replace those values", key="gw_bulk_overwrite")
+        if st.button(
+            "Add and assign", key="gw_add_paste", type="primary", disabled=not unique or not ok
+        ):
+            add_species(draft, unique, index, assign=assign, note=note.strip())
+            _activity(
+                "action",
+                "Guild File: add pasted list",
+                aous=unique,
+                assign=assign,
+                note=note.strip(),
+                overwrote=len(clash),
+            )
+            st.toast(f"Added or updated {len(unique)} species")
+            st.rerun()
+
+
+def _gw_check(gw: dict[str, Any], index: SpeciesIndex) -> None:
+    draft = gw["draft"]
+    st.subheader(_heading("Classify & Check"))
+    table = draft_table(draft)
+    checks = check_guild_rows(
+        table,
+        index,
+        allowed=draft["traits"],
+        recorded=[s["AOU"] for s in gw["recorded"]] if gw["recorded"] is not None else None,
+    )
+    m1, m2, m3, m4 = st.columns(4, border=True)
+    m1.metric("Rows that match the release", f"{checks.matched} of {checks.rows}")
+    m2.metric(
+        "Rows with an empty trait",
+        checks.empty_trait_rows,
+        help="Allowed: leave a trait empty when unknown; filters skip those rows.",
+    )
+    m3.metric(
+        "Recorded species without a row",
+        "—" if gw["recorded"] is None else len(checks.recorded_without_row),
+        help="Find recorded species on step 3 to fill this in.",
+    )
+    m4.metric("Values outside a trait's list", sum(len(v) for v in checks.outside_values.values()))
+    for row in checks.unmatched:
+        _show("warning", f"Matches no species in this release: {row}. Fix the name or remove it.")
+    for aou, n in checks.duplicates.items():
+        _show("error", f"{n} rows for {index.label(aou)}: keep one.")
+    for trait, bad in checks.outside_values.items():
+        _show(
+            "error", f"{trait}: {bad} not in its allowed values. Pick a value, or add it on step 2."
+        )
+    if checks.recorded_without_row:
+        _show(
+            "warning",
+            "Recorded in the study area but not in this file: "
+            + ", ".join(index.label(a) for a in checks.recorded_without_row),
+        )
+
+    show = st.radio(
+        "Show",
+        ["All rows", "Rows with an empty trait", "Rows added this session"],
+        horizontal=True,
+        key="gw_filter",
+    )
+    rows = draft["rows"]
+    if show == "Rows with an empty trait":
+        rows = [r for r in rows if any(not r.get(t) for t in draft["traits"])]
+    elif show == "Rows added this session":
+        rows = [r for r in rows if r["aou"] in draft["added"]]
+    columns = ["aou", "common_name", "scientific_name", *draft["traits"], *draft["notes"]]
+    view = pl.DataFrame(
+        [{c: r.get(c) or (EMPTY if c in draft["traits"] else "") for c in columns} for r in rows],
+        schema=dict.fromkeys(columns, pl.String),
+    )
+    config: dict[str, Any] = {
+        t: st.column_config.SelectboxColumn(t, options=[EMPTY, *v])
+        for t, v in draft["traits"].items()
+    }
+    edited = st.data_editor(
+        view,
+        key=f"gw_table_{show}_{len(rows)}",
+        hide_index=True,
+        num_rows="delete",
+        disabled=["aou", "common_name", "scientific_name"],
+        column_config=config,
+        height=min(38 * (len(rows) + 1) + 3, 600),
+    )
+    _apply_table_edits(draft, rows, edited)
+
+    st.divider()
+    with st.container(horizontal=True, vertical_alignment="bottom"):
+        gw["save_path"] = st.text_input("File", gw["save_path"], key="gw_save_path2")
+        use = st.checkbox("Use it in the open profile", value=True, key="gw_use_in_profile")
+        if st.button(
+            "Save guild file",
+            key="gw_save",
+            type="primary",
+            disabled=checks.blocking,
+            help="Fix the problems shown in red first." if checks.blocking else None,
+        ):
+            try:
+                path = write_draft(draft, Path(gw["save_path"].strip()))
+            except (OSError, ValueError) as exc:
+                _show("error", str(exc))
+            else:
+                if use:
+                    _draft()["guilds"]["file"] = str(path)
+                    st.session_state.pop("ui_guild_file", None)
+                _activity(
+                    "action",
+                    "Guild File: save",
+                    path=str(path),
+                    rows=checks.rows,
+                    use_in_profile=use,
+                )
+                st.toast(f"Saved {path}" + (" · set as the profile's guild file" if use else ""))
+        st.download_button(
+            "Download CSV",
+            draft_table(draft).sort("aou").write_csv(),
+            file_name=Path(gw["save_path"]).name or "guilds.csv",
+            mime="text/csv",
+            key="gw_download",
+        )
+
+
+def _apply_table_edits(
+    draft: dict[str, Any], shown: list[dict[str, Any]], edited: pl.DataFrame
+) -> None:
+    """Copy the table's edits back into the draft; rows deleted in the table are removed."""
+    kept = set(edited["aou"].to_list()) if edited.height else set()
+    removed = [r["aou"] for r in shown if r["aou"] not in kept]
+    changed = False
+    if removed:
+        draft["rows"] = [r for r in draft["rows"] if r["aou"] not in removed]
+        _activity("edit", "Guild File: remove rows", aous=removed)
+        changed = True
+    by_aou = {r["aou"]: r for r in draft["rows"]}
+    for new in edited.iter_rows(named=True):
+        row = by_aou.get(new["aou"])
+        if row is None:
+            continue
+        for col in [*draft["traits"], *draft["notes"]]:
+            value = new.get(col) or ""
+            value = "" if value == EMPTY else value
+            if (row.get(col) or "") != value:
+                row[col] = value
+                changed = True
+    if changed:
+        st.rerun()
+
+
+PAGES: dict[str, Any] = {}  # "build" / "settings" / "guilds" -> st.Page, set in render_editor
 
 
 def _header(
@@ -1904,6 +2444,8 @@ def _header(
     with st.container(horizontal=True, vertical_alignment="center"):
         st.title(_heading("BBS Dataset Builder"), width="stretch")
         if page == "build":
+            if st.button("Guild File", key="btn_to_guilds", icon=":material/category:"):
+                st.switch_page(PAGES["guilds"])
             if st.button("Settings", key="btn_to_settings", icon=":material/settings:"):
                 st.switch_page(PAGES["settings"])
         elif st.button("Back to builder", key="btn_to_build", icon=":material/arrow_back:"):
@@ -2011,9 +2553,12 @@ def render_editor() -> None:
 
     PAGES["build"] = st.Page(_build_page, title="Build", url_path="build", default=True)
     PAGES["settings"] = st.Page(_settings_page, title="Settings", url_path="settings")
+    PAGES["guilds"] = st.Page(_guild_page, title="Guild File", url_path="guilds")
     page = st.navigation(list(PAGES.values()), position="hidden")
     header = st.container()  # filled after the page, once the draft has been validated
-    st.session_state["page_name"] = "settings" if page.url_path == "settings" else "build"
+    st.session_state["page_name"] = (
+        page.url_path if page.url_path in ("settings", "guilds") else "build"
+    )
     page.run()
     _log_draft_edits()
     st.session_state["shown_before"] = st.session_state.pop("shown_now", set())
@@ -2024,7 +2569,7 @@ def render_editor() -> None:
         except ProfileError:
             profile = None  # the page already shows why
     with header:
-        _header(path, profile, saved, "build" if page.url_path in ("", "build") else "settings")
+        _header(path, profile, saved, "build" if page.url_path in ("", "build") else page.url_path)
         if path is None and st.session_state.get("opened_manifest"):
             _show(
                 "info",
