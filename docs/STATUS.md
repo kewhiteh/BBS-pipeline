@@ -25,6 +25,11 @@ change that discovers or fixes any of it. The phase plan and its decisions live 
 
 ## Decisions
 
+- **`runs.min_continuity` defaults to 0.8** (was 0.0): routes must have a kept run in at
+  least 80% of non-cancelled years unless a profile says otherwise (Kyle, 2026-11-09,
+  plan U7: academic-rigour files without opening the setting every time). Profiles that
+  omit it now filter at 80%; `examples/wood_thrush_story_map.toml` (which keeps every
+  run on purpose) now sets `min_continuity = 0.0` so its output is unchanged.
 - **`observations.source` defaults to `10_stop`** (was `50_stop`), and the editor lists
   it first: 10-stop data cover 1966 on, 50-stop only 1997 on, so the widest option is the
   default (Kyle, 2026-11-09). Profiles that omit `source` now read 10-stop data; set
@@ -71,14 +76,20 @@ change that discovers or fixes any of it. The phase plan and its decisions live 
   The golden 50-stop expected CSV lost only its `tenure_tier` column; every other value
   is unchanged.
 
-- **Editor pages (redesign PR 1, 2026-11-09).** Two pages, no sidebar: **Build** (the
-  dataset settings, still in tabs until redesign PR 2) and **Settings** (release,
+- **Editor pages (redesign PRs 1–2, 2026-11-09).** Two pages, no sidebar: **Build** (no
+  tabs: cards *Study Area*, *Survey Period & Protocol*, *Species & Guilds*, then
+  *Output* with *Joined Columns*, then *Inspect & Run*; less-used options sit under a
+  "More" expander in each card) and **Settings** (release,
   folders, download settings, saved projections, logs). The header on both shows the
   release status, the open profile, an Unsaved/Saved badge, Save, and a **Profile**
   menu (open, new, start from an example, save as, TOML). The Getting started checklist
   is gone (U9). **Start from an example** copies an `examples/*.toml` profile into a new,
   unsaved draft, so examples are never overwritten. Edits on either page share one
-  draft: `test_settings_page_holds_the_release_and_build_page_does_not`.
+  draft: `test_settings_page_holds_the_release_and_build_page_does_not`. RunType and
+  QualityCurrentID are toggles (on = `[1]`, off = `[]`); a profile with another mix,
+  e.g. `[0]`, gets a code list instead so opening it never rewrites the filter
+  (`test_an_unusual_run_type_mix_is_kept_not_rewritten`). Source, stop layout, shape
+  and join modes are radio buttons.
 - **Fixed 2026-11-07:** a profile without a guild file read "Unsaved changes" right
   after opening, because the editor cleared the default `joins.guilds = ["*"]` to `[]`.
 - **Overlay and boundary files** (Kyle asked for a file picker, 2026-11-07). Overlays

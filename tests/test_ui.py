@@ -111,9 +111,9 @@ def test_editor_offers_pick_lists_and_saves_only_on_save(
     at.multiselect(key="ui_bcrs").set_value([29])
     at.multiselect(key="ui_families").set_value(["Turdidae"])
     at.multiselect(key="ui_guild_breeding_habitat").set_value(["woodland"])
-    at.segmented_control(key="ui_join_mode_vehicle").set_value("Some").run()
+    at.radio(key="ui_join_mode_vehicle").set_value("Some").run()
     at.multiselect(key="ui_join_vehicle").set_value(["CarTotal"])
-    at.segmented_control(key="ui_shape").set_value("wide")
+    at.radio(key="ui_shape").set_value("wide")
     at.run()
     assert not at.exception, at.exception
 
@@ -147,7 +147,7 @@ def test_join_all_columns_checkbox_saves_a_star(
 ) -> None:
     at, path = _app(tmp_path, monkeypatch, _profile(tmp_path))
 
-    at.segmented_control(key="ui_join_mode_routes").set_value("All").run()
+    at.radio(key="ui_join_mode_routes").set_value("All").run()
     at.button(key="btn_save").click().run()
 
     assert load_profile(path).joins.routes == ["*"]
@@ -368,22 +368,22 @@ def test_years_before_1997_switch_the_source_off_50_stop(
 ) -> None:
     """50_stop starts in 1997: an earlier start year swaps it for 10_stop, no error."""
     at, _ = _app(tmp_path, monkeypatch, _profile(tmp_path))
-    at.selectbox(key="ui_obs_source").set_value("50_stop").run()
-    at.selectbox(key="ui_stops").set_value("stops").run()
-    at.multiselect(key="ui_run_types").set_value([1]).run()
+    at.radio(key="ui_obs_source").set_value("50_stop").run()
+    at.radio(key="ui_stops").set_value("stops").run()
+    at.toggle(key="ui_run_types").set_value(True).run()
 
     at.slider(key="ui_years").set_value((1995, 2024)).run()
     assert not at.error
-    assert at.selectbox(key="ui_obs_source").value == "10_stop"
-    assert "50_stop" not in at.selectbox(key="ui_obs_source").options
-    assert at.selectbox(key="ui_stops").value == "ten_stop_bins"
-    assert "stops" not in at.selectbox(key="ui_stops").options
-    assert any("10_stop" in i.value for i in at.info)  # says what changed and why
+    assert at.radio(key="ui_obs_source").value == "10_stop"
+    assert "50-stop (1997+)" not in at.radio(key="ui_obs_source").options
+    assert at.radio(key="ui_stops").value == "ten_stop_bins"
+    assert "All 50 stops" not in at.radio(key="ui_stops").options
+    assert any("switched to 10-stop" in i.value for i in at.info)  # says what changed, why
     assert any(m.key == "ui_aous" for m in at.multiselect)
-    assert at.multiselect(key="ui_run_types").value == [1]
+    assert at.toggle(key="ui_run_types").value is True
 
     at.slider(key="ui_years").set_value((1997, 2024)).run()
-    assert "50_stop" in at.selectbox(key="ui_obs_source").options
+    assert "50-stop (1997+)" in at.radio(key="ui_obs_source").options
 
 
 def test_failures_are_logged_with_their_traceback(
@@ -419,10 +419,10 @@ def test_output_file_is_folder_name_and_format(
 def test_join_modes_none_some_all(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     at, path = _app(tmp_path, monkeypatch, _profile(tmp_path))
 
-    at.segmented_control(key="ui_join_mode_weather").set_value("None").run()
-    at.segmented_control(key="ui_join_mode_vehicle").set_value("Some").run()
+    at.radio(key="ui_join_mode_weather").set_value("None").run()
+    at.radio(key="ui_join_mode_vehicle").set_value("Some").run()
     at.multiselect(key="ui_join_vehicle").set_value(["CarTotal"]).run()
-    at.segmented_control(key="ui_join_mode_species").set_value("All").run()
+    at.radio(key="ui_join_mode_species").set_value("All").run()
     at.button(key="btn_save").click().run()
 
     joins = load_profile(path).joins
@@ -580,3 +580,46 @@ def test_overlay_needs_a_file_and_can_be_removed(
     at.button(key="btn_ov_0_remove").click().run()
     assert not at.error
     assert not any(t.key == "ui_ov_0_name" for t in at.text_input)
+
+
+# --- Build page cards (redesign PR 2) -----------------------------------------------
+
+
+def test_build_page_has_the_cards_and_no_tabs(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    at, _ = _app(tmp_path, monkeypatch, _profile(tmp_path))
+    headings = [h.value for h in at.subheader]
+    for name in ["Study Area", "Survey Period & Protocol", "Species & Guilds", "Output"]:
+        assert name in headings
+    assert "Inspect & Run" in headings
+    assert not at.tabs
+    assert any("Joined Columns" in m.value for m in at.markdown)
+    assert any("at least 80% of years" in c.value for c in at.caption)  # the new default
+
+
+def test_run_filters_are_toggles_that_save_one_or_nothing(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    profile = _profile(tmp_path, runs={"run_types": [1], "quality_current_ids": []})
+    at, path = _app(tmp_path, monkeypatch, profile)
+    assert at.toggle(key="ui_run_types").value is True
+    assert at.toggle(key="ui_quality_ids").value is False
+
+    at.toggle(key="ui_run_types").set_value(False)
+    at.toggle(key="ui_quality_ids").set_value(True).run()
+    at.button(key="btn_save").click().run()
+    runs = load_profile(path).runs
+    assert (runs.run_types, runs.quality_current_ids) == ([], [1])
+
+
+def test_an_unusual_run_type_mix_is_kept_not_rewritten(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """[0] (non-standard runs only) cannot be a toggle; it gets a code list instead."""
+    at, _ = _app(tmp_path, monkeypatch, _profile(tmp_path, runs={"run_types": [0]}))
+    assert not any(t.key == "ui_run_types" for t in at.toggle)
+    assert at.multiselect(key="ui_run_types_codes").value == [0]
+    assert [m.value for m in at.markdown if "badge" in m.value and "aved" in m.value] == [
+        ":gray-badge[Saved]"
+    ]

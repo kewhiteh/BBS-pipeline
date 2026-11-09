@@ -30,7 +30,7 @@ end_year = 2024
 run_types = [1]               # [] = no RunType filter. 1 = QualityCurrentID 1 + random route + official protocol
 quality_current_ids = [1]     # [] = no filter. 1 = BBS weather, date, time, and route-completion criteria met,
                               # including at least 45 of 50 stops completed (the release has no per-run stop count)
-min_continuity = 0.0          # share of non-cancelled years a route must be surveyed (2020 never counts)
+min_continuity = 0.8          # share of non-cancelled years a route must be surveyed (2020 never counts); 0 = keep all
 drop_observer_first_year = false  # true = drop each observer's first year on a route (USGS start-up effect)
 
 [observations]

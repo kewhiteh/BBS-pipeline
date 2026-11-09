@@ -128,7 +128,7 @@ def test_profile_runs_wide_with_rolling_mean(tmp_path: Path) -> None:
     profile = profile_from_data(
         {
             "source": {"release": TEST_DOI, "raw_dir": str(raw), "cache_dir": str(tmp_path / "c")},
-            "runs": {"start_year": 1995, "end_year": 2021},
+            "runs": {"start_year": 1995, "end_year": 2021, "min_continuity": 0.0},
             "observations": {"source": "10_stop", "rolling_years": 3},
             "joins": {"routes": [], "weather": [], "observer": [], "species": []},
             "output": {"path": str(out), "shape": "wide", "wide_value": "rolling_mean"},

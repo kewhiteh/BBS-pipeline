@@ -5,6 +5,8 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+- Changed: `runs.min_continuity` defaults to 0.8 (was 0.0). Profiles that omit it now
+  keep only routes surveyed in at least 80% of non-cancelled years; set 0.0 to keep all.
 - Changed: `observations.source` defaults to `10_stop` (was `50_stop`). Profiles that
   omit it now read 10-stop data.
 - Changed: the editor drops `50_stop` from the Source list when the years start before

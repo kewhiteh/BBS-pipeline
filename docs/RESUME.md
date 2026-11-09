@@ -8,11 +8,11 @@ last_audit: none recorded
 ---
 # Resume
 ## Next
-Redesign PR 2 of 3 (Build page cards, U6 toggles, U7 continuity default) per instructions/UI_REDESIGN_PLAN.md, after Kyle reviews PR 1. Open question for Kyle: U18 (Settings per profile vs machine-wide).
+Redesign PR 3 of 3 per instructions/UI_REDESIGN_PLAN.md: Inspect & Run area (stale marker, Run writes + download, drop Live inspect per U5), dark earthy theme (U16) and gold Title Case headings (U17) in `.streamlit/config.toml`.
 ## Where I left off
-Last merge on main: b00e01a (kewhiteh/BBS-pipeline#25). Open: kewhiteh/BBS-pipeline#26 (redesign plan, docs) and redesign PR 1 on branch `ui-redesign-1-settings-header`, stacked on #26.
+Last merge on main: 8772210 (kewhiteh/BBS-pipeline#27, redesign PR 1). Open: redesign PR 2 on branch `ui-redesign-2-build-cards` (cards, toggles, radios, min_continuity default 0.8).
 ## Checks at stop
-`uv run ruff check .` green; `uv run ruff format --check .` green; `uv run pytest -q` green, 176 passed. 2026-11-09, branch `ui-redesign-1-settings-header`.
+`uv run ruff check .` green; `uv run ruff format --check .` green; `uv run pytest -q` green, 179 passed. 2026-11-09, branch `ui-redesign-2-build-cards`.
 ## Blocked / DECISION needed
 - None.
 ## Read next
