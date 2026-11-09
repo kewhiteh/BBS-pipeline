@@ -251,6 +251,16 @@ change that discovers or fixes any of it. The phase plan and its decisions live 
   same row order); tests `test_memory_reductions.py`. All states still does not fit
   (~15 GB table alone). Streaming collects were tried and saved nothing.
 
+- **EPSG:4326 output is NAD83 numbers labelled WGS84 (~1 m).** The release's route
+  starts are NAD83 (EPSG:4269, per the release metadata). Converting to EPSG:4326 uses
+  pyproj's default NAD83 -> WGS84 operation, a null (0 m) shift, so the 4326 file holds
+  the release's numbers unchanged; EPSG:5070 and other NAD83-based outputs are exact.
+  ArcGIS Pro applies a real NAD83 <-> WGS84 transformation when it draws the two
+  together, so at large scales (1:212, H2, 2026-11-09) the 4326 and 5070 points sit
+  about 1 m apart. The release doesn't say which NAD83 realization it uses, so a
+  "correct" shift can't be chosen; 1 m is far below what a route start location
+  means. For exact NAD83, export EPSG:4269 (offered in the editor's projection list).
+
 ## Environment notes
 
 - Moving the project folder breaks `.venv`: its scripts keep the old absolute Python
