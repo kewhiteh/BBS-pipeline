@@ -671,10 +671,13 @@ def test_error_log_is_readable_and_clearable_on_settings(
     )
     at.button(key="btn_to_settings").click().run()
 
-    labels = [e.label for e in at.expander if "2026-11-09" in e.label]
-    assert labels[0].startswith("2026-11-09T11:00:00 Run") and "OSError: new one" in labels[0]
-    assert "ValueError: old one" in labels[1]  # newest first
-    assert any("OSError: new one" in c.value for c in at.code)
+    picker = at.selectbox(key="ui_log_entry")  # compact: one list, nothing expanded
+    assert picker.value is None and not any("Traceback" in c.value for c in at.code)
+    assert picker.options[0].startswith("2026-11-09T11:00:00 Run")  # newest first
+    assert "OSError: new one" in picker.options[0]
+    assert "ValueError: old one" in picker.options[1]
+    picker.set_value(1).run()
+    assert any("ValueError: old one" in c.value for c in at.code)  # its trace, below
 
     at.button(key="btn_log_clear").click().run()
     assert not log.exists()

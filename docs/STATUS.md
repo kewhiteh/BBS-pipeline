@@ -48,8 +48,9 @@ change that discovers or fixes any of it. The phase plan and its decisions live 
   profile and traceback: Fetch, Inspect, Run, pick-list read errors (once per distinct
   error), and unexpected page errors. The error box names the log and has a
   "Technical details" expander, so errors never need copying off the screen. The
-  Settings page's **Error Log** shows the latest 20 entries newest first (time, action,
-  last line; expand for the traceback), with Download and Clear (confirmed):
+  Settings page's **Error Log** is one dropdown of the latest 20 entries, newest first
+  (time, action, last line); picking one shows its traceback below. Download and Clear
+  (confirmed) sit beside it:
   `test_error_log_is_readable_and_clearable_on_settings`.
 - **Output projection list** (`CRS_CHOICES` in `ui/app.py`): EPSG:4326, 4269, 5070,
   32119 (NC State Plane, meters), 3857, plus "Other" for any EPSG code. The v2 GUI

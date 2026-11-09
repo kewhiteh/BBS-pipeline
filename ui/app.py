@@ -969,10 +969,22 @@ def _log_viewer() -> None:
             else "."
         )
     )
-    for head, trace in entries[:LOG_ENTRIES_SHOWN]:
-        last = trace.splitlines()[-1] if trace else ""
-        with st.expander(f"{head} · {last}"[:160]):
-            st.code(trace, language=None)
+    shown = entries[:LOG_ENTRIES_SHOWN]
+    labels = {
+        n: f"{head} · {trace.splitlines()[-1] if trace else ''}"[:160]
+        for n, (head, trace) in enumerate(shown)
+    }
+    chosen = st.selectbox(
+        "Logged errors",
+        list(labels),
+        index=None,
+        format_func=labels.get,
+        key="ui_log_entry",
+        placeholder="Choose an error to see its details",
+        label_visibility="collapsed",
+    )
+    if chosen is not None:
+        st.code(shown[chosen][1], language=None)
     with st.container(horizontal=True):
         st.download_button(
             "Download log",
