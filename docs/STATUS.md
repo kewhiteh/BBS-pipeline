@@ -190,6 +190,10 @@ change that discovers or fixes any of it. The phase plan and its decisions live 
 
 ## Open items
 
+- **Small screens (not urgent, Kyle 2026-11-09).** On a 27" monitor the layout is fine;
+  in a narrow window the four Settings cards and the three Build cards get cramped.
+  Making the layout adapt to window width is likely a bigger refactor than the recent
+  tweaks. Cheap first step if needed: two cards per row instead of four on Settings.
 - Editor redesign (one Build page + Settings page): decisions U1–U10 and the mock-up link
   are in [instructions/UI_REDESIGN_PLAN.md](instructions/UI_REDESIGN_PLAN.md). Mock-up signed
   off 2026-11-09; build next, in 3 PRs. Includes a planned change of the
