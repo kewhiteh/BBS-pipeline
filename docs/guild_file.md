@@ -32,6 +32,22 @@ Columns named `note`, `notes`, `comment`, `comments`, `source`, `citation`, or
 name, but the editor and `bbs values` do not offer them as filters. Columns with more
 than 50 distinct values (such as `pwrc_name`) are not offered as filters either.
 
+## Help building one
+
+- `bbs guilds match --config profile.toml < names.txt` matches names (one per line, e.g.
+  a list copied from a paper) to the release: exact names and AOU codes, old names from
+  [`guilds/name_changes.csv`](../guilds/name_changes.csv) (renames, splits, forms, and old
+  genera such as *Dendroica* → *Setophaga*), and close spellings. Anything but an exact
+  match is marked `CONFIRM`.
+- `bbs guilds check guilds/my.csv --config profile.toml [--recorded]` reports rows that
+  match nothing, duplicate rows, rows with an empty trait, trait values that differ only
+  in case or spacing (`Interior` / `interior`), and with `--recorded` the species recorded
+  in the profile's study area that have no row. Exit code 1 if rows are unmatched or
+  duplicated.
+- The editor's Guild File page (being built, see
+  [instructions/GUILD_WIZARD_PLAN.md](instructions/GUILD_WIZARD_PLAN.md)) does the same
+  with a table.
+
 ## Starter file
 
 [`guilds/pwrc_species_groups.csv`](../guilds/pwrc_species_groups.csv) covers 412 BBS

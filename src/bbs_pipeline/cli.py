@@ -77,6 +77,22 @@ def build_parser() -> argparse.ArgumentParser:
         "guilds | guilds.<trait>",
     )
 
+    guilds = sub.add_parser("guilds", help="Help build a guild file: match names, check a file")
+    gsub = guilds.add_subparsers(dest="guilds_command", required=True)
+    match = gsub.add_parser(
+        "match", help="Match species names (one per line) to the release's species list"
+    )
+    _add_profile_args(match)
+    match.add_argument("--file", type=Path, help="Text file of names (default: read stdin)")
+    check = gsub.add_parser("check", help="Check a guild CSV against the release")
+    _add_profile_args(check)
+    check.add_argument("csv", type=Path, help="Guild file to check")
+    check.add_argument(
+        "--recorded",
+        action="store_true",
+        help="Also list species recorded in the profile's study area that have no row",
+    )
+
     for name, help_text in (
         ("validate", "Check a run profile and print it with every default filled in"),
         ("inspect", "Dry run: counts after each stage and the exact output columns"),
@@ -146,6 +162,46 @@ def _print_guilds(report: dict, limit: int = 25) -> None:
         print(f"  (first {limit} shown; the manifest lists all)")
 
 
+def _guilds(args: argparse.Namespace, profile: RunProfile) -> int:
+    """bbs guilds match / check: the Guild File page's matching and checks, as text."""
+    from bbs_pipeline.guild_builder import (  # noqa: PLC0415 (loads the cache)
+        SpeciesIndex,
+        check_guild_rows,
+        match_names,
+        recorded_species,
+    )
+    from bbs_pipeline.guilds import read_guild_csv  # noqa: PLC0415
+    from bbs_pipeline.sources.loader import load_sources  # noqa: PLC0415
+
+    tables = load_sources(profile.to_bundle().protocol).tables
+    index = SpeciesIndex.from_species(tables["species"].collect())
+    if args.guilds_command == "match":
+        text = args.file.read_text(encoding="utf-8") if args.file else sys.stdin.read()
+        for m in match_names(text.splitlines(), index):
+            found = "; ".join(index.label(a) for a in m.aous) or "no match"
+            note = f"  ({m.why})" if m.why else ""
+            flag = "  CONFIRM" if m.needs_confirm else ""
+            print(f"{m.kind:<9} {m.text}  ->  {found}{note}{flag}")
+        return 0
+    recorded = recorded_species(profile)["AOU"].to_list() if args.recorded else None
+    checks = check_guild_rows(read_guild_csv(args.csv), index, recorded=recorded)
+    print(f"{args.csv}: {checks.rows} rows, {checks.matched} match the release")
+    print(f"  rows with an empty trait: {checks.empty_trait_rows}")
+    for row in checks.unmatched:
+        print(f"  no match: {row}")
+    for aou, n in checks.duplicates.items():
+        print(f"  {n} rows for {index.label(aou)}")
+    for trait, groups in checks.near_duplicate_values.items():
+        for group in groups:
+            print(f"  {trait}: values differ only in case or spacing: {group}")
+    if recorded is not None:
+        missing = checks.recorded_without_row
+        print(f"  recorded in the study area with no row: {len(missing)}")
+        for aou in missing:
+            print(f"    {index.label(aou)}")
+    return 1 if checks.unmatched or checks.duplicates else 0
+
+
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
     try:
@@ -157,6 +213,8 @@ def main(argv: list[str] | None = None) -> int:
 
             print("\n".join(collect_values(profile).field_values(args.field)))
             return 0
+        if args.command == "guilds":
+            return _guilds(args, profile)
         if args.command == "validate":
             print(dump_profile(profile), end="")
             return 0

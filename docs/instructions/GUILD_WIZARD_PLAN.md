@@ -32,7 +32,7 @@ a run, and every AOU code is looked up elsewhere. The guild file format itself
 
 ## Build order (one PR each)
 
-1. `bbs_pipeline.guild_builder`: name matcher (G6, G7) with `guilds/name_changes.csv`, and the checks (G9) as plain functions; CLI `bbs guilds match` / `check`. Tests on the fixture release.
+1. **Done 2026-11-09.** `bbs_pipeline.guild_builder`: name matcher (G6, G7) with `guilds/name_changes.csv`, and the checks (G9) as plain functions; CLI `bbs guilds match` / `check`. Tests on the fixture release.
 2. Guild File page, steps 1–2 (start, traits) and Save/Download (G3, G4, G11).
 3. Step 3 (G5, G6, G8): search, study area, paste-and-match.
 4. Step 4 (G9) and the "Use in the open profile" link to Build. Browser check (Playwright) of the whole flow.

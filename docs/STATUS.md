@@ -303,7 +303,9 @@ change that discovers or fixes any of it. The phase plan and its decisions live 
   `test_open_manifest_starts_an_unsaved_draft_with_its_settings`.
 
 - Guild File wizard: mock-up signed off 2026-11-09; plan and decisions G1–G12 in
-  [instructions/GUILD_WIZARD_PLAN.md](instructions/GUILD_WIZARD_PLAN.md); not built.
+  [instructions/GUILD_WIZARD_PLAN.md](instructions/GUILD_WIZARD_PLAN.md). Build step 1
+  (matcher, checks, `bbs guilds match|check`, `guilds/name_changes.csv`) done 2026-11-09;
+  the editor page (steps 2–4) not built yet.
   Kyle's research guild file comes after it; H9 waits for that.
 
 - H13 memory: count the file write (GeoPackage via geopandas) in the estimate for Run.
