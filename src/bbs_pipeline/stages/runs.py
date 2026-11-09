@@ -33,6 +33,23 @@ def flag_observer_first_year[FrameT: (pl.DataFrame, pl.LazyFrame)](
     return match_return_type(lf, weather)
 
 
+class MultipleRunsError(ValueError):
+    """More than one run survives for some route-years (repeat or non-standard runs).
+
+    Decision D3: stop rather than pick a run or sum them. With RunType 1 kept, the
+    release has at most one run per route-year, so keeping standard runs only fixes it.
+    """
+
+    def __init__(self, count: int, examples: str) -> None:
+        self.count = count
+        self.examples = examples
+        super().__init__(
+            f"{count} route-year(s) have more than one run after filtering (repeat or "
+            f"non-standard runs; e.g. {examples}). Keep standard runs only "
+            "(run_types = [1]) so one run remains."
+        )
+
+
 def _assert_one_run_per_route_year(runs_lf: pl.LazyFrame) -> None:
     """Raise if more than one run survives the filters for any route-year."""
     dupes = (
@@ -47,10 +64,7 @@ def _assert_one_run_per_route_year(runs_lf: pl.LazyFrame) -> None:
             f"{r['route_id']} {r['Year']}: {r['RouteDataIDs']}"
             for r in dupes.head(5).iter_rows(named=True)
         )
-        raise ValueError(
-            f"{dupes.height} route-year(s) have more than one run after filtering "
-            f"(e.g. {examples}). Narrow run_types/quality_current_ids so one run remains."
-        )
+        raise MultipleRunsError(dupes.height, examples)
 
 
 @dataclass(frozen=True)

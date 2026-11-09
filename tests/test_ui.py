@@ -972,3 +972,27 @@ def test_activity_log_records_what_happened(
     assert result["message"].startswith("Inspect:") and result["funnel"]
     # a message shown on every rerun is logged once, not once per rerun
     assert sum("Source switched" in e["message"] for e in entries) == 1
+
+
+def test_multiple_runs_stop_shows_a_fix_not_a_crash(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from bbs_pipeline import pipeline
+    from bbs_pipeline.stages.runs import MultipleRunsError
+
+    def _too_many_runs(*_args: object, **_kwargs: object) -> None:
+        raise MultipleRunsError(2, "02_141 2010: [1, 2]")
+
+    monkeypatch.setattr(pipeline, "run_profile", _too_many_runs)
+    at, path = _app(tmp_path, monkeypatch, _profile(tmp_path, runs={"run_types": []}))
+    assert any("repeat or non-standard run" in c.value for c in at.caption)
+
+    at.button(key="btn_inspect").click().run()
+
+    assert not at.exception, at.exception
+    assert not at.error
+    assert any("more than one run" in w.value for w in at.warning)
+    at.button(key="btn_fix_multi_run").click().run()
+    assert at.toggle(key="ui_run_types").value is True
+    at.button(key="btn_save").click().run()
+    assert load_profile(path).runs.run_types == [1]
