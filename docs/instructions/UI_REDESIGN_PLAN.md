@@ -1,7 +1,7 @@
 # Editor (Streamlit) redesign plan
 
-Status: **waiting for Kyle's sign-off on the clickable mock-up.** No app code changes until
-then (rule: GUI changes get a clickable mock-up first, 2026-11-09).
+Status: **mock-up signed off by Kyle, 2026-11-09.** The final mock-up (version 19) is the
+target for the build (rule: GUI changes get a clickable mock-up first).
 
 Mock-up (private to Kyle): https://claude.ai/artifact/8TPjBea1pDvYzkEqj9G7aV
 (Build page and Settings page; the numbers in it are illustrative, not real counts).
@@ -49,4 +49,4 @@ carry over; tests that look for tabs or the checklist are rewritten.
 
 ## Open questions
 
-- Anything Kyle changes after clicking through the mock-up.
+- None open. Build follows the order above.

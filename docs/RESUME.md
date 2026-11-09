@@ -8,7 +8,7 @@ last_audit: none recorded
 ---
 # Resume
 ## Next
-Kyle clicks through the editor redesign mock-up (link in instructions/UI_REDESIGN_PLAN.md) and signs off or asks for changes; then build it in 3 PRs per that plan.
+Build the editor redesign per instructions/UI_REDESIGN_PLAN.md (mock-up signed off 2026-11-09), PR 1 of 3: Settings page + header toolbar.
 ## Where I left off
 Last merge on main: b00e01a (kewhiteh/BBS-pipeline#25, 10_stop default and reactive Source list).
 This session: branch `docs-ui-redesign-plan`, docs-only PR recording redesign decisions U1–U10 and the mock-up.
