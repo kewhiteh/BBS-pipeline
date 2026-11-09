@@ -301,9 +301,9 @@ change that discovers or fixes any of it. The phase plan and its decisions live 
   but nothing opens a manifest directly. Proposed: `bbs run --config x.manifest.json`
   and the editor's profile opener accept a manifest.
 
-- Guild file wizard (Kyle, 2026-11-09, to consider): help build a guild CSV inside the
-  editor: pick species, define traits, check every row against the release as it is
-  made. Kyle's research guild file is next; H9 waits for it.
+- Guild File wizard: mock-up signed off 2026-11-09; plan and decisions G1–G12 in
+  [instructions/GUILD_WIZARD_PLAN.md](instructions/GUILD_WIZARD_PLAN.md); not built.
+  Kyle's research guild file comes after it; H9 waits for that.
 
 - H13 memory: count the file write (GeoPackage via geopandas) in the estimate for Run.
   The remaining cost is the left joins that add the columns (~1.4–1.8x the table on top
