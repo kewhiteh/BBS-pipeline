@@ -16,6 +16,7 @@ Last merge on main: kewhiteh/BBS-pipeline#38 (editor activity log). Today's merg
 ## Blocked / DECISION needed
 - None.
 ## Read next
+- [instructions/GUILD_WIZARD_PLAN.md](instructions/GUILD_WIZARD_PLAN.md): Guild File wizard decisions, mock-up, build order
 - [instructions/UI_REDESIGN_PLAN.md](instructions/UI_REDESIGN_PLAN.md): editor redesign decisions and mock-up
 - [STATUS.md](STATUS.md): verified facts, decisions, limitations, open items
 - [VERIFICATION.md](VERIFICATION.md): what is verified against real data, by script / tests / hand, and what is not
