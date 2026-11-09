@@ -585,6 +585,16 @@ def _routes_runs_tab(p: dict[str, Any], v: ProfileValues | None) -> None:
     )
 
 
+FIFTY_STOP_FIRST_YEAR = 1997
+
+
+def _switch_choice(section: dict[str, Any], field: str, key: str, value: str) -> None:
+    """Move a selectbox to a still-valid value when an earlier choice removed its option."""
+    section[field] = value
+    if key in st.session_state:
+        st.session_state[key] = value
+
+
 def _species_tab(p: dict[str, Any], v: ProfileValues | None) -> None:
     obs, sp, g = p["observations"], p["species"], p["guilds"]
     st.caption(
@@ -593,14 +603,33 @@ def _species_tab(p: dict[str, Any], v: ProfileValues | None) -> None:
     )
     st.subheader("Observations")
     sources, layouts = list(OBSERVATION_SOURCES), list(STOP_LAYOUTS)
+    start_year = p["runs"]["start_year"]
+    if start_year < FIFTY_STOP_FIRST_YEAR:  # 50-stop counts only exist from 1997
+        sources.remove("50_stop")
+        if obs["source"] == "50_stop":
+            _switch_choice(obs, "source", "ui_obs_source", "10_stop")
+            st.info(
+                f"Source switched to 10_stop: the years start in {start_year}, and "
+                f"50-stop data only exist from {FIFTY_STOP_FIRST_YEAR}.",
+                icon=":material/sync_alt:",
+            )
+    if obs["source"] != "50_stop":  # per-stop layout needs per-stop counts
+        layouts.remove("stops")
+        if obs["stops"] == "stops":
+            _switch_choice(obs, "stops", "ui_stops", "ten_stop_bins")
+            st.info(
+                "Stop layout switched to ten_stop_bins: all 50 stops need the 50_stop source.",
+                icon=":material/sync_alt:",
+            )
     c1, c2 = st.columns(2)
     obs["source"] = c1.selectbox(
         "Source",
         sources,
         sources.index(obs["source"]),
         key="ui_obs_source",
-        help="50_stop: per-stop counts, 1997 on. 10_stop: 10-stop summaries, 1966 on. "
-        "hybrid: both, harmonised to 10-stop bins.",
+        help="10_stop: 10-stop summaries, 1966 on (the widest coverage). hybrid: both, "
+        "harmonised to 10-stop bins. 50_stop: per-stop counts, 1997 on only; offered "
+        "when the years start in 1997 or later.",
     )
     obs["stops"] = c2.selectbox(
         "Stop layout",

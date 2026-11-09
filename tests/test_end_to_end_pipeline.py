@@ -100,6 +100,7 @@ min_continuity = 1.0   # 63_001 has 4/4 active years (2018, 2019, 2021, 2022)
 drop_observer_first_year = true
 
 [observations]
+source = "50_stop"
 stops = "ten_stop_bins"
 
 [species]

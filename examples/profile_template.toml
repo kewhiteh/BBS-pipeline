@@ -34,7 +34,7 @@ min_continuity = 0.0          # share of non-cancelled years a route must be sur
 drop_observer_first_year = false  # true = drop each observer's first year on a route (USGS start-up effect)
 
 [observations]
-source = "50_stop"        # 50_stop (1997+ only) | 10_stop (1966+) | hybrid (10-stop before 1997, 50-stop after)
+source = "10_stop"        # 10_stop (1966+) | hybrid (10-stop before 1997, 50-stop after) | 50_stop (1997+ only)
 stops = "route_total"     # route_total | ten_stop_bins | stops (Stop1..Stop50; 50_stop only)
 zero_fill = true          # zeros for every species ever recorded on the route
 lump_subspecies = true    # count every subspecies/form/within-species hybrid under its species,
