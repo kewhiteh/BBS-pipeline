@@ -48,7 +48,11 @@ date, what was seen) and tick it here.
 - [ ] **H13 Large extent**: all states, 1966–2025, once: how long it takes and whether
   memory is fine. *2026-11-09 attempt 1: out of memory, WSL crashed (see STATUS.md
   "Full extent runs out of memory"). Retry once the time/memory log is merged; read the
-  numbers from `logs/ui_activity.log`.*
+  numbers from `logs/ui_activity.log`.* *2026-11-09 attempt 2 (Inspect, RunType 1,
+  continuity 0, zero-fill, 10-stop bins, all joins = 152 columns, 1966–2025): 1 state
+  230,044 rows 1.7 s peak 5.16 GB; 10 states 2,385,181 rows 3.0 s 6.97 GB; 20 states
+  4,687,331 rows 5.4 s 13.25 GB (of 15.4 GB). Stopped there; the full extent does not
+  fit. Speed is fine; memory is the limit.*
 
 ## Script checks (`scripts/validate_outputs.py`)
 

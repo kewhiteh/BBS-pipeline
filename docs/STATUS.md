@@ -224,6 +224,13 @@ change that discovers or fixes any of it. The phase plan and its decisions live 
   or raise WSL's limit in `%UserProfile%\.wslconfig` (`[wsl2]` `memory=24GB`). A real
   fix (streaming or per-state chunks) is an open item. The GPU's 12 GB is unrelated: the
   pipeline uses system RAM only.
+  Measured 2026-11-09 (Inspect, same settings, 152 columns): 1 / 10 / 20 states =
+  5.2 / 7.0 / 13.3 GB peak, 1.7 / 3.0 / 5.4 s. About 4.5 GB is a fixed cost (the
+  release tables are loaded whole before filtering); from 10 to 20 states memory grew
+  ~2.7 GB per million rows, faster than from 1 to 10, so the peak likely holds two
+  copies of the output at some step. A Run needs more than Inspect (file writing copies
+  again). Practical limit with everything on: about 15–20 states; fewer join columns
+  raise it.
 
 ## Environment notes
 
