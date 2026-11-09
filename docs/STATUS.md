@@ -241,6 +241,15 @@ change that discovers or fixes any of it. The phase plan and its decisions live 
   override; the constants are `PEAK_TABLE_COPIES` / `MEMORY_HEADROOM` in
   `src/bbs_pipeline/usage.py`. Only Linux memory readings are supported (elsewhere the
   check is skipped).
+  **Memory cuts (2026-11-09, option 3):** the observation tables are filtered to the
+  routes with surviving runs while they are read (on raw StateNum/Route), the narrow
+  observation matrix is built once (it was rebuilt three times) and sorted before the
+  joins, which keep its order (`maintain_order="left"`), so the wide table is never
+  sorted. Same H13 profile, `bbs run` to Parquet, peak memory before -> after: 1 state
+  5.9 -> 1.3 GB, 10 states 7.4 -> 7.0 GB, 20 states 13.25 (Inspect) -> 10.5 GB (Run).
+  Outputs for 1 and 10 states are identical to the old code (`assert_frame_equal`,
+  same row order); tests `test_memory_reductions.py`. All states still does not fit
+  (~15 GB table alone). Streaming collects were tried and saved nothing.
 
 ## Environment notes
 
@@ -251,9 +260,9 @@ change that discovers or fixes any of it. The phase plan and its decisions live 
 
 ## Open items
 
-- H13 memory, next (Kyle 2026-11-09, option 3): cut the ~4 GB fixed cost (release
-  tables loaded whole before filtering) and the extra copy at the final sort; then
-  recalibrate `PEAK_TABLE_COPIES`. Count the file write in the estimate for Run.
+- H13 memory: count the file write (GeoPackage via geopandas) in the estimate for Run.
+  The remaining cost is the left joins that add the columns (~1.4–1.8x the table on top
+  of it); merging same-key joins first was tried and saved nothing (6.60 -> 6.54 GB).
 - Future (Kyle 2026-11-09: wanted on principle, not needed for current analyses):
   whole-country builds with everything on (~14 M rows x 151 columns), by writing the
   output in chunks of states.

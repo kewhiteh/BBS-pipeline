@@ -115,7 +115,8 @@ def apply_joins(
                 f"joins.{table}: {dupes.height} duplicate {source.key} value(s) "
                 f"(e.g. {dupes[source.key].head(3).to_list()}); the join would multiply rows."
             )
-        observations = observations.join(right, on=source.key, how="left")
+        # maintain_order: the engine sorts the narrow matrix before the joins
+        observations = observations.join(right, on=source.key, how="left", maintain_order="left")
         present.update(columns)
         joined[table] = columns
     return observations, joined
