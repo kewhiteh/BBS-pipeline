@@ -25,6 +25,7 @@ def _profile(tmp_path: Path, **sections: dict) -> RunProfile:
             "offline": True,
         },
         "runs": {"start_year": 2015, "end_year": 2024},
+        "observations": {"source": "50_stop"},  # the fixture has 50-stop data only
         "output": {"path": str(tmp_path / "out" / "o.csv")},
     }
     for key, value in sections.items():
@@ -358,21 +359,27 @@ def test_profile_list_skips_non_profile_toml_files(
     assert "broken.toml" not in offered
 
 
-def test_pick_lists_survive_a_briefly_invalid_profile(
+def test_years_before_1997_switch_the_source_off_50_stop(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """1995 with the 50_stop source is invalid until the source changes; keep the pickers."""
+    """50_stop starts in 1997: an earlier start year swaps it for 10_stop, no error."""
     at, _ = _app(tmp_path, monkeypatch, _profile(tmp_path))
+    at.selectbox(key="ui_obs_source").set_value("50_stop").run()
+    at.selectbox(key="ui_stops").set_value("stops").run()
     at.multiselect(key="ui_run_types").set_value([1]).run()
 
     at.slider(key="ui_years").set_value((1995, 2024)).run()
+    assert not at.error
+    assert at.selectbox(key="ui_obs_source").value == "10_stop"
+    assert "50_stop" not in at.selectbox(key="ui_obs_source").options
+    assert at.selectbox(key="ui_stops").value == "ten_stop_bins"
+    assert "stops" not in at.selectbox(key="ui_stops").options
+    assert any("10_stop" in i.value for i in at.info)  # says what changed and why
     assert any(m.key == "ui_aous" for m in at.multiselect)
     assert at.multiselect(key="ui_run_types").value == [1]
-    assert any("50_stop" in e.value for e in at.error)  # the reason is shown
 
-    at.selectbox(key="ui_obs_source").set_value("10_stop").run()
-    assert not at.error
-    assert at.multiselect(key="ui_run_types").value == [1]
+    at.slider(key="ui_years").set_value((1997, 2024)).run()
+    assert "50_stop" in at.selectbox(key="ui_obs_source").options
 
 
 def test_failures_are_logged_with_their_traceback(

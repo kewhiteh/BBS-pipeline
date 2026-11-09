@@ -119,7 +119,7 @@ def test_fifty_stop_before_1997_is_rejected_instead_of_zero_filled(tmp_path: Pat
     with pytest.raises(ValueError, match="50-stop data starts in 1997"):
         run_ecological_engine(tables, SpeciesSelectionContract(), protocol)
     with pytest.raises(ProfileError, match="starts in 1997 but runs.start_year is 1995"):
-        profile_from_data({"runs": {"start_year": 1995}})
+        profile_from_data({"runs": {"start_year": 1995}, "observations": {"source": "50_stop"}})
 
 
 def test_profile_runs_wide_with_rolling_mean(tmp_path: Path) -> None:

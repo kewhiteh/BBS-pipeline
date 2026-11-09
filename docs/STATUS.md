@@ -8,8 +8,15 @@ change that discovers or fixes any of it. The phase plan and its decisions live 
 
 - `uv run ruff check .`, `uv run ruff format --check .`, `uv run pytest -q` pass
   (2026-11-07; results in [RESUME.md "Checks at stop"](RESUME.md)).
-- Pick lists stay up while the draft is briefly invalid (e.g. 1995 with the `50_stop`
-  source, mid-edit) and selections are kept: `test_pick_lists_survive_a_briefly_invalid_profile`.
+- The editor's Source list follows the years: with a start year before 1997, `50_stop`
+  is not offered, a draft on `50_stop` is switched to `10_stop` with a blue note (not a
+  red error), and a `stops` layout is switched to `ten_stop_bins`. Pick lists and other
+  selections are kept: `test_years_before_1997_switch_the_source_off_50_stop`.
+- Wide output: a year cell is `null` (shown "None") when the route/species has no kept
+  run that year: the route was not run, or the run was filtered out (RunType,
+  QualityCurrentID, observer's first year). `0` means a kept run with the species not
+  seen (zero-fill on). With `zero_fill = false`, unseen species are also `null`. Read
+  from `shape.py` (polars pivot) and the zero-fill stage, 2026-11-09.
 - Inspect with every join table on "All" works on the 2026 release.
 - Code names for BCR (37 codes), Stratum (71), RunType (2), and QualityCurrentID (2) are
   read from the release metadata XML (`<attr>/<edom>` lists), checked against the
@@ -18,6 +25,11 @@ change that discovers or fixes any of it. The phase plan and its decisions live 
 
 ## Decisions
 
+- **`observations.source` defaults to `10_stop`** (was `50_stop`), and the editor lists
+  it first: 10-stop data cover 1966 on, 50-stop only 1997 on, so the widest option is the
+  default (Kyle, 2026-11-09). Profiles that omit `source` now read 10-stop data; set
+  `source = "50_stop"` to keep the old behavior. The CLI still rejects `50_stop` with a
+  start year before 1997 (a profile file has no one to ask); only the editor auto-switches.
 - **Code names come only from the release XML, never a typed-in table** (same rule as
   StateNum, see `sources/regions.py`). If the raw release directory has no metadata XML,
   or more than one, the editor shows bare codes instead of guessing names.

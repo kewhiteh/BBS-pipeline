@@ -161,6 +161,7 @@ def _profile(tmp_path: Path, guild_csv: str, **sections: dict) -> object:
     data = {
         "source": {"release": TEST_DOI, "raw_dir": str(raw), "cache_dir": str(tmp_path / "c")},
         "runs": {"start_year": 2021, "end_year": 2022},
+        "observations": {"source": "50_stop"},  # the fixture has 50-stop data only
         "guilds": {"file": str(_csv(tmp_path, guild_csv))},
         "joins": {"routes": [], "weather": [], "observer": [], "guilds": ["*"]},
         "output": {"path": str(tmp_path / "out" / "o.csv")},

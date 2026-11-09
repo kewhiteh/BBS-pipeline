@@ -41,9 +41,9 @@ SECTION_ORDER: tuple[str, ...] = (
 )
 
 OBSERVATION_SOURCES: dict[str, TemporalRoutingMode] = {
-    "50_stop": TemporalRoutingMode.FIFTY_STOP_1997_PLUS,
     "10_stop": TemporalRoutingMode.TEN_STOP_1966_PLUS,
     "hybrid": TemporalRoutingMode.HYBRID_HARMONIZED_10_STOP,
+    "50_stop": TemporalRoutingMode.FIFTY_STOP_1997_PLUS,
 }
 STOP_LAYOUTS: dict[str, StopAggregationMode] = {
     "route_total": StopAggregationMode.ROUTE_TOTAL,
@@ -140,7 +140,7 @@ class RunsSection(_Section):
 
 
 class ObservationsSection(_Section):
-    source: Literal["50_stop", "10_stop", "hybrid"] = "50_stop"
+    source: Literal["50_stop", "10_stop", "hybrid"] = "10_stop"
     stops: Literal["route_total", "ten_stop_bins", "stops"] = "route_total"
     zero_fill: bool = True
     lump_subspecies: bool = True
