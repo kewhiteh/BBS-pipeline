@@ -118,9 +118,9 @@ def test_editor_offers_pick_lists_and_saves_only_on_save(
     assert not at.exception, at.exception
 
     assert path.read_text(encoding="utf-8") == before  # nothing saved yet
-    assert any("Unsaved changes" in c.value for c in at.sidebar.caption)
+    assert any("Unsaved changes" in m.value for m in at.markdown)
 
-    at.sidebar.button(key="btn_save").click().run()
+    at.button(key="btn_save").click().run()
     saved = load_profile(path)
     assert saved.routes.states == ["NC"]  # stored as the postal abbreviation
     assert saved.routes.bcrs == [29]
@@ -148,7 +148,7 @@ def test_join_all_columns_checkbox_saves_a_star(
     at, path = _app(tmp_path, monkeypatch, _profile(tmp_path))
 
     at.segmented_control(key="ui_join_mode_routes").set_value("All").run()
-    at.sidebar.button(key="btn_save").click().run()
+    at.button(key="btn_save").click().run()
 
     assert load_profile(path).joins.routes == ["*"]
 
@@ -191,7 +191,7 @@ def test_invalid_edit_shows_the_error_and_disables_save(
     at.selectbox(key="ui_crs_choice").set_value("Other (enter an EPSG code)").run()
     at.text_input(key="ui_crs").set_value("not-a-crs").run()
 
-    assert any("output.crs" in e.value for e in at.sidebar.error)
+    assert any("output.crs" in e.value for e in at.error)
     assert path.read_text(encoding="utf-8") == before
 
 
@@ -202,8 +202,10 @@ def test_without_a_release_lists_fall_back_to_text_boxes(
     at, _ = _app(tmp_path, monkeypatch, profile)
 
     assert at.text_input(key="ui_states") is not None
-    assert any("Fetch release" in b.label for b in at.button)
+    assert any("Fetch the BBS Release" in h.value for h in at.subheader)  # points to Settings
     assert any("Fetch the release" in w.value for w in at.warning)
+    at.button(key="btn_to_settings").click().run()
+    assert any("Fetch release" in b.label for b in at.button)
 
 
 # --- GUI parity with the CLI ------------------------------------------------------
@@ -216,11 +218,11 @@ def test_open_another_profile_loads_its_values(
     save_profile(_profile(tmp_path, routes={"bcrs": [28]}, runs={"start_year": 2001}), other)
     at, _ = _app(tmp_path, monkeypatch, _profile(tmp_path))
 
-    at.sidebar.text_input(key="sb_open_path").set_value(str(other)).run()
-    at.sidebar.button(key="btn_open").click().run()
+    at.text_input(key="sb_open_path").set_value(str(other)).run()
+    at.button(key="btn_open").click().run()
 
     assert not at.exception, at.exception
-    assert any(str(other) in m.value for m in at.sidebar.markdown)
+    assert any(str(other) in m.value for m in at.markdown)
     assert at.multiselect(key="ui_bcrs").value == [28]
     assert at.slider(key="ui_years").value == (2001, 2024)
 
@@ -230,10 +232,10 @@ def test_open_reports_an_invalid_profile(tmp_path: Path, monkeypatch: pytest.Mon
     bad.write_text("[runs]\nstart_yeer = 2000\n", encoding="utf-8")
     at, _ = _app(tmp_path, monkeypatch, _profile(tmp_path))
 
-    at.sidebar.text_input(key="sb_open_path").set_value(str(bad)).run()
-    at.sidebar.button(key="btn_open").click().run()
+    at.text_input(key="sb_open_path").set_value(str(bad)).run()
+    at.button(key="btn_open").click().run()
 
-    assert any("runs.start_yeer: unknown key" in e.value for e in at.sidebar.error)
+    assert any("runs.start_yeer: unknown key" in e.value for e in at.error)
 
 
 def test_save_as_writes_a_new_file_and_refuses_to_overwrite(
@@ -243,15 +245,15 @@ def test_save_as_writes_a_new_file_and_refuses_to_overwrite(
     copy = tmp_path / "copy.toml"
 
     at.multiselect(key="ui_bcrs").set_value([27])
-    at.sidebar.text_input(key="sb_save_as").set_value(str(copy))
-    at.sidebar.button(key="btn_save_as").click().run()
+    at.text_input(key="sb_save_as").set_value(str(copy))
+    at.button(key="btn_save_as").click().run()
     assert load_profile(copy).routes.bcrs == [27]
     assert load_profile(path).routes.bcrs == []  # the original is untouched
-    assert any(str(copy) in m.value for m in at.sidebar.markdown)
+    assert any(str(copy) in m.value for m in at.markdown)
 
-    at.sidebar.text_input(key="sb_save_as").set_value(str(path))
-    at.sidebar.button(key="btn_save_as").click().run()
-    assert any("tick 'Overwrite if it exists'" in e.value for e in at.sidebar.error)
+    at.text_input(key="sb_save_as").set_value(str(path))
+    at.button(key="btn_save_as").click().run()
+    assert any("tick 'Overwrite if it exists'" in e.value for e in at.error)
     assert load_profile(path).routes.bcrs == []
 
 
@@ -261,24 +263,26 @@ def test_new_profile_starts_from_defaults_and_needs_save_as(
     monkeypatch.chdir(tmp_path)  # the defaults point at ./data/raw, which does not exist here
     at, _ = _app(tmp_path, monkeypatch, _profile(tmp_path, routes={"bcrs": [29]}))
 
-    at.sidebar.button(key="btn_new").click().run()
+    at.button(key="btn_new").click().run()
 
     assert not at.exception, at.exception
-    assert any("new, not saved yet" in m.value for m in at.sidebar.markdown)
+    assert any("new, not saved yet" in m.value for m in at.markdown)
     assert at.slider(key="ui_years").value == (1997, 2024)
-    assert not any(b.key == "btn_save" for b in at.sidebar.button)
-    # No release there: the editor offers Fetch and never downloads on its own
+    assert not any(b.key == "btn_save" for b in at.button)
+    # No release there: Settings offers Fetch and the editor never downloads on its own
+    at.button(key="btn_to_settings").click().run()
     assert any("Fetch release" in b.label for b in at.button)
     assert not (tmp_path / "data").exists()
 
 
 def test_download_settings_are_editable(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     at, path = _app(tmp_path, monkeypatch, _profile(tmp_path))
+    at.button(key="btn_to_settings").click().run()  # download settings live on Settings
 
     at.number_input(key="ui_http_timeout").set_value(90.0)
     at.number_input(key="ui_http_retries").set_value(5)
     at.number_input(key="ui_http_backoff").set_value(2.5).run()
-    at.sidebar.button(key="btn_save").click().run()
+    at.button(key="btn_save").click().run()
 
     source = load_profile(path).source
     assert (source.http_timeout_seconds, source.http_retries, source.http_backoff_seconds) == (
@@ -291,7 +295,7 @@ def test_download_settings_are_editable(tmp_path: Path, monkeypatch: pytest.Monk
 def test_resolved_toml_is_shown(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     at, _ = _app(tmp_path, monkeypatch, _profile(tmp_path))
 
-    shown = "\n".join(c.value for c in at.sidebar.code)
+    shown = "\n".join(c.value for c in at.code)
 
     assert "[runs]" in shown and "start_year = 2015" in shown
     assert "http_retries = 3" in shown  # every default filled in, like `bbs validate`
@@ -303,7 +307,7 @@ def test_free_text_guild_filter_for_traits_without_a_pick_list(
     at, path = _app(tmp_path, monkeypatch, _profile(tmp_path, guilds={"file": str(GUILDS)}))
 
     at.text_area(key="ui_guild_other_filters").set_value("pwrc_name=Wood thrush").run()
-    at.sidebar.button(key="btn_save").click().run()
+    at.button(key="btn_save").click().run()
 
     assert load_profile(path).guilds.filters == {"pwrc_name": ["Wood thrush"]}
 
@@ -325,8 +329,8 @@ def test_malformed_lines_block_saving(
 
     at.text_area(key=widget).set_value(value).run()
 
-    assert any(message in e.value for e in at.sidebar.error)
-    assert not any(b.key == "btn_save" for b in at.sidebar.button)
+    assert any(message in e.value for e in at.error)
+    assert not any(b.key == "btn_save" for b in at.button)
     assert path.read_text(encoding="utf-8") == before
 
 
@@ -339,7 +343,7 @@ def test_non_numeric_bcr_in_text_box_is_reported(
     at.text_input(key="ui_bcrs").set_value("27, twenty-nine").run()
 
     assert not at.exception, at.exception
-    assert any("'twenty-nine' is not a whole number" in e.value for e in at.sidebar.error)
+    assert any("'twenty-nine' is not a whole number" in e.value for e in at.error)
 
 
 def test_profile_list_skips_non_profile_toml_files(
@@ -351,7 +355,7 @@ def test_profile_list_skips_non_profile_toml_files(
     (tmp_path / "typo.toml").write_text("[runs]\nstart_yeer = 2000\n", encoding="utf-8")
     at, _ = _app(tmp_path, monkeypatch, _profile(tmp_path))
 
-    offered = at.sidebar.selectbox(key="sb_open_choice").options
+    offered = at.selectbox(key="sb_open_choice").options
 
     assert "project.toml" in offered
     assert "typo.toml" in offered  # a profile with a mistake can still be opened and fixed
@@ -405,7 +409,7 @@ def test_output_file_is_folder_name_and_format(
     at.text_input(key="ui_output_name").set_value("wood_thrush").run()
     at.selectbox(key="ui_output_format").set_value(".gpkg").run()
     at.selectbox(key="ui_crs_choice").set_value("EPSG:5070").run()
-    at.sidebar.button(key="btn_save").click().run()
+    at.button(key="btn_save").click().run()
 
     saved = load_profile(path).output
     assert saved.path == tmp_path / "out" / "wood_thrush.gpkg"
@@ -419,7 +423,7 @@ def test_join_modes_none_some_all(tmp_path: Path, monkeypatch: pytest.MonkeyPatc
     at.segmented_control(key="ui_join_mode_vehicle").set_value("Some").run()
     at.multiselect(key="ui_join_vehicle").set_value(["CarTotal"]).run()
     at.segmented_control(key="ui_join_mode_species").set_value("All").run()
-    at.sidebar.button(key="btn_save").click().run()
+    at.button(key="btn_save").click().run()
 
     joins = load_profile(path).joins
     assert (joins.weather, joins.vehicle, joins.species) == ([], ["CarTotal"], ["*"])
@@ -432,7 +436,7 @@ def test_observer_first_year_is_one_checkbox(
     assert not any(n.key in ("ui_novice", "ui_veteran") for n in at.number_input)
 
     at.checkbox(key="ui_drop_first_year").check().run()
-    at.sidebar.button(key="btn_save").click().run()
+    at.button(key="btn_save").click().run()
 
     assert load_profile(path).runs.drop_observer_first_year is True
 
@@ -454,7 +458,7 @@ def test_other_projection_can_be_added_to_the_list(
     choice = at.selectbox(key="ui_crs_choice")
     assert choice.value == "EPSG:26917"
     assert "NAD83 / UTM zone 17N, metre · EPSG:26917" in choice.options
-    at.sidebar.button(key="btn_save").click().run()
+    at.button(key="btn_save").click().run()
     assert load_profile(path).output.crs == "EPSG:26917"
 
 
@@ -477,10 +481,12 @@ def test_opening_a_saved_profile_shows_no_unsaved_changes(
     """Default joins.guilds is ["*"]; with no guild file the editor must not clear it."""
     at, _ = _app(tmp_path, monkeypatch, _profile(tmp_path))
 
-    assert [c.value for c in at.sidebar.caption if "aved" in c.value] == ["Saved"]
+    assert [m.value for m in at.markdown if "aved" in m.value and "badge" in m.value] == [
+        ":gray-badge[Saved]"
+    ]
 
 
-# --- getting started ----------------------------------------------------------------
+# --- examples and pages -------------------------------------------------------------
 
 
 def test_start_from_an_example_makes_an_unsaved_copy(
@@ -490,10 +496,10 @@ def test_start_from_an_example_makes_an_unsaved_copy(
     before = example.read_text(encoding="utf-8")
     at, _ = _app(tmp_path, monkeypatch, _profile(tmp_path))
 
-    picker = at.selectbox(key="guide_example_choice")
+    picker = at.selectbox(key="sb_example_choice")
     assert any("wood_thrush_story_map: Wood Thrush story map" in o for o in picker.options)
     picker.set_value("examples/wood_thrush_story_map.toml").run()
-    at.button(key="btn_guide_example").click().run()
+    at.button(key="btn_sb_example").click().run()
 
     assert at.session_state["profile_path"] is None  # new, unsaved: Save as to keep it
     route_ids = at.session_state["draft"]["routes"]["route_ids"]
@@ -501,19 +507,24 @@ def test_start_from_an_example_makes_an_unsaved_copy(
     assert example.read_text(encoding="utf-8") == before
 
 
-def test_getting_started_ticks_steps_as_they_are_done(
+def test_settings_page_holds_the_release_and_build_page_does_not(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    at, _ = _app(tmp_path, monkeypatch, _profile(tmp_path))
-    label = next(e.label for e in at.expander if e.label.startswith("Getting started"))
-    # open + fetched + surveys + output are done; where, species, inspect, run are not
-    assert "(5 of 9 done)" in label  # the profile is also saved
+    at, path = _app(tmp_path, monkeypatch, _profile(tmp_path))
+    assert not any(t.key == "ui_release" for t in at.text_input)  # not on Build
+    assert not at.sidebar.button and not at.sidebar.markdown  # no sidebar any more
+    assert any("Release" in m.value and "badge" in m.value for m in at.markdown)
 
-    at.multiselect(key="ui_states").set_value([63]).run()
-    at.button(key="btn_inspect").click().run()
+    at.button(key="btn_to_settings").click().run()
+    assert any(t.key == "ui_release" for t in at.text_input)
+    assert not any(m.key == "ui_states" for m in at.multiselect)
+    at.text_input(key="ui_cache_dir").set_value(str(tmp_path / "cache2")).run()
+    assert any("Unsaved changes" in m.value for m in at.markdown)
 
-    label = next(e.label for e in at.expander if e.label.startswith("Getting started"))
-    assert "(6 of 9 done)" in label  # where and inspect done, but now unsaved
+    at.button(key="btn_to_build").click().run()  # the edit survives the page switch
+    assert any(m.key == "ui_states" for m in at.multiselect)
+    at.button(key="btn_save").click().run()
+    assert load_profile(path).source.cache_dir == tmp_path / "cache2"
 
 
 # --- GIS file picker and overlays ---------------------------------------------------
@@ -551,7 +562,7 @@ def test_overlay_cards_pick_a_file_and_a_label_column(
     assert column.options == ["Automatic (NAME)", "NAME", "HUC4"]
     assert any("2 polygons. `NAME` values: Neuse, Cape Fear" in c.value for c in at.caption)
     column.set_value("HUC4").run()
-    at.sidebar.button(key="btn_save").click().run()
+    at.button(key="btn_save").click().run()
 
     saved = load_profile(path).output.overlays["basin"]
     assert (saved.file, saved.column) == (basins, "HUC4")
@@ -564,8 +575,8 @@ def test_overlay_needs_a_file_and_can_be_removed(
     at, path = _app(tmp_path, monkeypatch, _profile(tmp_path, output=gpkg))
 
     at.button(key="btn_ov_add").click().run()
-    assert any("needs a polygon file" in e.value for e in at.sidebar.error)
+    assert any("needs a polygon file" in e.value for e in at.error)
 
     at.button(key="btn_ov_0_remove").click().run()
-    assert not at.sidebar.error
+    assert not at.error
     assert not any(t.key == "ui_ov_0_name" for t in at.text_input)

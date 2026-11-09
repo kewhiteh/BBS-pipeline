@@ -8,12 +8,11 @@ last_audit: none recorded
 ---
 # Resume
 ## Next
-Build the editor redesign per instructions/UI_REDESIGN_PLAN.md (mock-up signed off 2026-11-09), PR 1 of 3: Settings page + header toolbar.
+Redesign PR 2 of 3 (Build page cards, U6 toggles, U7 continuity default) per instructions/UI_REDESIGN_PLAN.md, after Kyle reviews PR 1. Open question for Kyle: U18 (Settings per profile vs machine-wide).
 ## Where I left off
-Last merge on main: b00e01a (kewhiteh/BBS-pipeline#25, 10_stop default and reactive Source list).
-This session: branch `docs-ui-redesign-plan`, docs-only PR recording redesign decisions U1–U10 and the mock-up.
+Last merge on main: b00e01a (kewhiteh/BBS-pipeline#25). Open: kewhiteh/BBS-pipeline#26 (redesign plan, docs) and redesign PR 1 on branch `ui-redesign-1-settings-header`, stacked on #26.
 ## Checks at stop
-`uv run ruff check .` green; `uv run ruff format --check .` green; `uv run pytest -q` green, 176 passed. 2026-11-09, branch `ui-reactive-obs-source`.
+`uv run ruff check .` green; `uv run ruff format --check .` green; `uv run pytest -q` green, 176 passed. 2026-11-09, branch `ui-redesign-1-settings-header`.
 ## Blocked / DECISION needed
 - None.
 ## Read next
