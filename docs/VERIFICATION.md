@@ -25,8 +25,7 @@ date, what was seen) and tick it here.
 - [x] **H1 GeoPackage in ArcGIS Pro**: done 2026-11-09; result in the checklist below.
 - [x] **H2 Other projection in ArcGIS Pro**: done 2026-11-09; result in the checklist below.
 - [x] **H3 FlatGeobuf, GeoJSON, GeoParquet in ArcGIS Pro**: done 2026-11-09; result in the checklist below.
-- [ ] **H4 RunType / QC toggles on real data**: Inspect, then toggle each off; the runs
-  kept at that stage go up, and nothing else changes.
+- [x] **H4 RunType / QC toggles on real data**: done 2026-11-09; result in the checklist below.
 - [ ] **H5 Continuity on real data**: Inspect at 80% and at 0%; fewer routes at 80%, and
   a route dropped at 80% really has runs in fewer than 80% of the years.
 - [ ] **H6 Drop observer's first year**: with it ticked, no row has `is_first_year` true;
@@ -82,7 +81,7 @@ holds 6 NC runs from before 1997.
 | Command line and editor produce the same file | **Verified (script)** | V6 (the editor's Run calls `run_profile`) |
 | CSV, Parquet, GeoPackage agree; points in the right place | **Verified (script)** | V7 (EPSG:4326 only) |
 | Golden slice of the real release reproduces exactly | **Verified (tests)** | `tests/test_golden.py`, 12 NC routes, all years, including `test_golden_counts_match_the_raw_fifty_stop_file` |
-| RunType / QualityCurrentID filters keep the right runs | Tests only | `test_user_run_filters_are_not_overridden`, `test_excluded_run_never_contributes_counts`; **not checked on real data by hand** (Inspect counts as the toggles change) |
+| RunType / QualityCurrentID filters keep the right runs | **Verified (hand)** 2026-11-09 + tests | Kyle, editor Inspect, NC 2015–2024, continuity 0: both on 581 runs / 79 routes; QC off 581 / 79 (no change: every RunType 1 run has QualityCurrentID 1, D11); both off 676 / 90. Routes before run filters stayed 5,845 / 113. Claude matched every count against the raw weather table (NC 2015–2024: RunType 1 + QC 1 = 581, RunType 0 + QC 1 = 72, RunType 0 + QC 0 = 23). QC on with RunType off (653 runs) not tried by hand. Tests: `test_user_run_filters_are_not_overridden`, `test_excluded_run_never_contributes_counts` |
 | Continuity filter (default 0.8) | Tests only | `test_cancelled_2020_survey_does_not_count_against_continuity`; not hand-checked on real routes |
 | Drop observer's first year / `is_first_year` | Tests only | `test_observer_first_year_is_per_route`; not hand-checked on real data |
 | Subspecies lumping | Tests only | `tests/test_taxonomy.py` (forms counted under the species); **not checked against the raw release** (the script runs with lumping off) |
