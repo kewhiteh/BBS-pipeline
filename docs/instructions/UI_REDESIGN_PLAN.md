@@ -31,6 +31,7 @@ was one page with Run and download at the bottom, and he preferred that flow.
 | U12 | Years are **one two-handle range slider** (start, end), as `st.slider` with a tuple value. | Kyle, mock-up review: two sliders waste space. |
 | U13 | The output file-name box is narrow (~340 px), not full row width. | Kyle, mock-up review. |
 | U14 | **Joins are visible** in the Output card, not in an expander: one box per table (Routes, Weather, Observer, Guild traits), each with None / Some / All radios; Some shows a column picker. Projection (CRS) stays in a collapsed expander that shows the current code. | Kyle, mock-up review: joins were hidden under "Extra columns & projection" and read as missing. The first mock-up also left out guild trait joins. |
+| U15 | Join modes and output shape use **stacked (vertical) radios**; the four join boxes are narrow (~180 px min) so they sit in one row. | Kyle, mock-up review: more compact than wide rows. |
 | U9 | The Getting started checklist is removed. | The single page is the checklist; the no-release card covers the one prerequisite. |
 | U10 | Every profile option stays reachable in the editor; profile format and CLI are unchanged except U7's default. | GUI/CLI parity rule. |
 
