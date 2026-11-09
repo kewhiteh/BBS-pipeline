@@ -94,7 +94,8 @@ change that discovers or fixes any of it. The phase plan and its decisions live 
 - **Editor pages (redesign PRs 1–2, 2026-11-09).** Two pages, no sidebar: **Build** (no
   tabs: cards *Study Area*, *Survey Period & Protocol*, *Species & Guilds*, then
   *Output* with *Joined Columns*, then *Inspect & Run*; less-used options sit under a
-  "More" expander in each card) and **Settings** (release,
+  "More" expander in each card; Joined Columns is its own card above Output, U19) and
+  **Settings** (one row of four cards, then the Error Log row, U21: release,
   folders, download settings, saved projections, logs). The header on both shows the
   release status, the open profile, an Unsaved/Saved badge, Save, and a **Profile**
   menu (open, new, start from an example, save as, TOML). The Getting started checklist
