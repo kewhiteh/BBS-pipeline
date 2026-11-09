@@ -208,6 +208,13 @@ change that discovers or fixes any of it. The phase plan and its decisions live 
   **Fetch release** again.
 - RunType and QualityCurrentID pick lists offer only 0 and 1 (plus any value already in
   the profile), not the codes found in the data.
+- With "Standard runs only" off (`run_types` not `[1]`), 103 route-years in the 2026
+  release keep more than one run (repeat or non-standard RPIDs 102/103/104/203/501/502),
+  and Inspect/Run stop with `MultipleRunsError` (decision D3: no tie-break rule, no
+  summing). The editor warns under the toggle and offers a one-click "Keep standard runs
+  only" fix instead of a crash box; it is logged as a warning, not an error. Repeat runs
+  matter only for method studies (observer / detection variability); Kyle decided
+  2026-11-09 not to support keeping them. Test: `test_multiple_runs_stop_shows_a_fix_not_a_crash`.
 
 ## Environment notes
 

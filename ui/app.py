@@ -48,6 +48,7 @@ from bbs_pipeline.sources.regions import resolve_states
 from bbs_pipeline.sources.release import RELEASE_JSON, fetch_release
 from bbs_pipeline.spatial.files import save_gis_upload
 from bbs_pipeline.spatial.geometry import automatic_overlay_column
+from bbs_pipeline.stages.runs import MultipleRunsError
 from bbs_pipeline.values import ProfileValues, area_counts, area_options, collect_values
 
 PROFILE_DIRS: tuple[str, ...] = (".", "examples", "profiles")
@@ -942,6 +943,12 @@ def _survey_card(p: dict[str, Any], v: ProfileValues | None) -> None:
         "Keep only runs that met all standard BBS criteria, as most trend analyses do. "
         "Off = every run.",
     )
+    if rn["run_types"] != [1]:
+        st.caption(
+            ":orange[:material/warning:] With this off, about 100 route-years in the full "
+            "release have a repeat or non-standard run besides the standard one; Inspect "
+            "and Run stop if any fall in your selection."
+        )
     rn["quality_current_ids"] = _code_toggle(
         "Passed quality check only (QualityCurrentID 1)",
         rn["quality_current_ids"],
@@ -1589,6 +1596,15 @@ def _log_result(action: str, res: dict[str, Any]) -> None:
     )
 
 
+def _keep_standard_runs() -> None:
+    """on_click: set RunType to [1] in the draft and its widget (fix for MultipleRunsError)."""
+    _draft()["runs"]["run_types"] = [1]
+    st.session_state["ui_run_types"] = True
+    if "ui_run_types_codes" in st.session_state:
+        st.session_state["ui_run_types_codes"] = [1]
+    _activity("action", "Keep standard runs only")
+
+
 def _inspect_run_section(profile: RunProfile | None, stamp: tuple) -> None:
     """Inspect (writes nothing) and Run (writes the file, then offers it as a download).
 
@@ -1620,6 +1636,24 @@ def _inspect_run_section(profile: RunProfile | None, stamp: tuple) -> None:
             st.session_state["last_result"] = _inspect(current, stamp)
             st.session_state["last_result_for"] = current
             _log_result("Inspect", st.session_state["last_result"])
+    except MultipleRunsError as exc:  # a settings problem with a known fix, not a crash
+        action = "Run" if run_clicked else "Inspect"
+        _log_warning(action, str(exc))
+        _show(
+            "warning",
+            f"{exc.count} route-year(s) in your selection have more than one run: repeat "
+            f"or non-standard runs (e.g. {exc.examples}). The pipeline won't pick one or "
+            "add them together. Keep standard runs only, then try again.",
+            title=f"{action} stopped",
+            icon=":material/warning:",
+        )
+        st.button(
+            "Keep standard runs only",
+            key="btn_fix_multi_run",
+            icon=":material/build:",
+            on_click=_keep_standard_runs,
+        )
+        return
     except Exception as exc:  # shown and logged, not swallowed
         _show_failure("Run" if run_clicked else "Inspect", exc)
         return
