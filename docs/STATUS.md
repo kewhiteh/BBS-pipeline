@@ -296,6 +296,10 @@ change that discovers or fixes any of it. The phase plan and its decisions live 
 
 ## Open items
 
+- Guild file wizard (Kyle, 2026-11-09, to consider): help build a guild CSV inside the
+  editor: pick species, define traits, check every row against the release as it is
+  made. Kyle's research guild file is next; H9 waits for it.
+
 - H13 memory: count the file write (GeoPackage via geopandas) in the estimate for Run.
   The remaining cost is the left joins that add the columns (~1.4–1.8x the table on top
   of it); merging same-key joins first was tried and saved nothing (6.60 -> 6.54 GB).
