@@ -52,6 +52,12 @@ change that discovers or fixes any of it. The phase plan and its decisions live 
   (time, action, last line); picking one shows its traceback below. Download and Clear
   (confirmed) sit beside it:
   `test_error_log_is_readable_and_clearable_on_settings`.
+- **Fixed 2026-11-09: the test suite wrote to the real error log.** Two UI tests open a
+  profile with no release on purpose, and every `pytest` run appended their failures
+  to `logs/ui_errors.log` (all 127 entries in Kyle's log were these). `tests/conftest.py`
+  now points `BBS_UI_ERROR_LOG` at each test's temp folder; the editor reads that
+  variable, else `logs/ui_errors.log`. Check: the log's size is unchanged after
+  `uv run pytest -q`. Old entries can be cleared with the Error Log's Clear button.
 - **Output projection list** (`CRS_CHOICES` in `ui/app.py`): EPSG:4326, 4269, 5070,
   32119 (NC State Plane, meters), 3857, plus "Other" for any EPSG code. The v2 GUI
   offered 4326, 5070, 3857 and `nc_state_plane`. The v3 config takes EPSG codes only,

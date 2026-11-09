@@ -50,7 +50,9 @@ from bbs_pipeline.spatial.geometry import automatic_overlay_column
 from bbs_pipeline.values import ProfileValues, collect_values
 
 PROFILE_DIRS: tuple[str, ...] = (".", "examples", "profiles")
-ERROR_LOG = Path("logs") / "ui_errors.log"
+# BBS_UI_ERROR_LOG lets the test suite log elsewhere; its deliberate failures used to
+# fill the real log with errors nobody hit (2 per test run).
+ERROR_LOG = Path(os.environ.get("BBS_UI_ERROR_LOG") or Path("logs") / "ui_errors.log")
 
 
 # --- helpers -------------------------------------------------------------------------
