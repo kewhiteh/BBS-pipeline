@@ -24,8 +24,7 @@ date, what was seen) and tick it here.
 
 - [ ] **H1 GeoPackage in ArcGIS Pro**: points land on the route starts in the right
   state; attribute names and types look right (AOU kept as text with its leading zero).
-- [ ] **H2 Other projection in ArcGIS Pro**: export one GeoPackage in EPSG:5070 (Albers);
-  Pro reads the projection and the points still line up.
+- [x] **H2 Other projection in ArcGIS Pro**: done 2026-11-09; result in the checklist below.
 - [ ] **H3 FlatGeobuf, GeoJSON, GeoParquet in ArcGIS Pro**: each opens (or note which
   Pro can't read).
 - [ ] **H4 RunType / QC toggles on real data**: Inspect, then toggle each off; the runs
@@ -93,7 +92,7 @@ holds 6 NC runs from before 1997.
 | Guild file: matching, filters, trait joins | Tests only | `tests/test_guilds.py`; **Kyle's own guild CSV not yet checked** (try one deliberate AOU typo: it should be reported as unmatched) |
 | Boundary polygon filter | Tests only | `tests/test_spatial_integrity.py`; not checked with a real polygon |
 | Overlays (route labels from polygons) | Tests only | not checked with a real layer |
-| Other projections (e.g. EPSG:5070 Albers) | Tests only | multi-CRS end-to-end test on fixture data; **not opened in ArcGIS Pro** |
+| Other projections (e.g. EPSG:5070 Albers) | **Verified (hand)** 2026-11-09 (EPSG:5070) | Kyle, ArcGIS Pro: NC 2015–2024 GeoPackage in EPSG:5070; Pro reads NAD 1983 Contiguous USA Albers, WKID 5070; points sit exactly on the H1 (EPSG:4326) points. Claude checked the file: 43,046 points on 50 NC routes, reprojected back to 4326 they equal the release Latitude/Longitude (max difference 2e-14 degrees). Other EPSG codes: tests only |
 | GeoPackage opens correctly in ArcGIS Pro | **Not verified** | Kyle to check: points on the route starts, attribute names and types |
 | FlatGeobuf, GeoJSON, GeoParquet open in ArcGIS Pro | **Not verified** | Pro's support for these is unconfirmed |
 | Manifest reproduces the same file | **Not verified** | rerun from `<file>.manifest.json` and compare |
