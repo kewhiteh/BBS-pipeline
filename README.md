@@ -30,6 +30,10 @@ uv run bbs run      --config project.toml --offline # writes the output file + m
 - `bbs run` writes `output.path` (format from the extension: `.parquet`, `.csv`,
   `.geoparquet`, `.gpkg`, `.fgb`, `.geojson`) and `<path>.manifest.json` with the resolved
   profile, release, package version and git commit, and the counts after each stage.
+- Rerun a build from its manifest: `bbs run --config out.gpkg.manifest.json --set
+  'output.path="out_again.gpkg"'` (without `--set` it overwrites the original file). In
+  the editor: Profile → Open / new → type the manifest's path; it opens as a new, unsaved
+  profile.
 - `bbs values --config project.toml routes.states` (or `routes.bcrs`, `routes.route_ids`,
   `species.families`, `joins.weather`, `guilds.<trait>`, ...) lists the valid values for a
   field from the release.

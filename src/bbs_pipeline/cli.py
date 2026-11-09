@@ -28,7 +28,12 @@ STAGE_LABELS: tuple[tuple[str, str], ...] = (
 
 
 def _add_profile_args(parser: argparse.ArgumentParser) -> None:
-    parser.add_argument("--config", type=Path, required=True, help="Run profile (TOML)")
+    parser.add_argument(
+        "--config",
+        type=Path,
+        required=True,
+        help="Run profile (TOML), or a <file>.manifest.json to rerun that build",
+    )
     parser.add_argument(
         "--set",
         dest="overrides",

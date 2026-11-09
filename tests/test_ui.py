@@ -1034,3 +1034,26 @@ def test_species_pick_survives_turning_lumping_off(
     at.button(key="btn_save").click().run()
     saved = load_profile(path)
     assert saved.species.aous == ["05677"] and not saved.observations.lump_subspecies
+
+
+def test_open_manifest_starts_an_unsaved_draft_with_its_settings(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from bbs_pipeline.pipeline import run_profile
+
+    built = _profile(tmp_path, species={"aous": ["07550"]})
+    run_profile(built)
+    manifest = tmp_path / "out" / "o.csv.manifest.json"
+    at, path = _app(tmp_path, monkeypatch, _profile(tmp_path))
+    before = path.read_text(encoding="utf-8")
+
+    at.text_input(key="sb_open_path").set_value(str(manifest)).run()
+    at.button(key="btn_open").click().run()
+
+    assert not at.exception, at.exception
+    assert at.session_state["profile_path"] is None
+    assert at.session_state["draft"]["species"]["aous"] == ["07550"]
+    assert any("Opened a run manifest" in i.value for i in at.info)
+    assert any("from manifest" in m.value for m in at.markdown)
+    assert path.read_text(encoding="utf-8") == before  # nothing written
+    assert manifest.read_text(encoding="utf-8").startswith("{")  # manifest untouched
