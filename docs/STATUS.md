@@ -105,6 +105,20 @@ change that discovers or fixes any of it. The phase plan and its decisions live 
   e.g. `[0]`, gets a code list instead so opening it never rewrites the filter
   (`test_an_unusual_run_type_mix_is_kept_not_rewritten`). Source, stop layout, shape
   and join modes are radio buttons.
+- **Dependent choices adjust instead of erroring (2026-11-09).** Every cross-field rule
+  in `config.py` is handled in the editor, with a blue note saying what changed and why:
+  BCR options are only those with routes in the chosen states, strata only those in the
+  chosen states and BCRs, routes only those in all three; a selection an earlier choice
+  rules out is removed (`test_area_filters_narrow_each_other`). Years stay inside the
+  release (1966–2025 now; from `ProfileValues.years`). 50-stop before 1997 → 10-stop;
+  "all 50 stops" without 50-stop → 10-stop bins. Zero-fill off → rolling mean off and
+  its box disabled; rolling 1 → 2; wide "rolling mean" values only offered with a
+  rolling mean; named guild-trait joins without a guild file → `["*"]`. A new guild
+  file or subspecies setting updates the pick lists in the same rerun
+  (`_with_pending_edits`). **Not narrowed, on purpose:** species, common names,
+  families and orders combine with OR, so none limits another; species are not limited
+  to those recorded in the chosen area, and the boundary polygon does not narrow the
+  route list (both would need a data pass per edit).
 - **Inspect & Run and theme (redesign PR 3, 2026-11-09).** Inspect is a button only (Live
   inspect removed, U5); after any edit the last results stay on screen with an "out of
   date" warning until the next Inspect or Run

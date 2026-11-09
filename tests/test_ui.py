@@ -722,3 +722,92 @@ def test_theme_is_dark_and_earthy() -> None:
     assert theme["base"] == "dark"
     assert theme["primaryColor"] == "#C2553A"  # brick red controls
     assert theme["yellowTextColor"] == "#D4B86A"  # gold headings
+
+
+# --- filters that depend on each other ------------------------------------------------
+
+
+def test_area_filters_narrow_each_other(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """BCRs fit the states, strata fit the BCRs, routes fit all three (fixture: NC only).
+
+    BCR 28 holds only stratum 23 and routes 63_031, 63_228, 63_906, 63_910.
+    """
+    profile = _profile(tmp_path, routes={"strata": [3], "route_ids": ["63_101"]})
+    at, _ = _app(tmp_path, monkeypatch, profile)
+    assert len(at.multiselect(key="ui_strata").options) == 4
+
+    at.multiselect(key="ui_bcrs").set_value([28]).run()
+    assert not at.error
+    strata = at.multiselect(key="ui_strata")
+    assert [o.split(" ")[0] for o in strata.options] == ["23"]
+    assert strata.value == []  # stratum 3 has no routes in BCR 28
+    assert at.multiselect(key="ui_route_ids").value == []  # 63_101 is in BCR 27
+    assert len(at.multiselect(key="ui_route_ids").options) == 4
+    notes = " ".join(i.value for i in at.info)
+    assert "Strata removed: 3" in notes and "Routes removed: 63_101" in notes
+    assert at.session_state["draft"]["routes"]["strata"] == []
+
+
+def test_years_stay_inside_the_release(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """The fixture release covers 1966-2025, so the slider stops at 2025."""
+    at, _ = _app(tmp_path, monkeypatch, _profile(tmp_path, runs={"end_year": 2026}))
+    slider = at.slider(key="ui_years")
+    assert slider.max == 2025 and slider.value == (2015, 2025)
+    assert any("this release covers 1966–2025" in i.value for i in at.info)
+
+
+def test_rolling_mean_follows_zero_fill_and_wide_value_follows_rolling(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    profile = _profile(
+        tmp_path,
+        observations={"source": "50_stop", "rolling_years": 3},
+        output={
+            "path": str(tmp_path / "out" / "o.csv"),
+            "shape": "wide",
+            "wide_value": "rolling_mean",
+        },
+    )
+    at, _ = _app(tmp_path, monkeypatch, profile)
+    assert not at.error
+
+    at.checkbox(key="ui_zero_fill").uncheck().run()
+    assert not at.error  # adjusted, not refused
+    assert at.number_input(key="ui_rolling").value == 0
+    assert at.number_input(key="ui_rolling").disabled
+    assert at.selectbox(key="ui_wide_value").value == "route_total"
+    assert at.selectbox(key="ui_wide_value").options == ["That year's count"]
+    notes = " ".join(i.value for i in at.info)
+    assert "Rolling mean turned off" in notes and "switched to the count" in notes
+
+
+def test_rolling_mean_of_one_year_becomes_two(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    at, _ = _app(tmp_path, monkeypatch, _profile(tmp_path))
+    at.number_input(key="ui_rolling").set_value(1).run()
+    assert not at.error
+    assert at.number_input(key="ui_rolling").value == 2
+    assert any("1 year is not a window" in i.value for i in at.info)
+
+
+def test_guild_columns_without_a_guild_file_reset_to_all(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    profile = _profile(
+        tmp_path, guilds={"file": str(GUILDS)}, joins={"guilds": ["breeding_habitat"]}
+    )
+    at, _ = _app(tmp_path, monkeypatch, profile)
+    at.text_input(key="ui_guild_file").set_value("").run()
+    assert not at.error
+    assert at.session_state["draft"]["joins"]["guilds"] == ["*"]
+    assert any("Guild trait columns removed" in i.value for i in at.info)
+
+
+def test_a_new_guild_file_offers_its_traits_at_once(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    at, _ = _app(tmp_path, monkeypatch, _profile(tmp_path))
+    assert not any(m.key == "ui_guild_breeding_habitat" for m in at.multiselect)
+    at.text_input(key="ui_guild_file").set_value(str(GUILDS)).run()  # one rerun only
+    assert any(m.key == "ui_guild_breeding_habitat" for m in at.multiselect)

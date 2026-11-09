@@ -10,9 +10,9 @@ last_audit: none recorded
 ## Next
 Kyle tries the finished editor in a browser (restart Streamlit from the repo root) and reports anything off; editor help text review (docs/STATUS.md "Open items").
 ## Where I left off
-Last merge on main: kewhiteh/BBS-pipeline#29 (Settings: projections, error log). Open: redesign PR 3 on branch `ui-redesign-3-theme-run` (theme, gold headings, out-of-date marker, Run + download).
+Last merge on main: kewhiteh/BBS-pipeline#30 (redesign PR 3). Open: branch `ui-reactive-filters` (area filters narrow each other; every config cross-field rule adjusts instead of erroring).
 ## Checks at stop
-`uv run ruff check .` green; `uv run ruff format --check .` green; `uv run pytest -q` green, 184 passed. 2026-11-09, branch `ui-redesign-3-theme-run`.
+`uv run ruff check .` green; `uv run ruff format --check .` green; `uv run pytest -q` green, 190 passed. 2026-11-09, branch `ui-reactive-filters`.
 ## Blocked / DECISION needed
 - None.
 ## Read next

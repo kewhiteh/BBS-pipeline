@@ -33,7 +33,7 @@ class ProfileValues:
     states: list[dict[str, object]]  # {"StateNum", "StateName", "abbreviation"}
     bcrs: list[int]
     strata: list[int]
-    routes: list[dict[str, object]]  # {"route_id", "RouteName", "StateNum", "BCR"}
+    routes: list[dict[str, object]]  # {"route_id", "RouteName", "StateNum", "BCR", "Stratum"}
     species: list[dict[str, str]]  # {"AOU", "English_Common_Name", "Family", "Order"}
     families: list[str]
     orders: list[str]
@@ -41,6 +41,7 @@ class ProfileValues:
     guild_traits: dict[str, list[str]] = field(default_factory=dict)
     # {"BCR": {27: "Southeastern Coastal Plain", ...}}; empty without the metadata XML
     code_labels: dict[str, dict[int, str]] = field(default_factory=dict)
+    years: tuple[int, int] | None = None  # first and last survey year in the release
 
     def label(self, attribute: str, code: int) -> str:
         """'27 · Southeastern Coastal Plain', or just '27' when the release has no name."""
@@ -139,7 +140,11 @@ def collect_values(profile: RunProfile) -> ProfileValues:
     )
     join_columns = {t: (s.columns if s is not None else []) for t, s in sources.items()}
 
-    route_cols = [c for c in ("route_id", "RouteName", "StateNum", "BCR") if c in routes.columns]
+    route_cols = [
+        c for c in ("route_id", "RouteName", "StateNum", "BCR", "Stratum") if c in routes.columns
+    ]
+    span = weather.select(pl.col("Year").min().alias("lo"), pl.col("Year").max().alias("hi"))
+    lo, hi = span.collect().row(0)
     return ProfileValues(
         states=states,
         bcrs=_sorted_unique(routes, "BCR"),
@@ -155,4 +160,5 @@ def collect_values(profile: RunProfile) -> ProfileValues:
         join_columns=join_columns,
         guild_traits=trait_values,
         code_labels=_code_labels(Path(profile.source.raw_dir)),
+        years=(int(lo), int(hi)) if lo is not None else None,
     )
