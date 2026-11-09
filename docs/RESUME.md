@@ -8,11 +8,11 @@ last_audit: none recorded
 ---
 # Resume
 ## Next
-Kyle works through the hand-check queue in [VERIFICATION.md](VERIFICATION.md) ("Kyle's hand-check queue", H1–H13); record each result there. Keep this pointer until every item is ticked.
+Kyle works through the hand-check queue in [VERIFICATION.md](VERIFICATION.md) ("Kyle's hand-check queue", H1–H13) in a new session; record each result there with date and evidence. Keep this pointer until every item is ticked. When Kyle reports an editor problem, read `logs/ui_activity.log` first (AGENTS.md "Troubleshooting the editor").
 ## Where I left off
-Last merge on main: kewhiteh/BBS-pipeline#35 (validation script, VERIFICATION.md). Open: branch `docs-validation-gate` (AGENTS.md: run the validation script after every code change; hand-check queue).
+Last merge on main: kewhiteh/BBS-pipeline#38 (editor activity log). Today's merged work: editor redesign (#26–#30), Settings projections and error log (#29), reactive filters (#31, #32, #37), layout (#33), validation script and VERIFICATION.md (#35), validation gate (#36). Open: none besides this handoff PR. Kyle chose to keep Streamlit's WSL poll-based file watching (the startup message is harmless).
 ## Checks at stop
-`uv run ruff check .` green; `uv run ruff format --check .` green; `uv run pytest -q` green; `uv run python scripts/validate_outputs.py` all PASS (Kyle and Claude, 2026-11-09).
+`uv run ruff check .` green; `uv run ruff format --check .` green; `uv run pytest -q` green, 198 passed; `uv run python scripts/validate_outputs.py` all PASS. 2026-11-09, main at kewhiteh/BBS-pipeline#38.
 ## Blocked / DECISION needed
 - None.
 ## Read next
