@@ -261,6 +261,12 @@ change that discovers or fixes any of it. The phase plan and its decisions live 
   "correct" shift can't be chosen; 1 m is far below what a route start location
   means. For exact NAD83, export EPSG:4269 (offered in the editor's projection list).
 
+- **ArcGIS Pro 3.7 and the other GIS formats (H3, 2026-11-09).** GeoParquet: Pro reads
+  it only with a `.parquet` extension (the pipeline uses `.parquet` for plain Parquet
+  without geometry, so the GIS file keeps `.geoparquet`; rename a copy for Pro). GeoJSON:
+  import with JSON To Features. FlatGeobuf: not readable in Pro (use QGIS, or
+  GeoPackage). The editor's format descriptions say so.
+
 ## Environment notes
 
 - Moving the project folder breaks `.venv`: its scripts keep the old absolute Python
