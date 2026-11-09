@@ -1,6 +1,6 @@
 # Guild File Wizard: Plan
 
-Status: **mock-up signed off by Kyle, 2026-11-09; not built yet.** Kyle will judge details
+Status: **built 2026-11-09** (kewhiteh/BBS-pipeline#59 core, then the page); waiting for Kyle to use it. Kyle will judge details
 by using the built page; the defaults below are meant to be changed after that.
 
 Mock-up (private to Kyle): https://claude.ai/artifact/TeEqTJkMQEEZv5JEXQPNMJ
@@ -33,9 +33,9 @@ a run, and every AOU code is looked up elsewhere. The guild file format itself
 ## Build order (one PR each)
 
 1. **Done 2026-11-09.** `bbs_pipeline.guild_builder`: name matcher (G6, G7) with `guilds/name_changes.csv`, and the checks (G9) as plain functions; CLI `bbs guilds match` / `check`. Tests on the fixture release.
-2. Guild File page, steps 1–2 (start, traits) and Save/Download (G3, G4, G11).
-3. Step 3 (G5, G6, G8): search, study area, paste-and-match.
-4. Step 4 (G9) and the "Use in the open profile" link to Build. Browser check (Playwright) of the whole flow.
+2. **Done 2026-11-09 (with 3 and 4, one PR).** Guild File page, steps 1–2 (start, traits) and Save/Download (G3, G4, G11).
+3. **Done.** Step 3 (G5, G6, G8): search, study area, paste-and-match.
+4. **Done.** Step 4 (G9) and the "Use in the open profile" link to Build. Browser check (Playwright) of the whole flow.
 5. Kyle builds the GHY 5812/5818 guild file with it; then H9.
 
 ## Open questions (answer by using it)
@@ -43,3 +43,19 @@ a run, and every AOU code is looked up elsewhere. The guild file format itself
 - Does one trait value per pasted list match how Kyle reads papers, or is a per-line value column needed?
 - Is All rows the right table default when starting from the 412-row starter?
 - Is the open profile's study area enough (G10)?
+
+## As built (differences from the mock-up)
+
+- Steps 2–4 shipped in one PR, not three.
+- The stepper is a row of buttons; steps after Start unlock once a working copy exists.
+- Starting again needs "Replace the current working copy" ticked.
+- Pasted-list confirmations are a "Use" tick column in the match table (exact matches
+  ticked, suggestions not).
+- Empty trait cells show "—" in the table (Streamlit shows an empty dropdown cell as
+  "None"); the file stores a blank.
+- Columns with more than 50 distinct values (e.g. the starter's `pwrc_name`) are kept as
+  free text, like `notes`, not offered as traits.
+- Verified: unit tests (`tests/test_guild_draft.py`, `tests/test_guild_builder.py`), an
+  AppTest of the whole flow ending in an Inspect with the saved file, and a Playwright
+  run on the real release (starter → paste and match → check → save; no errors).
+  Not yet used by Kyle.

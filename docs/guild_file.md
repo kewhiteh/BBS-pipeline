@@ -44,9 +44,11 @@ than 50 distinct values (such as `pwrc_name`) are not offered as filters either.
   in case or spacing (`Interior` / `interior`), and with `--recorded` the species recorded
   in the profile's study area that have no row. Exit code 1 if rows are unmatched or
   duplicated.
-- The editor's Guild File page (being built, see
-  [instructions/GUILD_WIZARD_PLAN.md](instructions/GUILD_WIZARD_PLAN.md)) does the same
-  with a table.
+- The editor's **Guild File** page (button in the header) does all of this in four
+  steps: start (blank, the starter below, or an existing CSV), traits with fixed allowed
+  values, add species (search, recorded in the open profile's study area, or paste a
+  list), then classify in a table and save. See
+  [instructions/GUILD_WIZARD_PLAN.md](instructions/GUILD_WIZARD_PLAN.md).
 
 ## Starter file
 
