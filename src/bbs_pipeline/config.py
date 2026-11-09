@@ -365,14 +365,39 @@ def profile_from_data(data: dict[str, Any], origin: str = "(data)") -> RunProfil
         raise ProfileError(_format_validation_error(exc, origin)) from None
 
 
-def load_profile(path: Path, overrides: list[str] | None = None) -> RunProfile:
-    """Read a TOML run profile, apply --set overrides, and validate it."""
+def is_manifest(path: Path) -> bool:
+    """A run manifest (``<output>.manifest.json``) rather than a TOML profile."""
+    return path.suffix.lower() == ".json"
+
+
+def _manifest_profile_data(path: Path, text: str) -> dict[str, Any]:
+    """The profile recorded in a run manifest (H12: rerun a build from its manifest)."""
     try:
-        data = tomllib.loads(path.read_text(encoding="utf-8"))
+        manifest = json.loads(text)
+    except json.JSONDecodeError as exc:
+        raise ProfileError(f"Manifest '{path}' is not valid JSON: {exc}") from None
+    data = manifest.get("profile") if isinstance(manifest, dict) else None
+    if not isinstance(data, dict):
+        raise ProfileError(
+            f"'{path}' has no recorded profile; only manifests written by `bbs run` or the "
+            "editor's Run can be opened."
+        )
+    return data
+
+
+def load_profile(path: Path, overrides: list[str] | None = None) -> RunProfile:
+    """Read a TOML run profile, or the profile in a run manifest; apply --set; validate."""
+    try:
+        text = path.read_text(encoding="utf-8")
     except FileNotFoundError:
         raise ProfileError(f"Run profile not found: '{path}'") from None
-    except tomllib.TOMLDecodeError as exc:
-        raise ProfileError(f"Run profile '{path}' is not valid TOML: {exc}") from None
+    if is_manifest(path):
+        data = _manifest_profile_data(path, text)
+    else:
+        try:
+            data = tomllib.loads(text)
+        except tomllib.TOMLDecodeError as exc:
+            raise ProfileError(f"Run profile '{path}' is not valid TOML: {exc}") from None
     return profile_from_data(apply_overrides(data, overrides or []), origin=f"'{path}'")
 
 

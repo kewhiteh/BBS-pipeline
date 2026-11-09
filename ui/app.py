@@ -37,6 +37,7 @@ from bbs_pipeline.config import (
     ProfileError,
     RunProfile,
     dump_profile,
+    is_manifest,
     load_profile,
     profile_from_data,
     save_profile,
@@ -1806,6 +1807,9 @@ def _switch_to(path: Path | None, draft: dict[str, Any]) -> None:
     st.session_state.pop("last_result_for", None)
     st.session_state.pop("logged_draft", None)  # a new profile is not a list of edits
     st.session_state.pop("ran", None)
+    if path is not None or "opened_manifest_pending" not in st.session_state:
+        st.session_state.pop("opened_manifest", None)
+    st.session_state.pop("opened_manifest_pending", None)
     st.session_state["profile_path"] = str(path) if path is not None else None
     st.session_state["draft"] = draft
     st.rerun()
@@ -1842,13 +1846,19 @@ def _profile_menu(path: Path | None, profile: RunProfile | None) -> None:
                 _action("Save as", target=str(new_path))
                 save_profile(profile, new_path)
                 st.session_state["profile_path"] = str(new_path)
+                st.session_state.pop("opened_manifest", None)
                 st.toast(f"Saved {new_path}")
                 st.rerun()
 
     with st.expander("Open / new"):
         found = _found_profiles()
         choice = st.selectbox("Profiles in this project", ["", *found], key="sb_open_choice")
-        typed = st.text_input("…or a file path", key="sb_open_path")
+        typed = st.text_input(
+            "…or a file path",
+            key="sb_open_path",
+            help="A profile (.toml), or a run's .manifest.json to rerun that build. A "
+            "manifest opens as a new, unsaved profile; Save as keeps it as .toml.",
+        )
         if st.button("Open", key="btn_open", disabled=not (typed.strip() or choice)):
             target_path = Path(typed.strip() or choice)
             _activity("action", "Open", target=str(target_path))
@@ -1857,6 +1867,10 @@ def _profile_menu(path: Path | None, profile: RunProfile | None) -> None:
             except ProfileError as exc:
                 _show("error", str(exc))
             else:
+                if is_manifest(target_path):  # Save would write TOML over the manifest
+                    st.session_state["opened_manifest"] = str(target_path)
+                    st.session_state["opened_manifest_pending"] = True
+                    _switch_to(None, opened.model_dump(mode="json"))
                 _switch_to(target_path, opened.model_dump(mode="json"))
         if st.button("New profile (defaults)", key="btn_new"):
             _activity("action", "New profile (defaults)")
@@ -1901,7 +1915,11 @@ def _header(
             icon=":material/check:" if fetched else ":material/warning:",
             color="green" if fetched else "orange",
         )
-        st.markdown(f"**Profile:** `{path}`" if path else "**Profile:** new, not saved yet")
+        manifest = st.session_state.get("opened_manifest") if path is None else None
+        if manifest:
+            st.markdown(f"**Profile:** from manifest `{manifest}`, not saved yet")
+        else:
+            st.markdown(f"**Profile:** `{path}`" if path else "**Profile:** new, not saved yet")
         if profile is not None:
             dirty = saved is None or profile != saved
             st.badge("Unsaved changes" if dirty else "Saved", color="orange" if dirty else "gray")
@@ -2007,6 +2025,14 @@ def render_editor() -> None:
             profile = None  # the page already shows why
     with header:
         _header(path, profile, saved, "build" if page.url_path in ("", "build") else "settings")
+        if path is None and st.session_state.get("opened_manifest"):
+            _show(
+                "info",
+                "Opened a run manifest: these are the exact settings of that build. Run "
+                f"writes to `{_draft()['output']['path']}`, the original file; change the "
+                "output path first to keep both and compare.",
+                icon=":material/history:",
+            )
 
 
 try:
