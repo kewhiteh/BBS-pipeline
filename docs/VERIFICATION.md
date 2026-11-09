@@ -23,8 +23,7 @@ is done, move its result into the feature checklist below (status **Verified (ha
 date, what was seen) and tick it here.
 
 - [x] **H1 GeoPackage in ArcGIS Pro**: done 2026-11-09; result in the checklist below.
-- [ ] **H2 Other projection in ArcGIS Pro**: export one GeoPackage in EPSG:5070 (Albers);
-  Pro reads the projection and the points still line up.
+- [x] **H2 Other projection in ArcGIS Pro**: done 2026-11-09; result in the checklist below.
 - [ ] **H3 FlatGeobuf, GeoJSON, GeoParquet in ArcGIS Pro**: each opens (or note which
   Pro can't read).
 - [ ] **H4 RunType / QC toggles on real data**: Inspect, then toggle each off; the runs
@@ -92,7 +91,7 @@ holds 6 NC runs from before 1997.
 | Guild file: matching, filters, trait joins | Tests only | `tests/test_guilds.py`; **Kyle's own guild CSV not yet checked** (try one deliberate AOU typo: it should be reported as unmatched) |
 | Boundary polygon filter | Tests only | `tests/test_spatial_integrity.py`; not checked with a real polygon |
 | Overlays (route labels from polygons) | Tests only | not checked with a real layer |
-| Other projections (e.g. EPSG:5070 Albers) | Tests only | multi-CRS end-to-end test on fixture data; **not opened in ArcGIS Pro** |
+| Other projections (e.g. EPSG:5070 Albers) | **Verified (hand)** 2026-11-09 (EPSG:5070) | Kyle, ArcGIS Pro: NC 2015–2024 GeoPackage in EPSG:5070; Pro reads NAD 1983 Contiguous USA Albers, WKID 5070; points sit exactly on the H1 (EPSG:4326) points. Claude checked the file: 43,046 points on 50 NC routes, reprojected back to 4326 they equal the release Latitude/Longitude (max difference 2e-14 degrees). Other EPSG codes: tests only. At 1:212 Pro draws the 4326 and 5070 points about 1 m apart: a datum shift, see STATUS.md "EPSG:4326 output is NAD83 numbers" |
 | GeoPackage opens correctly in ArcGIS Pro | **Verified (hand)** 2026-11-09 | Kyle, ArcGIS Pro: all routes 2015–2024 (RunType 1, QC 1, continuity 0.8), EPSG:4326, 1,489,901 points on 1,635 routes. Points on the route starts across the US and Canada; AOU is a Text field with leading zeros; field names fine. Claude checked the same file: every point equals its route's Latitude/Longitude in the release (max difference 0.0) |
 | FlatGeobuf, GeoJSON, GeoParquet open in ArcGIS Pro | **Not verified** | Pro's support for these is unconfirmed |
 | Manifest reproduces the same file | **Not verified** | rerun from `<file>.manifest.json` and compare |
