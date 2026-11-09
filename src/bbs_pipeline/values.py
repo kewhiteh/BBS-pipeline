@@ -33,7 +33,7 @@ class ProfileValues:
     states: list[dict[str, object]]  # {"StateNum", "StateName", "abbreviation"}
     bcrs: list[int]
     strata: list[int]
-    routes: list[dict[str, object]]  # {"route_id", "RouteName", "StateNum", "BCR"}
+    routes: list[dict[str, object]]  # {"route_id", "RouteName", "StateNum", "BCR", "Stratum"}
     species: list[dict[str, str]]  # {"AOU", "English_Common_Name", "Family", "Order"}
     families: list[str]
     orders: list[str]
@@ -41,6 +41,7 @@ class ProfileValues:
     guild_traits: dict[str, list[str]] = field(default_factory=dict)
     # {"BCR": {27: "Southeastern Coastal Plain", ...}}; empty without the metadata XML
     code_labels: dict[str, dict[int, str]] = field(default_factory=dict)
+    years: tuple[int, int] | None = None  # first and last survey year in the release
 
     def label(self, attribute: str, code: int) -> str:
         """'27 · Southeastern Coastal Plain', or just '27' when the release has no name."""
@@ -88,6 +89,29 @@ def _code_labels(raw_dir: Path) -> dict[str, dict[int, str]]:
     if len(xml_files) != 1:
         return {}  # no metadata (or ambiguous): show bare codes rather than guess names
     return {a: parse_code_labels(xml_files[0], a) for a in LABELED_CODES}
+
+
+AREA_FIELDS = ("StateNum", "BCR", "Stratum", "route_id")
+
+
+def area_options(
+    routes: list[dict[str, object]], chosen: dict[str, list[object]]
+) -> dict[str, list[object]]:
+    """For each area field, the values that still match a route given the OTHER picks.
+
+    ``routes`` are ``ProfileValues.routes``; ``chosen`` maps each of AREA_FIELDS to the
+    picked values (empty = no filter). Every filter respects every other one, so a
+    state, BCR, stratum or route that is offered always leaves at least one route:
+    pick BCR 29 and only states with BCR 29 routes are offered, and the other way round.
+    """
+
+    def fits(route: dict[str, object], skip: str) -> bool:
+        return all(not chosen.get(f) or route.get(f) in chosen[f] for f in AREA_FIELDS if f != skip)
+
+    return {
+        f: sorted({r[f] for r in routes if r.get(f) is not None and fits(r, f)})  # type: ignore[type-var]
+        for f in AREA_FIELDS
+    }
 
 
 def collect_values(profile: RunProfile) -> ProfileValues:
@@ -139,7 +163,11 @@ def collect_values(profile: RunProfile) -> ProfileValues:
     )
     join_columns = {t: (s.columns if s is not None else []) for t, s in sources.items()}
 
-    route_cols = [c for c in ("route_id", "RouteName", "StateNum", "BCR") if c in routes.columns]
+    route_cols = [
+        c for c in ("route_id", "RouteName", "StateNum", "BCR", "Stratum") if c in routes.columns
+    ]
+    span = weather.select(pl.col("Year").min().alias("lo"), pl.col("Year").max().alias("hi"))
+    lo, hi = span.collect().row(0)
     return ProfileValues(
         states=states,
         bcrs=_sorted_unique(routes, "BCR"),
@@ -155,4 +183,5 @@ def collect_values(profile: RunProfile) -> ProfileValues:
         join_columns=join_columns,
         guild_traits=trait_values,
         code_labels=_code_labels(Path(profile.source.raw_dir)),
+        years=(int(lo), int(hi)) if lo is not None else None,
     )

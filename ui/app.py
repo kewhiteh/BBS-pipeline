@@ -47,7 +47,7 @@ from bbs_pipeline.sources.regions import resolve_states
 from bbs_pipeline.sources.release import RELEASE_JSON, fetch_release
 from bbs_pipeline.spatial.files import save_gis_upload
 from bbs_pipeline.spatial.geometry import automatic_overlay_column
-from bbs_pipeline.values import ProfileValues, collect_values
+from bbs_pipeline.values import ProfileValues, area_options, collect_values
 
 PROFILE_DIRS: tuple[str, ...] = (".", "examples", "profiles")
 # BBS_UI_ERROR_LOG lets the test suite log elsewhere; its deliberate failures used to
@@ -137,6 +137,30 @@ def _pick_list_profile(p: dict[str, Any]) -> RunProfile:
             "guilds": {"file": g["file"], "unmatched": g["unmatched"]},
         }
     )
+
+
+# Widgets whose new value changes the pick lists, and where it goes in the draft
+PICK_LIST_WIDGETS: dict[str, tuple[str, str]] = {
+    "ui_guild_file": ("guilds", "file"),
+    "ui_guild_unmatched": ("guilds", "unmatched"),
+    "ui_lump": ("observations", "lump_subspecies"),
+}
+
+
+def _with_pending_edits(p: dict[str, Any]) -> dict[str, Any]:
+    """The draft plus this rerun's new widget values that change the pick lists.
+
+    Pick lists are built before the cards draw, so without this they lag one rerun
+    behind: a new guild file's traits would only appear after the next click.
+    """
+    out = {
+        section: dict(fields) if isinstance(fields, dict) else fields
+        for section, fields in p.items()
+    }
+    for key, (section, field) in PICK_LIST_WIDGETS.items():
+        if key in st.session_state:
+            out[section][field] = st.session_state[key]
+    return out
 
 
 def _value_source(profile: RunProfile) -> tuple[str, tuple]:
@@ -486,32 +510,71 @@ def _settings_page_body(p: dict[str, Any]) -> None:
     _log_viewer()
 
 
+def _narrow(label: str, current: list[Any], options: list[Any], key: str, why: str) -> list[Any]:
+    """Drop selections an earlier choice ruled out, and say which and why (no red error)."""
+    keep = [c for c in current if c in options]
+    dropped = [c for c in current if c not in options]
+    if dropped:
+        if key in st.session_state:
+            st.session_state[key] = keep
+        st.info(
+            f"{label} removed: {', '.join(str(d) for d in dropped)} ({why}).",
+            icon=":material/filter_alt:",
+        )
+    return keep
+
+
+def _area_choices(rt: dict[str, Any], names: dict[int, Any], regions: Any) -> dict[str, list[Any]]:
+    """Current area picks: this rerun's widget values where set, else the draft's."""
+    try:
+        states = resolve_states(rt["states"], regions) if rt["states"] else []
+    except ValueError as exc:
+        st.warning(str(exc))
+        states = []
+    return {
+        "StateNum": st.session_state.get("ui_states", states),
+        "BCR": st.session_state.get("ui_bcrs", rt["bcrs"]),
+        "Stratum": st.session_state.get("ui_strata", rt["strata"]),
+        "route_id": st.session_state.get("ui_route_ids", rt["route_ids"]),
+    }
+
+
+AREA_WIDGETS = {
+    "ui_states": "states",
+    "ui_bcrs": "bcrs",
+    "ui_strata": "strata",
+    "ui_route_ids": "route_ids",
+}
+
+
+def _clear_area() -> None:
+    """on_click: drop every Study Area pick (states, BCRs, strata, routes, boundary)."""
+    rt = _draft()["routes"]
+    for key, field in AREA_WIDGETS.items():
+        rt[field] = []
+        st.session_state[key] = []
+    rt["boundary"] = None
+    st.session_state["ui_boundary"] = ""
+
+
 def _study_area_card(p: dict[str, Any], v: ProfileValues | None) -> None:
     """Where: states, BCRs and a boundary; strata and single routes under More."""
     rt = p["routes"]
     st.subheader(_heading("Study Area"))
-    st.caption("Each filter narrows the previous ones; empty keeps every route.")
-    codes: list[int] = []
-    if v is not None:
-        names = {s["StateNum"]: s for s in v.states}
-        regions = pl.DataFrame(
-            {"StateNum": list(names), "StateName": [s["StateName"] for s in v.states]}
-        )
-        try:
-            current = resolve_states(rt["states"], regions) if rt["states"] else []
-        except ValueError as exc:
-            st.warning(str(exc))
-            current = []
-        codes = _pick(
-            "States / provinces",
-            list(names),
-            current,
-            "ui_states",
-            lambda c: f"{names[c]['abbreviation'] or c} · {names[c]['StateName']}",
-            help="Keep routes in these states or provinces. Empty = all.",
-        )
-        rt["states"] = [names[c]["abbreviation"] or c for c in codes]
-    else:
+    st.caption(
+        "Each list offers only what fits the other picks, so every combination matches "
+        "routes. Empty keeps every route."
+    )
+    picked = any(rt[f] for f in AREA_WIDGETS.values()) or bool(rt["boundary"])
+    st.button(
+        "Clear area",
+        key="btn_clear_area",
+        icon=":material/filter_alt_off:",
+        on_click=_clear_area,
+        disabled=not picked,
+        help="Remove every Study Area pick (states, BCRs, strata, routes, boundary) to start over.",
+    )
+    if v is None:  # no release: plain text boxes, nothing to cross-check
         rt["states"] = _pick(
             "States / provinces",
             None,
@@ -519,15 +582,65 @@ def _study_area_card(p: dict[str, Any], v: ProfileValues | None) -> None:
             "ui_states",
             help="Names, postal abbreviations, or StateNum codes. Empty = all.",
         )
+        rt["bcrs"] = _pick(
+            "Bird Conservation Regions (BCRs)", None, rt["bcrs"], "ui_bcrs", as_int=True
+        )
+        rt["boundary"] = _gis_file_picker(
+            "Boundary polygon file (start point inside)",
+            rt["boundary"] or "",
+            "ui_boundary",
+            "Optional. Keeps only routes whose start point falls inside the polygon(s).",
+        )
+        with st.expander("More: strata and individual routes", key="ui_more_area"):
+            rt["strata"] = _pick(
+                "BBS physiographic strata", None, rt["strata"], "ui_strata", as_int=True
+            )
+            rt["route_ids"] = _pick("Route ids", None, rt["route_ids"], "ui_route_ids")
+        return
+
+    names = {s["StateNum"]: s for s in v.states}
+    regions = pl.DataFrame(
+        {"StateNum": list(names), "StateName": [s["StateName"] for s in v.states]}
+    )
+    chosen = _area_choices(rt, names, regions)
+    # A saved profile can hold an impossible mix (NC + BCR 1). Keep the states and drop
+    # whatever no longer fits, in order BCR, stratum, route, saying which and why.
+    for field, label, key in (
+        ("BCR", "BCRs", "ui_bcrs"),
+        ("Stratum", "Strata", "ui_strata"),
+        ("route_id", "Routes", "ui_route_ids"),
+    ):
+        options = area_options(v.routes, chosen)[field]
+        chosen[field] = _narrow(
+            label, chosen[field], options, key, "no routes match the other picks"
+        )
+    options = area_options(v.routes, chosen)
+    no_other_picks = not (chosen["BCR"] or chosen["Stratum"] or chosen["route_id"])
+    state_options = (
+        list(names)
+        if no_other_picks
+        else sorted({*options["StateNum"], *chosen["StateNum"]}, key=list(names).index)
+    )
+    route_info = {r["route_id"]: r for r in v.routes}
+
+    codes = _pick(
+        "States / provinces",
+        state_options,
+        chosen["StateNum"],
+        "ui_states",
+        lambda c: f"{names[c]['abbreviation'] or c} · {names[c]['StateName']}",
+        help="Keep routes in these states or provinces. Only states with routes that "
+        "fit the other picks are offered. Empty = all.",
+    )
+    rt["states"] = [names[c]["abbreviation"] or c for c in codes]
     rt["bcrs"] = _pick(
         "Bird Conservation Regions (BCRs)",
-        v.bcrs if v else None,
-        rt["bcrs"],
+        options["BCR"],
+        chosen["BCR"],
         "ui_bcrs",
-        (lambda c: v.label("BCR", c)) if v else str,
-        as_int=True,
-        help="NABCI ecological regions with similar bird communities and habitats. "
-        "Keep routes in these BCRs. Empty = all.",
+        lambda c: v.label("BCR", c),
+        help="NABCI ecological regions with similar bird communities and habitats. Only "
+        "BCRs with routes that fit the other picks are offered. Empty = all.",
     )
     rt["boundary"] = _gis_file_picker(
         "Boundary polygon file (start point inside)",
@@ -538,33 +651,21 @@ def _study_area_card(p: dict[str, Any], v: ProfileValues | None) -> None:
     with st.expander("More: strata and individual routes", key="ui_more_area"):
         rt["strata"] = _pick(
             "BBS physiographic strata",
-            v.strata if v else None,
-            rt["strata"],
+            options["Stratum"],
+            chosen["Stratum"],
             "ui_strata",
-            (lambda c: v.label("Stratum", c)) if v else str,
-            as_int=True,
-            help="The BBS's own physiographic regions (older than BCRs). Keep routes in "
-            "these strata. Empty = all.",
+            lambda c: v.label("Stratum", c),
+            help="The BBS's own physiographic regions (older than BCRs). Only strata with "
+            "routes that fit the other picks are offered. Empty = all.",
         )
-        route_options = None
-        route_info: dict[str, Any] = {}
-        if v is not None:
-            chosen_states = set(codes) if codes else None
-            route_info = {
-                r["route_id"]: r
-                for r in v.routes
-                if (chosen_states is None or r["StateNum"] in chosen_states)
-                and (not rt["bcrs"] or r.get("BCR") in rt["bcrs"])
-                or r["route_id"] in rt["route_ids"]
-            }
-            route_options = list(route_info)
         rt["route_ids"] = _pick(
-            "Route ids (narrowed to the chosen states and BCRs)",
-            route_options,
-            rt["route_ids"],
+            "Route ids (only routes that fit the states, BCRs and strata)",
+            options["route_id"],
+            chosen["route_id"],
             "ui_route_ids",
-            (lambda r: f"{r} · {route_info[r]['RouteName']}") if v else str,
-            help="Pick individual routes. Empty = every route that passes the filters above.",
+            lambda r: f"{r} · {route_info[r]['RouteName']}",
+            help="Pick individual routes. Picking routes also limits the other lists to "
+            "theirs. Empty = every route that passes the filters above.",
         )
 
 
@@ -580,7 +681,7 @@ assert set(SOURCE_LABELS) == set(OBSERVATION_SOURCES)
 assert set(LAYOUT_LABELS) == set(STOP_LAYOUTS)
 
 
-def _switch_choice(section: dict[str, Any], field: str, key: str, value: str) -> None:
+def _switch_choice(section: dict[str, Any], field: str, key: str, value: Any) -> None:
     """Move a choice widget to a still-valid value when an earlier choice removed its option."""
     section[field] = value
     if key in st.session_state:
@@ -601,17 +702,33 @@ def _code_toggle(label: str, current: list[int], key: str, help: str) -> list[in
     return current if sorted(current) == [0, 1] else []  # [0, 1] also means no filter
 
 
-def _survey_card(p: dict[str, Any]) -> None:
+def _no_one_year_rolling() -> None:
+    """on_change: typing 1 becomes 2 before the rerun (0 = off, 2 or more = a mean)."""
+    if st.session_state.get("ui_rolling") == 1:
+        st.session_state["ui_rolling"] = 2
+        st.session_state["rolling_note"] = True
+
+
+def _survey_card(p: dict[str, Any], v: ProfileValues | None) -> None:
     """When and how counted: years, source, stop layout, run filters; the rest under More."""
     rn, obs = p["runs"], p["observations"]
     st.subheader(_heading("Survey Period & Protocol"))
+    first, last = v.years if (v and v.years) else (1966, 2026)
+    years = (min(max(rn["start_year"], first), last), max(min(rn["end_year"], last), first))
+    if years != (rn["start_year"], rn["end_year"]):
+        st.info(
+            f"Years set to {years[0]}–{years[1]}: this release covers {first}–{last}.",
+            icon=":material/date_range:",
+        )
+        if "ui_years" in st.session_state:
+            st.session_state["ui_years"] = years
     rn["start_year"], rn["end_year"] = st.slider(
         "Years",
-        1966,
-        2026,
-        (rn["start_year"], rn["end_year"]),
+        first,
+        last,
+        years,
         key="ui_years",
-        help="Survey years to keep (inclusive).",
+        help=f"Survey years to keep (inclusive). This release covers {first}–{last}.",
     )
     sources, layouts = list(SOURCE_LABELS), list(LAYOUT_LABELS)
     start_year = rn["start_year"]
@@ -697,14 +814,31 @@ def _survey_card(p: dict[str, Any]) -> None:
             help="Add a 0 count for each species seen on the route in any year but not on "
             "this run. Needed for most abundance models.",
         )
+        if not obs["zero_fill"] and obs["rolling_years"]:
+            _switch_choice(obs, "rolling_years", "ui_rolling", 0)
+            st.info(
+                "Rolling mean turned off: it needs zero-fill, or the mean would cover only "
+                "the years a species was seen.",
+                icon=":material/sync_alt:",
+            )
+        one_year = obs["rolling_years"] == 1  # a saved 1; typing 1 is caught on_change
+        if one_year:
+            _switch_choice(obs, "rolling_years", "ui_rolling", 2)
+        if st.session_state.pop("rolling_note", False) or one_year:
+            st.info(
+                "Rolling mean set to 2 years: 1 year is not a window.", icon=":material/sync_alt:"
+            )
         obs["rolling_years"] = int(
             st.number_input(
-                "Rolling mean over N calendar years (0 = off)",
+                "Rolling mean over N calendar years (0 = off, 2 or more = on)",
                 0,
                 60,
                 obs["rolling_years"],
                 key="ui_rolling",
-                help="Smooth each route's counts with a moving average over this many years.",
+                on_change=_no_one_year_rolling,
+                disabled=not obs["zero_fill"],
+                help="Smooth each route's counts with a moving average over this many "
+                "years. Needs zero-fill.",
             )
         )
 
@@ -1164,8 +1298,15 @@ def _output_card(p: dict[str, Any], v: ProfileValues | None) -> None:
             help="Long: one row per run and species; suits most statistics. Wide: one row "
             "per route and species, a column per year; suits spreadsheets and maps.",
         )
+        rolling_on = p["observations"]["rolling_years"] >= 2
+        if out["wide_value"] == "rolling_mean" and not rolling_on:
+            _switch_choice(out, "wide_value", "ui_wide_value", "route_total")
+            st.info(
+                "Year columns switched to the count: the rolling mean is off.",
+                icon=":material/sync_alt:",
+            )
         if out["shape"] == "wide":
-            wide_values = ["route_total", "rolling_mean"]
+            wide_values = ["route_total", "rolling_mean"] if rolling_on else ["route_total"]
             out["wide_value"] = st.selectbox(
                 "Value in each year column",
                 wide_values,
@@ -1189,9 +1330,19 @@ def _output_card(p: dict[str, Any], v: ProfileValues | None) -> None:
 
     st.markdown(f"#### {_heading('Joined Columns')}")
     st.caption("Extra columns added to every row. Inspect shows the exact columns you'll get.")
+    joins = p["joins"]
+    if not p["guilds"]["file"] and joins["guilds"] not in ([], ["*"]):
+        st.info(
+            f"Guild trait columns removed ({', '.join(joins['guilds'])}): there is no guild "
+            "file. Choose one under Species & Guilds to join its traits.",
+            icon=":material/sync_alt:",
+        )
+        joins["guilds"] = ["*"]  # the default: every trait column, once a file is chosen
     shown: list[tuple[str, list[str] | None]] = []
     for table in JOIN_TABLES:
         options = v.join_columns.get(table, []) if v else None
+        if table == "guilds" and not p["guilds"]["file"]:
+            options = []  # the pick lists may predate clearing the file this rerun
         if options is not None and not options:
             # Leave the saved value alone (e.g. guilds = ["*"] without a guild file):
             # clearing it marked every such profile "Unsaved changes" as soon as it opened
@@ -1481,7 +1632,7 @@ def _build_page() -> None:
     values: ProfileValues | None = None
     values_error = None
     try:
-        values = _values(*_value_source(_pick_list_profile(p)))
+        values = _values(*_value_source(_pick_list_profile(_with_pending_edits(p))))
     except Exception as exc:  # no release yet, or an unreadable guild file
         values_error = str(exc)
         if st.session_state.get("logged_values_error") != values_error:  # once, not per rerun
@@ -1497,7 +1648,7 @@ def _build_page() -> None:
     with area:
         _study_area_card(p, values)
     with survey:
-        _survey_card(p)
+        _survey_card(p, values)
     with birds:
         _species_card(p, values)
     with st.container(border=True):
