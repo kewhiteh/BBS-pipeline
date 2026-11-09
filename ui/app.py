@@ -433,10 +433,24 @@ def _settings_page_body(p: dict[str, Any]) -> None:
     """The profile's [source] section and machine-level lists: set about once a year."""
     src = p["source"]
     st.caption(
-        "The BBS release and where it lives on disk. USGS publishes about one release a "
-        "year, so these rarely change. They are saved in the open profile's [source] "
-        "section, like every other setting."
+        "Set about once a year. Release, folders and download settings are saved in the "
+        "open profile's [source] section; saved projections and the error log are shared "
+        "by every profile."
     )
+    release, folders, downloads, projections = st.columns(4, border=True)
+    with release:
+        _release_card(src, p)
+    with folders:
+        _folders_card(src)
+    with downloads:
+        _downloads_card(src)
+    with projections:
+        _projections_manager()
+    with st.container(border=True):
+        _log_viewer()
+
+
+def _release_card(src: dict[str, Any], p: dict[str, Any]) -> None:
     st.subheader(_heading("BBS Release"))
     fetched, status = _release_status(p)
     (st.success if fetched else st.info)(status)
@@ -465,6 +479,8 @@ def _settings_page_body(p: dict[str, Any]) -> None:
         help="Rebuild the cache from the release files, e.g. after replacing them.",
     )
 
+
+def _folders_card(src: dict[str, Any]) -> None:
     st.subheader(_heading("Data Folders"))
     src["raw_dir"] = st.text_input(
         "Release directory",
@@ -479,6 +495,8 @@ def _settings_page_body(p: dict[str, Any]) -> None:
         help="Where the cleaned, typed copy of the release is kept so runs start fast.",
     )
 
+
+def _downloads_card(src: dict[str, Any]) -> None:
     st.subheader(_heading("Download Settings"))
     src["offline"] = st.checkbox(
         "Offline (never download)",
@@ -486,30 +504,31 @@ def _settings_page_body(p: dict[str, Any]) -> None:
         key="ui_offline",
         help="Use only files already on disk; fail instead of reaching ScienceBase.",
     )
-    c1, c2, c3 = st.columns(3)
     src["http_timeout_seconds"] = float(
-        c1.number_input(
+        st.number_input(
             "HTTP timeout (seconds)",
             min_value=1.0,
             value=float(src["http_timeout_seconds"]),
             key="ui_http_timeout",
+            width=140,
         )
     )
-    src["http_retries"] = int(
-        c2.number_input("HTTP retries", 0, 10, int(src["http_retries"]), key="ui_http_retries")
-    )
-    src["http_backoff_seconds"] = float(
-        c3.number_input(
-            "Retry backoff (seconds, doubles each retry)",
-            min_value=0.0,
-            value=float(src["http_backoff_seconds"]),
-            key="ui_http_backoff",
+    with st.container(horizontal=True):
+        src["http_retries"] = int(
+            st.number_input(
+                "Retries", 0, 10, int(src["http_retries"]), key="ui_http_retries", width=110
+            )
         )
-    )
-
-    _projections_manager()
-
-    _log_viewer()
+        src["http_backoff_seconds"] = float(
+            st.number_input(
+                "Backoff (s)",
+                min_value=0.0,
+                value=float(src["http_backoff_seconds"]),
+                key="ui_http_backoff",
+                width=110,
+                help="Wait before a retry; doubles each retry.",
+            )
+        )
 
 
 def _narrow(label: str, current: list[Any], options: list[Any], key: str, why: str) -> list[Any]:
@@ -1005,7 +1024,7 @@ def _output_path_picker(out: dict[str, Any]) -> str:
     suffix = path.suffix.lower()
     if suffix not in extensions:
         st.warning(f"'{path.name}' has no supported format; choose one below.")
-    c1, c2, c3 = st.columns(3, vertical_alignment="bottom")
+    c1, c2 = st.columns(2)  # folder and name side by side, format below (Kyle, 2026-11-09)
     folder = c1.text_input(
         "Folder", str(path.parent), key="ui_output_folder", help="Created if it doesn't exist."
     )
@@ -1016,7 +1035,7 @@ def _output_path_picker(out: dict[str, Any]) -> str:
         help="Without the extension; the format adds it.",
     )
     labels = {ext: f"{name} ({ext}): {use}" for name, ext, use in OUTPUT_FORMATS}
-    ext = c3.selectbox(
+    ext = st.selectbox(
         "Format",
         extensions,
         extensions.index(suffix) if suffix in extensions else None,
@@ -1115,31 +1134,22 @@ def _log_viewer() -> None:
     if not entries:
         st.caption("No errors logged. Failures (fetch, inspect, run, unexpected) appear here.")
         return
-    st.caption(
-        f"{len(entries)} error(s) logged, newest first"
-        + (
-            f"; showing the latest {LOG_ENTRIES_SHOWN}."
-            if len(entries) > LOG_ENTRIES_SHOWN
-            else "."
-        )
-    )
     shown = entries[:LOG_ENTRIES_SHOWN]
     labels = {
         n: f"{head} · {trace.splitlines()[-1] if trace else ''}"[:160]
         for n, (head, trace) in enumerate(shown)
     }
-    chosen = st.selectbox(
-        "Logged errors",
-        list(labels),
-        index=None,
-        format_func=labels.get,
-        key="ui_log_entry",
-        placeholder="Choose an error to see its details",
-        label_visibility="collapsed",
-    )
-    if chosen is not None:
-        st.code(shown[chosen][1], language=None)
-    with st.container(horizontal=True):
+    more = f", showing the latest {LOG_ENTRIES_SHOWN}" if len(entries) > LOG_ENTRIES_SHOWN else ""
+    with st.container(horizontal=True, vertical_alignment="bottom"):
+        chosen = st.selectbox(
+            f"Logged errors ({len(entries)}, newest first{more})",
+            list(labels),
+            index=None,
+            format_func=labels.get,
+            key="ui_log_entry",
+            placeholder="Choose an error to see its details",
+            width=640,
+        )
         st.download_button(
             "Download log",
             ERROR_LOG.read_text(encoding="utf-8"),
@@ -1154,15 +1164,16 @@ def _log_viewer() -> None:
                 ERROR_LOG.unlink(missing_ok=True)
                 st.toast("Error log cleared")
                 st.rerun()
+    if chosen is not None:
+        st.code(shown[chosen][1], language=None)
 
 
 def _projections_manager() -> None:
     """Settings page: list, rename, remove and add the projections offered in every profile."""
     st.subheader(_heading("Saved Projections"))
     st.caption(
-        "Your own projections, offered in the Build page's projection list for every "
-        "profile, after the built-in ones. Changes are saved at once (to "
-        f"`{PROJECTIONS_FILE}`); no profile Save needed."
+        "Offered in the projection list for every profile, after the built-ins. "
+        "Changes save at once; no profile Save needed."
     )
     saved = _saved_projections()
     if not saved:
@@ -1182,26 +1193,25 @@ def _projections_manager() -> None:
                 st.toast(f"Removed {code}")
                 st.rerun()
     catalog = _epsg_catalog()
-    with st.container(horizontal=True, vertical_alignment="bottom"):
-        picked = st.selectbox(
-            "Add a projection",
-            list(catalog),
-            index=None,
-            format_func=lambda c: f"{c} · {catalog[c][0]}",
-            key="ui_proj_new_code",
-            placeholder="Search by code or name, e.g. 26917 or UTM zone 17N",
-            help="Every current EPSG projection and lat/long system, from the copy of the "
-            "EPSG database that comes with pyproj (no internet needed).",
-        )
-        raw = picked or ""
-        code = _epsg_code(raw) if raw.strip() else ""
-        name = _crs_name(code) if code else None
-        label = st.text_input(
-            "Name in my list", name or "", key=f"ui_proj_new_name_{code}", disabled=not name
-        )
-        add = st.button(
-            "Add", key="btn_proj_add", icon=":material/add:", disabled=not name or code in saved
-        )
+    picked = st.selectbox(
+        "Add a projection",
+        list(catalog),
+        index=None,
+        format_func=lambda c: f"{c} · {catalog[c][0]}",
+        key="ui_proj_new_code",
+        placeholder="Search by code or name, e.g. 26917 or UTM zone 17N",
+        help="Every current EPSG projection and lat/long system, from the copy of the "
+        "EPSG database that comes with pyproj (no internet needed).",
+    )
+    raw = picked or ""
+    code = _epsg_code(raw) if raw.strip() else ""
+    name = _crs_name(code) if code else None
+    label = st.text_input(
+        "Name in my list", name or "", key=f"ui_proj_new_name_{code}", disabled=not name
+    )
+    add = st.button(
+        "Add", key="btn_proj_add", icon=":material/add:", disabled=not name or code in saved
+    )
     if code and name is None:
         st.caption(f"`{raw.strip()}` is not a known EPSG code.")
     elif code in saved:
@@ -1292,11 +1302,40 @@ def _crs_picker(out: dict[str, Any]) -> None:
             st.rerun()
 
 
-def _output_card(p: dict[str, Any], v: ProfileValues | None) -> None:
-    """The file to write, its shape, the joined columns, and GIS options."""
+def _joins_card(p: dict[str, Any], v: ProfileValues | None) -> None:
+    """Joined Columns: None / Some / All per table; its own card above Output."""
+    st.subheader(_heading("Joined Columns"))
+    st.caption("Extra columns added to every row. Inspect shows the exact columns you'll get.")
+    joins = p["joins"]
+    if not p["guilds"]["file"] and joins["guilds"] not in ([], ["*"]):
+        st.info(
+            f"Guild trait columns removed ({', '.join(joins['guilds'])}): there is no guild "
+            "file. Choose one under Species & Guilds to join its traits.",
+            icon=":material/sync_alt:",
+        )
+        joins["guilds"] = ["*"]  # the default: every trait column, once a file is chosen
+    shown: list[tuple[str, list[str] | None]] = []
+    for table in JOIN_TABLES:
+        options = v.join_columns.get(table, []) if v else None
+        if table == "guilds" and not p["guilds"]["file"]:
+            options = []  # the pick lists may predate clearing the file this rerun
+        if options is not None and not options:
+            # Leave the saved value alone (e.g. guilds = ["*"] without a guild file):
+            # clearing it marked every such profile "Unsaved changes" as soon as it opened
+            st.caption(f"{JOIN_TABLE_TITLES.get(table, table)}: nothing to add in this profile")
+            continue
+        shown.append((table, options))
+    if shown:
+        for column, (table, options) in zip(st.columns(len(shown)), shown, strict=True):
+            with column:
+                _join_picker(p, table, options)
+
+
+def _output_card(p: dict[str, Any]) -> None:
+    """The file to write, its shape, and GIS options."""
     out = p["output"]
     st.subheader(_heading("Output"))
-    shape_col, file_col = st.columns([1, 3])
+    shape_col, file_col, _ = st.columns([1, 2, 2], gap="large")
     with shape_col:
         shapes = ["long", "wide"]
         out["shape"] = st.radio(
@@ -1340,32 +1379,6 @@ def _output_card(p: dict[str, Any], v: ProfileValues | None) -> None:
             "version, and the counts after each filter, so the file can be traced and "
             "rebuilt.",
         )
-
-    st.markdown(f"#### {_heading('Joined Columns')}")
-    st.caption("Extra columns added to every row. Inspect shows the exact columns you'll get.")
-    joins = p["joins"]
-    if not p["guilds"]["file"] and joins["guilds"] not in ([], ["*"]):
-        st.info(
-            f"Guild trait columns removed ({', '.join(joins['guilds'])}): there is no guild "
-            "file. Choose one under Species & Guilds to join its traits.",
-            icon=":material/sync_alt:",
-        )
-        joins["guilds"] = ["*"]  # the default: every trait column, once a file is chosen
-    shown: list[tuple[str, list[str] | None]] = []
-    for table in JOIN_TABLES:
-        options = v.join_columns.get(table, []) if v else None
-        if table == "guilds" and not p["guilds"]["file"]:
-            options = []  # the pick lists may predate clearing the file this rerun
-        if options is not None and not options:
-            # Leave the saved value alone (e.g. guilds = ["*"] without a guild file):
-            # clearing it marked every such profile "Unsaved changes" as soon as it opened
-            st.caption(f"{JOIN_TABLE_TITLES.get(table, table)}: nothing to add in this profile")
-            continue
-        shown.append((table, options))
-    if shown:
-        for column, (table, options) in zip(st.columns(len(shown)), shown, strict=True):
-            with column:
-                _join_picker(p, table, options)
 
     if ext in VECTOR_EXTENSIONS:
         with st.expander(f"Projection, layer name and overlays · {out['crs']}", key="ui_more_gis"):
@@ -1665,7 +1678,9 @@ def _build_page() -> None:
     with birds:
         _species_card(p, values)
     with st.container(border=True):
-        _output_card(p, values)
+        _joins_card(p, values)
+    with st.container(border=True):
+        _output_card(p)
     profile = _validated(alerts)
     with st.container(border=True):
         stamp = _value_source(profile)[1] if profile is not None else ()

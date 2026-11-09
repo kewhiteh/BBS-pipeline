@@ -595,7 +595,8 @@ def test_build_page_has_the_cards_and_no_tabs(
     assert ":yellow[Inspect & Run]" in headings
     assert at.title[0].value == ":yellow[BBS Dataset Builder]"
     assert not at.tabs
-    assert any("Joined Columns" in m.value for m in at.markdown)
+    # Joined Columns is its own card, above Output (Kyle, 2026-11-09)
+    assert headings.index(":yellow[Joined Columns]") < headings.index(":yellow[Output]")
     assert any("at least 80% of years" in c.value for c in at.caption)  # the new default
 
 
@@ -884,3 +885,19 @@ def test_states_are_found_by_abbreviation(tmp_path: Path, monkeypatch: pytest.Mo
     modes = MultiSelect.DESCRIPTOR.fields_by_name["filter_mode"].enum_type
     proto = at.multiselect(key="ui_states").proto
     assert modes.values_by_number[proto.filter_mode].name == "FILTER_MODE_PREFIX"
+
+
+def test_settings_page_is_one_row_of_cards_then_the_error_log(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    at, _ = _app(tmp_path, monkeypatch, _profile(tmp_path))
+    at.button(key="btn_to_settings").click().run()
+    assert not at.exception, at.exception
+    headings = [h.value for h in at.subheader]
+    assert headings == [
+        ":yellow[BBS Release]",
+        ":yellow[Data Folders]",
+        ":yellow[Download Settings]",
+        ":yellow[Saved Projections]",
+        ":yellow[Error Log]",
+    ]
