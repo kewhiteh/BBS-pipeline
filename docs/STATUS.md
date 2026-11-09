@@ -112,7 +112,16 @@ change that discovers or fixes any of it. The phase plan and its decisions live 
   a stratum first limits the BCRs (`bbs_pipeline.values.area_options`,
   `test_area_options_respect_every_other_pick`). A saved impossible mix keeps its
   states and drops BCRs, then strata, then routes that no longer fit, with a note
-  (`test_an_impossible_saved_area_mix_is_trimmed`). **Clear area** removes every
+  (`test_an_impossible_saved_area_mix_is_trimmed`). Each state, BCR and stratum shows how many
+  routes it keeps given the other picks, e.g. `23 · Blue Ridge Mountains (1 route)`;
+  only states with routes are listed. States are found by typing the postal
+  abbreviation (prefix search: "nc" finds NC alone; Streamlit's default fuzzy search
+  matched 7). Trade-off: typing a name ("north") no longer matches, since the label
+  starts with the abbreviation.
+- **Verified in the 2025 release (not a bug):** BCR 29 (Piedmont) has one route in
+  stratum 23 (Blue Ridge Mountains), Elamsville VA (88_037), plus 3 in stratum 4. BCR
+  and stratum boundaries differ, so edge routes pair unlikely names; the counts make
+  these visible. Check: `routes.parquet` filtered to BCR 29, grouped by Stratum. **Clear area** removes every
   Study Area pick, boundary included, in one click. Years stay inside the
   release (1966–2025 now; from `ProfileValues.years`). 50-stop before 1997 → 10-stop;
   "all 50 stops" without 50-stop → 10-stop bins. Zero-fill off → rolling mean off and

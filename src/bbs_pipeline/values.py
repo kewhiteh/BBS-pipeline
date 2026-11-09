@@ -114,6 +114,22 @@ def area_options(
     }
 
 
+def area_counts(
+    routes: list[dict[str, object]], chosen: dict[str, list[object]]
+) -> dict[str, dict[object, int]]:
+    """Like ``area_options``, but how many routes each offered value would keep."""
+    counts: dict[str, dict[object, int]] = {f: {} for f in AREA_FIELDS}
+    for route in routes:
+        for f in AREA_FIELDS:
+            others_fit = all(
+                not chosen.get(o) or route.get(o) in chosen[o] for o in AREA_FIELDS if o != f
+            )
+            value = route.get(f)
+            if others_fit and value is not None:
+                counts[f][value] = counts[f].get(value, 0) + 1
+    return counts
+
+
 def collect_values(profile: RunProfile) -> ProfileValues:
     """Read the release (building the cache if needed) and list every valid value."""
     bundle = profile.to_bundle()

@@ -47,7 +47,7 @@ from bbs_pipeline.sources.regions import resolve_states
 from bbs_pipeline.sources.release import RELEASE_JSON, fetch_release
 from bbs_pipeline.spatial.files import save_gis_upload
 from bbs_pipeline.spatial.geometry import automatic_overlay_column
-from bbs_pipeline.values import ProfileValues, area_options, collect_values
+from bbs_pipeline.values import ProfileValues, area_counts, area_options, collect_values
 
 PROFILE_DIRS: tuple[str, ...] = (".", "examples", "profiles")
 # BBS_UI_ERROR_LOG lets the test suite log elsewhere; its deliberate failures used to
@@ -187,6 +187,7 @@ def _pick(
     fmt: Any = str,
     as_int: bool = False,
     help: str | None = None,
+    filter_mode: str = "fuzzy",
 ) -> list[Any]:
     """Multiselect over ``options``; a text box when no pick list is available."""
     if options is None:
@@ -202,6 +203,7 @@ def _pick(
         format_func=fmt,
         key=key,
         help=help,
+        filter_mode=filter_mode,  # type: ignore[arg-type]
     )
 
 
@@ -615,11 +617,15 @@ def _study_area_card(p: dict[str, Any], v: ProfileValues | None) -> None:
             label, chosen[field], options, key, "no routes match the other picks"
         )
     options = area_options(v.routes, chosen)
-    no_other_picks = not (chosen["BCR"] or chosen["Stratum"] or chosen["route_id"])
-    state_options = (
-        list(names)
-        if no_other_picks
-        else sorted({*options["StateNum"], *chosen["StateNum"]}, key=list(names).index)
+    counts = area_counts(v.routes, chosen)
+
+    def routes_note(field: str, value: Any) -> str:
+        n = counts[field].get(value, 0)
+        return f" ({n} route{'s' if n != 1 else ''})"
+
+    # Only states with routes (some regions have none); a saved pick always stays listed
+    state_options = sorted(
+        {*options["StateNum"], *chosen["StateNum"]} & set(names), key=list(names).index
     )
     route_info = {r["route_id"]: r for r in v.routes}
 
@@ -628,9 +634,13 @@ def _study_area_card(p: dict[str, Any], v: ProfileValues | None) -> None:
         state_options,
         chosen["StateNum"],
         "ui_states",
-        lambda c: f"{names[c]['abbreviation'] or c} · {names[c]['StateName']}",
-        help="Keep routes in these states or provinces. Only states with routes that "
-        "fit the other picks are offered. Empty = all.",
+        lambda c: (
+            f"{names[c]['abbreviation'] or c} · {names[c]['StateName']}"
+            + routes_note("StateNum", c)
+        ),
+        help="Type the postal abbreviation (NC, VA, ON). Only states with routes that "
+        "fit the other picks are offered; the count is how many. Empty = all.",
+        filter_mode="prefix",  # "nc" finds only NC, not every name with n...c in it
     )
     rt["states"] = [names[c]["abbreviation"] or c for c in codes]
     rt["bcrs"] = _pick(
@@ -638,9 +648,10 @@ def _study_area_card(p: dict[str, Any], v: ProfileValues | None) -> None:
         options["BCR"],
         chosen["BCR"],
         "ui_bcrs",
-        lambda c: v.label("BCR", c),
+        lambda c: v.label("BCR", c) + routes_note("BCR", c),
         help="NABCI ecological regions with similar bird communities and habitats. Only "
-        "BCRs with routes that fit the other picks are offered. Empty = all.",
+        "BCRs with routes that fit the other picks are offered; the count is how many. "
+        "Empty = all.",
     )
     rt["boundary"] = _gis_file_picker(
         "Boundary polygon file (start point inside)",
@@ -654,9 +665,11 @@ def _study_area_card(p: dict[str, Any], v: ProfileValues | None) -> None:
             options["Stratum"],
             chosen["Stratum"],
             "ui_strata",
-            lambda c: v.label("Stratum", c),
+            lambda c: v.label("Stratum", c) + routes_note("Stratum", c),
             help="The BBS's own physiographic regions (older than BCRs). Only strata with "
-            "routes that fit the other picks are offered. Empty = all.",
+            "routes that fit the other picks are offered; the count is how many. BCR and "
+            "strata lines differ, so a few edge routes pair unlikely names (one Piedmont "
+            "route, Elamsville VA, is in the Blue Ridge stratum). Empty = all.",
         )
         rt["route_ids"] = _pick(
             "Route ids (only routes that fit the states, BCRs and strata)",

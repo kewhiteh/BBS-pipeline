@@ -88,10 +88,10 @@ def test_editor_shows_names_for_coded_filters(
     at, _ = _app(tmp_path, monkeypatch, _profile(tmp_path))
 
     bcrs = at.multiselect(key="ui_bcrs")
-    assert bcrs.options == [
-        "27 · Southeastern Coastal Plain",
-        "28 · Appalachian Mountains",
-        "29 · Piedmont",
+    assert bcrs.options == [  # with how many routes each keeps
+        "27 · Southeastern Coastal Plain (4 routes)",
+        "28 · Appalachian Mountains (4 routes)",
+        "29 · Piedmont (4 routes)",
     ]
     assert bcrs.help
     assert all(" · " in o for o in at.multiselect(key="ui_strata").options)
@@ -104,7 +104,7 @@ def test_editor_offers_pick_lists_and_saves_only_on_save(
     before = path.read_text(encoding="utf-8")
 
     # labelled pick lists from the release
-    assert "NC · North Carolina" in at.multiselect(key="ui_states").options
+    assert at.multiselect(key="ui_states").options == ["NC · North Carolina (12 routes)"]
     assert "63_024 · ARCOLA" in at.multiselect(key="ui_route_ids").options
     assert "07550 · Wood Thrush" in at.multiselect(key="ui_aous").options
     at.multiselect(key="ui_states").set_value([63])
@@ -751,6 +751,12 @@ def test_area_options_respect_every_other_pick() -> None:
     alaska = area_options(routes, {**none, "StateNum": [3]})
     assert alaska["BCR"] == [2] and alaska["Stratum"] == [70]
 
+    from bbs_pipeline.values import area_counts
+
+    counts = area_counts(routes, {**none, "StateNum": [63]})
+    assert counts["BCR"] == {29: 1, 28: 1, 27: 1}  # Alaska's BCR 2 no longer counts
+    assert counts["StateNum"] == {3: 1, 63: 3}  # a field never limits itself
+
     route_first = area_options(routes, {**none, "route_id": ["63_003"]})
     assert route_first == {**route_first, "StateNum": [63], "BCR": [27], "Stratum": [4]}
 
@@ -868,3 +874,13 @@ def test_clear_area_removes_every_area_pick(
     )
     assert len(at.multiselect(key="ui_strata").options) == 4  # every option is back
     assert at.button(key="btn_clear_area").disabled
+
+
+def test_states_are_found_by_abbreviation(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Typing "nc" must find NC alone: prefix matching, not fuzzy (Kyle, 2026-11-09)."""
+    at, _ = _app(tmp_path, monkeypatch, _profile(tmp_path))
+    from streamlit.proto.MultiSelect_pb2 import MultiSelect
+
+    modes = MultiSelect.DESCRIPTOR.fields_by_name["filter_mode"].enum_type
+    proto = at.multiselect(key="ui_states").proto
+    assert modes.values_by_number[proto.filter_mode].name == "FILTER_MODE_PREFIX"
