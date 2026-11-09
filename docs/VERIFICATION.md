@@ -30,8 +30,7 @@ date, what was seen) and tick it here.
 - [ ] **H6 Drop observer's first year**: with it ticked, no row has `is_first_year` true;
   the runs-kept count drops.
 - [x] **H7 Subspecies lumping**: done 2026-11-09; result in the checklist below.
-- [ ] **H8 Rolling mean**: for one route and species, the rolling value equals the mean
-  of that year and the previous N−1 calendar years by hand.
+- [x] **H8 Rolling mean**: done 2026-11-09 (Claude); result in the checklist below.
 - [ ] **H9 Your guild CSV**: it loads; Inspect's guild report shows the expected matches;
   one deliberate AOU typo is reported as unmatched; filters keep the right species.
 - [ ] **H10 Boundary polygon**: with a real polygon (e.g. a county), only routes starting
@@ -83,7 +82,7 @@ holds 6 NC runs from before 1997.
 | Continuity filter (default 0.8) | **Verified (hand)** 2026-11-09 + tests | Kyle, editor Inspect, NC 2015–2024, standard runs: 0% = 581 runs / 79 routes; 80% = 432 runs / 50 routes. Claude matched both against the raw weather table: 2020 has no runs and is left out of the denominator (9 years; the preview's 0.8889 = 8/9), so 80% needs 8 of 9 years; 50 routes have 8 or 9 (432 runs). Dropped example: 63_226, runs in 2017–2019 and 2021–2024 = 7 of 9 = 0.778. Test: `test_cancelled_2020_survey_does_not_count_against_continuity` |
 | Drop observer's first year / `is_first_year` | Tests only | `test_observer_first_year_is_per_route`; not hand-checked on real data |
 | Subspecies lumping | **Verified (hand + script run)** 2026-11-09 + tests | NC 2015–2024, standard runs, continuity 0.8. Lumping on, Dark-eyed Junco (05677): 79 rows, one per run, 493 birds. Lumping off: every NC junco record is the Slate-colored form (05670): the same 79 runs, 493 birds; per-run totals equal in all 79 runs; 05677 alone gives 0 rows. Kyle's editor run found a bug (turning lumping off silently cleared the species pick), fixed in kewhiteh/BBS-pipeline#52 and confirmed in a real browser (Playwright): the old code clears the pick on the next Inspect (43,046 rows, all species), the fixed code keeps it. Tests: `tests/test_taxonomy.py`, `test_species_pick_survives_turning_lumping_off` |
-| Rolling mean | Tests only | `test_rolling_mean_uses_calendar_years_not_rows`; values not hand-checked on real data |
+| Rolling mean | **Verified (script run, by Claude)** 2026-11-09 + tests | NC 2015–2024, standard runs, continuity 0, zero-fill, Wood Thrush (07550), 3-year window. Route 63_030 (no runs 2018–2020): pipeline `rolling_mean` / `rolling_n_years` = 10.0/1, 6.5/2, 7.333/3, 16.0/1 (2021: window 2019–2021 holds only 2021), 16.5/2, 15.0/3, 16.0/3. Recomputed independently from raw `States/NCaroli.csv` (SpeciesTotal, RPID 101) and `Weather.csv` (RunType 1, zero when unrecorded): identical for all 7 years. The window uses only years inside the build's range (2015's mean ignores 2013–2014 runs). Test: `test_rolling_mean_uses_calendar_years_not_rows` |
 | Guild file: matching, filters, trait joins | Tests only | `tests/test_guilds.py`; **Kyle's own guild CSV not yet checked** (try one deliberate AOU typo: it should be reported as unmatched) |
 | Boundary polygon filter | Tests only | `tests/test_spatial_integrity.py`; not checked with a real polygon |
 | Overlays (route labels from polygons) | Tests only | not checked with a real layer |
