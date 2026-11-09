@@ -46,7 +46,9 @@ date, what was seen) and tick it here.
   point is in.
 - [ ] **H12 Manifest**: rerun from a `<file>.manifest.json` and get an identical file.
 - [ ] **H13 Large extent**: all states, 1966–2025, once: how long it takes and whether
-  memory is fine.
+  memory is fine. *2026-11-09 attempt 1: out of memory, WSL crashed (see STATUS.md
+  "Full extent runs out of memory"). Retry once the time/memory log is merged; read the
+  numbers from `logs/ui_activity.log`.*
 
 ## Script checks (`scripts/validate_outputs.py`)
 

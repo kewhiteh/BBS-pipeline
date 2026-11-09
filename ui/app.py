@@ -49,6 +49,7 @@ from bbs_pipeline.sources.release import RELEASE_JSON, fetch_release
 from bbs_pipeline.spatial.files import save_gis_upload
 from bbs_pipeline.spatial.geometry import automatic_overlay_column
 from bbs_pipeline.stages.runs import MultipleRunsError
+from bbs_pipeline.usage import GB, measure, total_memory_bytes
 from bbs_pipeline.values import ProfileValues, area_counts, area_options, collect_values
 
 PROFILE_DIRS: tuple[str, ...] = (".", "examples", "profiles")
@@ -230,13 +231,45 @@ def _activity(kind: str, message: str, **extra: Any) -> None:
         **extra,
     }
     try:
-        ACTIVITY_LOG.parent.mkdir(parents=True, exist_ok=True)
-        if ACTIVITY_LOG.is_file() and ACTIVITY_LOG.stat().st_size > ACTIVITY_MAX_BYTES:
-            ACTIVITY_LOG.replace(ACTIVITY_LOG.with_suffix(".log.1"))
-        with ACTIVITY_LOG.open("a", encoding="utf-8") as log:
-            log.write(json.dumps(entry, default=str, ensure_ascii=False) + "\n")
+        _write_activity(entry)
     except OSError as exc:  # logging must never break the editor; say so on screen
         st.toast(f"Couldn't write the activity log: {exc}")
+
+
+def _write_activity(entry: dict[str, Any], sync: bool = False) -> None:
+    """Append one JSON line; sync=True forces it to disk (survives a VM crash)."""
+    ACTIVITY_LOG.parent.mkdir(parents=True, exist_ok=True)
+    if ACTIVITY_LOG.is_file() and ACTIVITY_LOG.stat().st_size > ACTIVITY_MAX_BYTES:
+        ACTIVITY_LOG.replace(ACTIVITY_LOG.with_suffix(".log.1"))
+    with ACTIVITY_LOG.open("a", encoding="utf-8") as log:
+        log.write(json.dumps(entry, default=str, ensure_ascii=False) + "\n")
+        if sync:
+            log.flush()
+            os.fsync(log.fileno())
+
+
+def _memory_sampler(action: str) -> Any:
+    """on_sample for usage.measure: log memory while a build runs, from its thread.
+
+    The sampler thread has no Streamlit context, so the session fields are read now.
+    """
+    base = {
+        "session": st.session_state.setdefault("session_id", uuid.uuid4().hex[:8]),
+        "page": st.session_state.get("page_name"),
+        "profile": st.session_state.get("profile_path"),
+        "kind": "progress",
+    }
+
+    def _sample(elapsed_s: float, rss: int) -> None:
+        entry = {
+            "time": datetime.now().isoformat(timespec="seconds"),
+            **base,
+            "message": f"{action} running: {elapsed_s:.0f} s, memory {rss / GB:.1f} GB "
+            f"of {total_memory_bytes() / GB:.0f} GB",
+        }
+        _write_activity(entry, sync=True)
+
+    return _sample
 
 
 def _draft_toml() -> str:
@@ -1547,6 +1580,8 @@ def _output_card(p: dict[str, Any]) -> None:
 def _show_result(res: dict[str, Any]) -> None:
     metrics = res["funnel_metrics"]
     st.caption(f"Data source: {metrics['data_source']}")
+    if st.session_state.get("last_usage"):
+        st.caption(st.session_state["last_usage"])
     stages = pl.DataFrame(
         {
             "stage": [label for _, label in STAGE_LABELS] + ["rows in output file"],
@@ -1585,15 +1620,24 @@ def _show_result(res: dict[str, Any]) -> None:
 
 
 def _log_result(action: str, res: dict[str, Any]) -> None:
-    """The counts after each filter, output size and files written, for the activity log."""
+    """The counts after each filter, output size, files written, time and memory."""
+    usage = res.get("usage") or {}
     _activity(
         "result",
-        f"{action}: {res.get('output_rows')} rows, {len(res.get('output_columns', []))} columns",
+        f"{action}: {res.get('output_rows')} rows, {len(res.get('output_columns', []))} "
+        f"columns; {usage.get('elapsed_s')} s, peak {usage.get('peak_rss_gb')} GB",
+        usage=usage,
         funnel=res.get("funnel_metrics"),
         output_columns=res.get("output_columns"),
         exported_files=res.get("exported_files"),
         guild_report=res.get("guild_report"),
     )
+
+
+def _store_result(current: str | None, result: dict[str, Any], usage: Any) -> None:
+    st.session_state["last_result"] = result
+    st.session_state["last_result_for"] = current
+    st.session_state["last_usage"] = usage.summary()
 
 
 def _keep_standard_runs() -> None:
@@ -1626,15 +1670,16 @@ def _inspect_run_section(profile: RunProfile | None, stamp: tuple) -> None:
     try:
         if run_clicked and profile is not None:
             _action("Run")
-            with st.spinner("Running..."):
-                st.session_state["last_result"] = run_profile(profile).model_dump(mode="json")
-            st.session_state["last_result_for"] = current
+            with st.spinner("Running..."), measure(_memory_sampler("Run")) as usage:
+                result = run_profile(profile).model_dump(mode="json")
+            _store_result(current, {**result, "usage": usage.as_dict()}, usage)
             st.session_state["ran"] = True
             _log_result("Run", st.session_state["last_result"])
         elif inspect_clicked and profile is not None:
             _action("Inspect")
-            st.session_state["last_result"] = _inspect(current, stamp)
-            st.session_state["last_result_for"] = current
+            with measure(_memory_sampler("Inspect")) as usage:
+                result = _inspect(current, stamp)
+            _store_result(current, {**result, "usage": usage.as_dict()}, usage)
             _log_result("Inspect", st.session_state["last_result"])
     except MultipleRunsError as exc:  # a settings problem with a known fix, not a crash
         action = "Run" if run_clicked else "Inspect"

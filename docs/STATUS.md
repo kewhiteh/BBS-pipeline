@@ -216,6 +216,15 @@ change that discovers or fixes any of it. The phase plan and its decisions live 
   matter only for method studies (observer / detection variability); Kyle decided
   2026-11-09 not to support keeping them. Test: `test_multiple_runs_stop_shows_a_fix_not_a_crash`.
 
+- **Full extent runs out of memory (H13, 2026-11-09).** All states, 1966–2025, RunType 1,
+  continuity 0, zero-fill on, 10-stop bins, every join: Inspect ran WSL out of memory
+  (WSL gets 15 GB of the PC's 31 GB by default) and WSL crashed; a test run in another
+  session was killed with exit 137 at the same time. Peak memory and which stage is
+  unknown (no sampling then). Workarounds: build by region (states / BCRs) and combine,
+  or raise WSL's limit in `%UserProfile%\.wslconfig` (`[wsl2]` `memory=24GB`). A real
+  fix (streaming or per-state chunks) is an open item. The GPU's 12 GB is unrelated: the
+  pipeline uses system RAM only.
+
 ## Environment notes
 
 - Moving the project folder breaks `.venv`: its scripts keep the old absolute Python
@@ -224,6 +233,9 @@ change that discovers or fixes any of it. The phase plan and its decisions live 
   ruff and pytest.
 
 ## Open items
+
+- H13 memory: rerun with the time/memory log (below) on growing extents to find where
+  memory goes, then decide between chunked builds and streaming.
 
 - **Small screens (not urgent, Kyle 2026-11-09).** On a 27" monitor the layout is fine;
   in a narrow window the four Settings cards and the three Build cards get cramped.
@@ -237,6 +249,12 @@ change that discovers or fixes any of it. The phase plan and its decisions live 
   stop layout, and first-year descriptions.
 
 ## How to reproduce key checks
+
+- **Time and memory of a build:** every Inspect / Run logs a `result` entry with
+  `usage` (`elapsed_s`, `peak_rss_gb`, `total_memory_gb`) in `logs/ui_activity.log`,
+  and `progress` entries every 5 s while it runs (forced to disk, so a crash leaves the
+  last reading). The result panel shows "Took … ; peak memory … GB of … GB". Editor
+  only; the CLI does not report it yet.
 
 ```bash
 uv sync --extra dev
