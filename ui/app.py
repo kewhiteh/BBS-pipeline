@@ -474,16 +474,7 @@ def _settings_page_body(p: dict[str, Any]) -> None:
         )
     )
 
-    st.subheader("Saved Projections")
-    saved = _saved_projections()
-    if saved:
-        st.dataframe(
-            pl.DataFrame({"code": list(saved), "name": list(saved.values())}), hide_index=True
-        )
-    st.caption(
-        f'Projections added with "Add to my list" on the Build page are kept in '
-        f"`{PROJECTIONS_FILE}` for every profile. Edit that file to rename or remove one."
-    )
+    _projections_manager()
 
     st.subheader("Logs")
     st.caption(f"Editor errors are written to `{ERROR_LOG}` with the full traceback.")
@@ -903,14 +894,88 @@ def _saved_projections() -> dict[str, str]:
     return {str(code): str(label) for code, label in table.items()}
 
 
-def _save_projection(code: str, label: str) -> None:
-    saved = {**_saved_projections(), code: label}
+def _write_projections(saved: dict[str, str]) -> None:
     lines = [
-        '# Projections added in the editor with "Add to my list". Edit or delete freely.',
+        '# Projections saved in the editor (Settings page, or "Add to my list").',
         "[projections]",
         *(f"{json.dumps(c)} = {json.dumps(text, ensure_ascii=False)}" for c, text in saved.items()),
     ]
     PROJECTIONS_FILE.write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+
+def _save_projection(code: str, label: str) -> None:
+    _write_projections({**_saved_projections(), code: label})
+
+
+def _epsg_code(raw: str) -> str:
+    """'26917', 'epsg:26917' -> 'EPSG:26917'."""
+    code = raw.strip().upper()
+    return f"EPSG:{code}" if code.isdigit() else code
+
+
+def _rename_projection(code: str) -> None:
+    """on_change for a saved projection's name box: write the new name at once."""
+    label = st.session_state[f"ui_proj_name_{code}"].strip()
+    saved = _saved_projections()
+    if label and code in saved:
+        saved[code] = label
+        _write_projections(saved)
+        st.toast(f"Renamed {code}")
+
+
+def _projections_manager() -> None:
+    """Settings page: list, rename, remove and add the projections offered in every profile."""
+    st.subheader("Saved Projections")
+    st.caption(
+        "Your own projections, offered in the Build page's projection list for every "
+        "profile, after the built-in ones. Changes are saved at once (to "
+        f"`{PROJECTIONS_FILE}`); no profile Save needed."
+    )
+    saved = _saved_projections()
+    if not saved:
+        st.caption("None saved yet.")
+    for code, label in saved.items():
+        with st.container(horizontal=True, vertical_alignment="bottom"):
+            st.text_input(
+                f"Name for {code}",
+                label,
+                key=f"ui_proj_name_{code}",
+                on_change=_rename_projection,
+                args=(code,),
+                help="Press Enter to save the new name.",
+            )
+            if st.button("Remove", key=f"btn_proj_remove_{code}", icon=":material/delete:"):
+                _write_projections({c: t for c, t in saved.items() if c != code})
+                st.toast(f"Removed {code}")
+                st.rerun()
+    with st.container(horizontal=True, vertical_alignment="bottom"):
+        raw = st.text_input(
+            "Add an EPSG code",
+            key="ui_proj_new_code",
+            placeholder="e.g. 26917",
+            help="Look one up at epsg.io, e.g. 26917 (UTM zone 17N).",
+        )
+        code = _epsg_code(raw) if raw.strip() else ""
+        name = _crs_name(code) if code else None
+        label = st.text_input(
+            "Name in my list", name or "", key=f"ui_proj_new_name_{code}", disabled=not name
+        )
+        add = st.button(
+            "Add", key="btn_proj_add", icon=":material/add:", disabled=not name or code in saved
+        )
+    if code and name is None:
+        st.caption(f"`{raw.strip()}` is not a known EPSG code.")
+    elif code in saved:
+        st.caption(f"{code} is already in your list.")
+    elif code in CRS_CHOICES:
+        st.caption(f"{code} is already a built-in choice; adding it gives it your own name.")
+    elif name:
+        st.caption(f"{code}: {name}")
+    if add and name:
+        _save_projection(code, label.strip() or name)
+        st.toast(f"Added {code}")
+        st.session_state.pop("ui_proj_new_code", None)
+        st.rerun()
 
 
 def _crs_name(code: str) -> str | None:

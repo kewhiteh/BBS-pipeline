@@ -623,3 +623,32 @@ def test_an_unusual_run_type_mix_is_kept_not_rewritten(
     assert [m.value for m in at.markdown if "badge" in m.value and "aved" in m.value] == [
         ":gray-badge[Saved]"
     ]
+
+
+def test_projections_are_added_renamed_and_removed_on_settings(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """No hand-editing of projections.toml: the Settings page manages the list."""
+    at, _ = _app(tmp_path, monkeypatch, _profile(tmp_path))
+    monkeypatch.chdir(tmp_path)
+    saved = tmp_path / "projections.toml"
+    at.button(key="btn_to_settings").click().run()
+    assert any("None saved yet" in c.value for c in at.caption)
+
+    at.text_input(key="ui_proj_new_code").set_value("26917").run()
+    assert any("NAD83 / UTM zone 17N" in c.value for c in at.caption)
+    at.button(key="btn_proj_add").click().run()
+    assert not at.exception, at.exception
+    assert '"EPSG:26917" = "NAD83 / UTM zone 17N, metre"' in saved.read_text(encoding="utf-8")
+    assert at.text_input(key="ui_proj_new_code").value == ""  # cleared for the next one
+
+    at.text_input(key="ui_proj_name_EPSG:26917").set_value("UTM 17N (east NC)").run()
+    assert '"EPSG:26917" = "UTM 17N (east NC)"' in saved.read_text(encoding="utf-8")
+
+    at.text_input(key="ui_proj_new_code").set_value("nonsense").run()
+    assert any("not a known EPSG code" in c.value for c in at.caption)
+    assert at.button(key="btn_proj_add").disabled
+
+    at.button(key="btn_proj_remove_EPSG:26917").click().run()
+    assert "EPSG:26917" not in saved.read_text(encoding="utf-8")
+    assert any("None saved yet" in c.value for c in at.caption)

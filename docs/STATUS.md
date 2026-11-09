@@ -58,8 +58,10 @@ change that discovers or fixes any of it. The phase plan and its decisions live 
   **Add to my list**. Added codes go in `projections.toml` (`[projections]`
   `"EPSG:26917" = "label"`) at the project root, read relative to where Streamlit is
   started, and appear after the built-ins in every profile. The file is not
-  git-ignored: commit it to share the list, or leave it local. Remove entries by editing
-  it.
+  git-ignored: commit it to share the list, or leave it local. The **Settings** page
+  lists the saved projections and adds, renames (Enter saves) and removes them, writing
+  the file at once; nobody has to edit it by hand (Kyle, 2026-11-09):
+  `test_projections_are_added_renamed_and_removed_on_settings`.
 
 - **Observer experience matches USGS trend analysis: first year on a route, or not**
   (Kyle, 2026-11-07). `runs.drop_observer_first_year = true` drops each observer's
