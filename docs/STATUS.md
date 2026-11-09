@@ -52,6 +52,17 @@ change that discovers or fixes any of it. The phase plan and its decisions live 
   (time, action, last line); picking one shows its traceback below. Download and Clear
   (confirmed) sit beside it:
   `test_error_log_is_readable_and_clearable_on_settings`.
+- **Fixed 2026-11-09: picking a BCR after a state dropped the state.** Kyle picked NC,
+  then BCR 29: NC was dropped as "not in this release" and BCR 27 removed. Cause: the
+  route counts added to option labels that day ("NC · North Carolina (113 routes)")
+  changed when the BCR was picked, and the browser, which matches picks by label, handed
+  the old label back instead of StateNum 63. Fix: labels carry no live counts (a caption
+  shows them), a label handed back is mapped to its code, and both that and the "not in
+  this release" warning are now written to the error log.
+- **The error log records warnings, not only crashes (2026-11-09).** Before, only
+  exceptions were logged, so a pick silently dropped left no trace. Now anything the
+  editor works around unexpectedly is logged as `Warning: <what>` with a message (once
+  per distinct message per session).
 - **Fixed 2026-11-09: the test suite wrote to the real error log.** Two UI tests open a
   profile with no release on purpose, and every `pytest` run appended their failures
   to `logs/ui_errors.log` (all 127 entries in Kyle's log were these). `tests/conftest.py`
@@ -113,9 +124,10 @@ change that discovers or fixes any of it. The phase plan and its decisions live 
   a stratum first limits the BCRs (`bbs_pipeline.values.area_options`,
   `test_area_options_respect_every_other_pick`). A saved impossible mix keeps its
   states and drops BCRs, then strata, then routes that no longer fit, with a note
-  (`test_an_impossible_saved_area_mix_is_trimmed`). Each state, BCR and stratum shows how many
-  routes it keeps given the other picks, e.g. `23 · Blue Ridge Mountains (1 route)`;
-  only states with routes are listed. States are found by typing the postal
+  (`test_an_impossible_saved_area_mix_is_trimmed`). A caption shows how many routes match the current
+  picks, and (with a state, BCR or route picked) the routes per stratum, which is where
+  edge pairings like Piedmont + Blue Ridge show. Option labels never carry live counts:
+  see the 2026-11-09 fix below. States are found by typing the postal
   abbreviation (prefix search: "nc" finds NC alone; Streamlit's default fuzzy search
   matched 7). Trade-off: typing a name ("north") no longer matches, since the label
   starts with the abbreviation.
@@ -160,6 +172,12 @@ change that discovers or fixes any of it. The phase plan and its decisions live 
 
 ## Known limitations / workarounds
 
+- **UI tests can't catch label-matching bugs.** `streamlit.testing` (AppTest) passes a
+  pick by its value, but the browser matches a pick by its label text. A label that
+  changes between reruns loses the pick in the browser while the tests still pass. Rule:
+  option labels must not depend on other picks (`test_picking_a_bcr_after_a_state_keeps_the_state`
+  checks labels stay put). Anything else that differs between AppTest and the browser
+  needs a hand check.
 - **The theme needs Streamlit started from the repo root.** Streamlit reads
   `.streamlit/config.toml` from the folder you start it in; started elsewhere, the
   editor works but shows Streamlit's default colours. Workaround: `cd` to the repo first.

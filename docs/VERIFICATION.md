@@ -99,4 +99,4 @@ holds 6 NC runs from before 1997.
 | Manifest reproduces the same file | **Not verified** | rerun from `<file>.manifest.json` and compare |
 | Large extent (all states, 1966–2025): time and memory | **Not verified** | one full run to time it |
 | CSV opened in Excel keeps AOU leading zeros | **Known limitation** | Excel turns `07550` into `7550`; import the AOU column as text. R, Python and ArcGIS keep them. |
-| Editor: every setting behaves as labelled | Tests | `tests/test_ui.py` (52 tests); Kyle's hands-on use 2026-11-09 found and got fixed: state search, area filter cross-checks, layout |
+| Editor: every setting behaves as labelled | Tests + hand | `tests/test_ui.py` (54 tests; AppTest passes picks by value, so browser-only bugs need hands-on use). Kyle's use 2026-11-09 found and got fixed: state search, area cross-checks, layout, NC then BCR 29 dropping NC |
