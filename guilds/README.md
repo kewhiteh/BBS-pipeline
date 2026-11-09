@@ -56,3 +56,15 @@ uv run python scripts/build_pwrc_guilds.py guilds/source/pwrc_guildlst_archived_
 
 The build stops if a name has no match, if a `NAME_MAP` target is not in the species
 list, or if a species would land in two groups of one kind.
+
+## `name_changes.csv`
+
+Old names → current BBS names, used to match names pasted from papers (`bbs guilds
+match`, the editor's Guild File page). Columns: `old_name`, `current_names` (`;` between
+several; common or scientific names as in the BBS species list), `kind` (`renamed`,
+`split`, `form`, `spelling`, or `genus` for an old genus whose species moved to one of
+the listed genera), `note`. Seeded 2026-11-09 from `NAME_MAP` in
+`scripts/build_pwrc_guilds.py` plus AOS checklist genus changes. Matches are always
+looked up in the release and are only suggestions the user confirms, so a genus rule
+that does not fit a species yields nothing. Add rows as you meet new old names;
+`tests/test_guild_builder.py` checks that every non-genus row resolves in the release.
