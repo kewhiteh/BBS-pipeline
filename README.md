@@ -6,6 +6,9 @@ filters, observation handling, species, joins, and the output file. The CLI and 
 Streamlit editor (`ui/app.py`) both read and write that profile.
 
 What is verified, known limitations, and open items: [docs/STATUS.md](docs/STATUS.md).
+What has been checked against the real release (and what has **not**, so use with
+caution): [docs/VERIFICATION.md](docs/VERIFICATION.md). Rerun the data checks with
+`uv run python scripts/validate_outputs.py`.
 
 ## Quick start
 
