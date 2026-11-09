@@ -291,6 +291,11 @@ change that discovers or fixes any of it. The phase plan and its decisions live 
 
 ## Open items
 
+- Rerun from a manifest (H12, 2026-11-09): the manifest's `profile` reproduces the file
+  (CSV/Parquet byte-identical; GeoPackage identical except its `last_change` timestamp),
+  but nothing opens a manifest directly. Proposed: `bbs run --config x.manifest.json`
+  and the editor's profile opener accept a manifest.
+
 - Guild file wizard (Kyle, 2026-11-09, to consider): help build a guild CSV inside the
   editor: pick species, define traits, check every row against the release as it is
   made. Kyle's research guild file is next; H9 waits for it.
