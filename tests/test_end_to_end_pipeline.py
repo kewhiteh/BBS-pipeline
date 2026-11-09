@@ -229,3 +229,18 @@ def test_streamlit_run_button_executes_the_profile(
     at.button(key="btn_run_pipeline").click().run(timeout=15)
     assert not at.exception
     assert pl.read_parquet(out).height == 8
+
+
+def test_cli_too_big_build_prints_the_reason_not_a_traceback(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from bbs_pipeline import usage
+
+    raw_dir, cache_dir, out = tmp_path / "raw", tmp_path / "cache", tmp_path / "out" / "o.csv"
+    _build_synthetic_raw_bbs_dir(raw_dir)
+    profile = str(_write_profile(tmp_path / "p.toml", raw_dir, cache_dir, out))
+    monkeypatch.setattr(usage, "available_memory_bytes", lambda: 1)
+
+    assert cli_main(["run", "--config", profile]) == 2
+    assert "Stopped before running out" in capsys.readouterr().err
+    assert not out.exists()

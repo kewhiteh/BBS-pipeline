@@ -231,6 +231,16 @@ change that discovers or fixes any of it. The phase plan and its decisions live 
   copies of the output at some step. A Run needs more than Inspect (file writing copies
   again). Practical limit with everything on: about 15–20 states; fewer join columns
   raise it.
+  **Memory check (2026-11-09):** before building the output table, the engine sizes a
+  20,000-row sample of it and stops with `MemoryEstimateError` if memory in use + 1.8 x
+  the table would exceed 95% of (in use + free). Editor: a "stopped: too big" warning
+  (logged as a warning); CLI: the message on stderr, exit 2. Real data: all states
+  stops in 2 s at 4.4 GB (the build would need ~35 GB); 10 / 15 / 20 states pass (20
+  peaked 13.2 GB). Limits: the estimate covers Inspect; a Run also writes the file
+  (GeoPackage converts through geopandas, another copy), which is not counted yet. No
+  override; the constants are `PEAK_TABLE_COPIES` / `MEMORY_HEADROOM` in
+  `src/bbs_pipeline/usage.py`. Only Linux memory readings are supported (elsewhere the
+  check is skipped).
 
 ## Environment notes
 
@@ -241,8 +251,12 @@ change that discovers or fixes any of it. The phase plan and its decisions live 
 
 ## Open items
 
-- H13 memory: rerun with the time/memory log (below) on growing extents to find where
-  memory goes, then decide between chunked builds and streaming.
+- H13 memory, next (Kyle 2026-11-09, option 3): cut the ~4 GB fixed cost (release
+  tables loaded whole before filtering) and the extra copy at the final sort; then
+  recalibrate `PEAK_TABLE_COPIES`. Count the file write in the estimate for Run.
+- Future (Kyle 2026-11-09: wanted on principle, not needed for current analyses):
+  whole-country builds with everything on (~14 M rows x 151 columns), by writing the
+  output in chunks of states.
 
 - **Small screens (not urgent, Kyle 2026-11-09).** On a 27" monitor the layout is fine;
   in a narrow window the four Settings cards and the three Build cards get cramped.
