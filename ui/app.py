@@ -50,7 +50,9 @@ from bbs_pipeline.spatial.geometry import automatic_overlay_column
 from bbs_pipeline.values import ProfileValues, collect_values
 
 PROFILE_DIRS: tuple[str, ...] = (".", "examples", "profiles")
-ERROR_LOG = Path("logs") / "ui_errors.log"
+# BBS_UI_ERROR_LOG lets the test suite log elsewhere; its deliberate failures used to
+# fill the real log with errors nobody hit (2 per test run).
+ERROR_LOG = Path(os.environ.get("BBS_UI_ERROR_LOG") or Path("logs") / "ui_errors.log")
 
 
 # --- helpers -------------------------------------------------------------------------
@@ -474,19 +476,9 @@ def _settings_page_body(p: dict[str, Any]) -> None:
         )
     )
 
-    st.subheader("Saved Projections")
-    saved = _saved_projections()
-    if saved:
-        st.dataframe(
-            pl.DataFrame({"code": list(saved), "name": list(saved.values())}), hide_index=True
-        )
-    st.caption(
-        f'Projections added with "Add to my list" on the Build page are kept in '
-        f"`{PROJECTIONS_FILE}` for every profile. Edit that file to rename or remove one."
-    )
+    _projections_manager()
 
-    st.subheader("Logs")
-    st.caption(f"Editor errors are written to `{ERROR_LOG}` with the full traceback.")
+    _log_viewer()
 
 
 def _study_area_card(p: dict[str, Any], v: ProfileValues | None) -> None:
@@ -903,14 +895,181 @@ def _saved_projections() -> dict[str, str]:
     return {str(code): str(label) for code, label in table.items()}
 
 
-def _save_projection(code: str, label: str) -> None:
-    saved = {**_saved_projections(), code: label}
+def _write_projections(saved: dict[str, str]) -> None:
     lines = [
-        '# Projections added in the editor with "Add to my list". Edit or delete freely.',
+        '# Projections saved in the editor (Settings page, or "Add to my list").',
         "[projections]",
         *(f"{json.dumps(c)} = {json.dumps(text, ensure_ascii=False)}" for c, text in saved.items()),
     ]
     PROJECTIONS_FILE.write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+
+def _save_projection(code: str, label: str) -> None:
+    _write_projections({**_saved_projections(), code: label})
+
+
+def _epsg_code(raw: str) -> str:
+    """'26917', 'epsg:26917' -> 'EPSG:26917'."""
+    code = raw.strip().upper()
+    return f"EPSG:{code}" if code.isdigit() else code
+
+
+def _rename_projection(code: str) -> None:
+    """on_change for a saved projection's name box: write the new name at once."""
+    label = st.session_state[f"ui_proj_name_{code}"].strip()
+    saved = _saved_projections()
+    if label and code in saved:
+        saved[code] = label
+        _write_projections(saved)
+        st.toast(f"Renamed {code}")
+
+
+@st.cache_data(show_spinner=False)
+def _epsg_catalog() -> dict[str, tuple[str, str]]:
+    """{"EPSG:26917": (name, area of use)} for current EPSG projected and lat/long systems."""
+    from pyproj.database import query_crs_info
+    from pyproj.enums import PJType
+
+    infos = query_crs_info(
+        auth_name="EPSG", pj_types=[PJType.PROJECTED_CRS, PJType.GEOGRAPHIC_2D_CRS]
+    )
+    return {
+        f"EPSG:{i.code}": (i.name, i.area_of_use.name if i.area_of_use else "not recorded")
+        for i in sorted(infos, key=lambda i: int(i.code))
+        if not i.deprecated
+    }
+
+
+LOG_ENTRIES_SHOWN = 20
+
+
+def _log_entries() -> list[tuple[str, str]]:
+    """(heading, traceback) for each entry in ERROR_LOG, newest first."""
+    if not ERROR_LOG.is_file():
+        return []
+    entries: list[tuple[str, list[str]]] = []
+    for line in ERROR_LOG.read_text(encoding="utf-8").splitlines():
+        if line.startswith("--- "):
+            entries.append((line[4:], []))
+        elif entries:
+            entries[-1][1].append(line)
+    return [(head, "\n".join(body).strip()) for head, body in reversed(entries)]
+
+
+def _log_viewer() -> None:
+    """Settings page: read, download and clear the editor's error log."""
+    st.subheader("Error Log")
+    entries = _log_entries()
+    if not entries:
+        st.caption("No errors logged. Failures (fetch, inspect, run, unexpected) appear here.")
+        return
+    st.caption(
+        f"{len(entries)} error(s) logged, newest first"
+        + (
+            f"; showing the latest {LOG_ENTRIES_SHOWN}."
+            if len(entries) > LOG_ENTRIES_SHOWN
+            else "."
+        )
+    )
+    shown = entries[:LOG_ENTRIES_SHOWN]
+    labels = {
+        n: f"{head} · {trace.splitlines()[-1] if trace else ''}"[:160]
+        for n, (head, trace) in enumerate(shown)
+    }
+    chosen = st.selectbox(
+        "Logged errors",
+        list(labels),
+        index=None,
+        format_func=labels.get,
+        key="ui_log_entry",
+        placeholder="Choose an error to see its details",
+        label_visibility="collapsed",
+    )
+    if chosen is not None:
+        st.code(shown[chosen][1], language=None)
+    with st.container(horizontal=True):
+        st.download_button(
+            "Download log",
+            ERROR_LOG.read_text(encoding="utf-8"),
+            file_name=ERROR_LOG.name,
+            mime="text/plain",
+            key="btn_log_download",
+            icon=":material/download:",
+        )
+        with st.popover("Clear log", icon=":material/delete:"):
+            st.caption("Deletes every logged error. This can't be undone.")
+            if st.button("Clear all errors", key="btn_log_clear", type="primary"):
+                ERROR_LOG.unlink(missing_ok=True)
+                st.toast("Error log cleared")
+                st.rerun()
+
+
+def _projections_manager() -> None:
+    """Settings page: list, rename, remove and add the projections offered in every profile."""
+    st.subheader("Saved Projections")
+    st.caption(
+        "Your own projections, offered in the Build page's projection list for every "
+        "profile, after the built-in ones. Changes are saved at once (to "
+        f"`{PROJECTIONS_FILE}`); no profile Save needed."
+    )
+    saved = _saved_projections()
+    if not saved:
+        st.caption("None saved yet.")
+    for code, label in saved.items():
+        with st.container(horizontal=True, vertical_alignment="bottom"):
+            st.text_input(
+                f"Name for {code}",
+                label,
+                key=f"ui_proj_name_{code}",
+                on_change=_rename_projection,
+                args=(code,),
+                help="Press Enter to save the new name.",
+            )
+            if st.button("Remove", key=f"btn_proj_remove_{code}", icon=":material/delete:"):
+                _write_projections({c: t for c, t in saved.items() if c != code})
+                st.toast(f"Removed {code}")
+                st.rerun()
+    catalog = _epsg_catalog()
+    with st.container(horizontal=True, vertical_alignment="bottom"):
+        picked = st.selectbox(
+            "Add a projection",
+            list(catalog),
+            index=None,
+            format_func=lambda c: f"{c} · {catalog[c][0]}",
+            key="ui_proj_new_code",
+            placeholder="Search by code or name, e.g. 26917 or UTM zone 17N",
+            help="Every current EPSG projection and lat/long system, from the copy of the "
+            "EPSG database that comes with pyproj (no internet needed).",
+        )
+        raw = picked or ""
+        code = _epsg_code(raw) if raw.strip() else ""
+        name = _crs_name(code) if code else None
+        label = st.text_input(
+            "Name in my list", name or "", key=f"ui_proj_new_name_{code}", disabled=not name
+        )
+        add = st.button(
+            "Add", key="btn_proj_add", icon=":material/add:", disabled=not name or code in saved
+        )
+    if code and name is None:
+        st.caption(f"`{raw.strip()}` is not a known EPSG code.")
+    elif code in saved:
+        st.caption(f"{code} is already in your list.")
+    elif code in CRS_CHOICES:
+        st.caption(f"{code} is already a built-in choice; adding it gives it your own name.")
+    elif name:
+        st.caption(f"{code}: {name}")
+    if code in catalog:
+        st.caption(f"Where it applies: {catalog[code][1]}")
+        st.link_button(
+            f"More about {code} on epsg.io",
+            f"https://epsg.io/{code.split(':')[1]}",
+            icon=":material/open_in_new:",
+        )
+    if add and name:
+        _save_projection(code, label.strip() or name)
+        st.toast(f"Added {code}")
+        st.session_state.pop("ui_proj_new_code", None)
+        st.rerun()
 
 
 def _crs_name(code: str) -> str | None:
@@ -946,7 +1105,8 @@ def _crs_picker(out: dict[str, Any]) -> None:
         "EPSG code",
         current,
         key="ui_crs",
-        help="Look one up at epsg.io, e.g. EPSG:26917 (UTM zone 17N).",
+        help="E.g. EPSG:26917 (UTM zone 17N). To search every code by name, use Add a "
+        "projection on the Settings page.",
     )
     code = out["crs"].strip().upper()
     if code.isdigit():
@@ -954,8 +1114,18 @@ def _crs_picker(out: dict[str, Any]) -> None:
     name = _crs_name(code)
     if name is None:
         st.caption(f"`{out['crs']}` is not a known EPSG code.")
+        if st.button(
+            "Search every code (Settings)", key="btn_crs_search", icon=":material/search:"
+        ):
+            st.switch_page(PAGES["settings"])
         return
     st.caption(f"{code}: {name}")
+    if code.startswith("EPSG:"):
+        st.link_button(
+            f"More about {code} on epsg.io",
+            f"https://epsg.io/{code.split(':')[1]}",
+            icon=":material/open_in_new:",
+        )
     with st.container(horizontal=True, vertical_alignment="bottom"):
         label = st.text_input(
             "Name in my list",

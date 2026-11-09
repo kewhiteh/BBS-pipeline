@@ -623,3 +623,62 @@ def test_an_unusual_run_type_mix_is_kept_not_rewritten(
     assert [m.value for m in at.markdown if "badge" in m.value and "aved" in m.value] == [
         ":gray-badge[Saved]"
     ]
+
+
+def test_projections_are_added_renamed_and_removed_on_settings(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """No hand-editing of projections.toml: the Settings page manages the list."""
+    at, _ = _app(tmp_path, monkeypatch, _profile(tmp_path))
+    monkeypatch.chdir(tmp_path)
+    saved = tmp_path / "projections.toml"
+    at.button(key="btn_to_settings").click().run()
+    assert any("None saved yet" in c.value for c in at.caption)
+
+    search = at.selectbox(key="ui_proj_new_code")
+    assert "EPSG:26917 · NAD83 / UTM zone 17N" in search.options  # the full EPSG list
+    search.set_value("EPSG:26917").run()
+    assert any("NAD83 / UTM zone 17N" in c.value for c in at.caption)
+    assert any("North Carolina" in c.value for c in at.caption)  # where it applies
+    at.button(key="btn_proj_add").click().run()
+    assert not at.exception, at.exception
+    assert '"EPSG:26917" = "NAD83 / UTM zone 17N, metre"' in saved.read_text(encoding="utf-8")
+    assert at.selectbox(key="ui_proj_new_code").value is None  # cleared for the next one
+
+    at.text_input(key="ui_proj_name_EPSG:26917").set_value("UTM 17N (east NC)").run()
+    assert '"EPSG:26917" = "UTM 17N (east NC)"' in saved.read_text(encoding="utf-8")
+
+    at.selectbox(key="ui_proj_new_code").set_value("EPSG:26917").run()
+    assert any("already in your list" in c.value for c in at.caption)
+    assert at.button(key="btn_proj_add").disabled
+
+    at.button(key="btn_proj_remove_EPSG:26917").click().run()
+    assert "EPSG:26917" not in saved.read_text(encoding="utf-8")
+    assert any("None saved yet" in c.value for c in at.caption)
+
+
+def test_error_log_is_readable_and_clearable_on_settings(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    at, _ = _app(tmp_path, monkeypatch, _profile(tmp_path))
+    monkeypatch.chdir(tmp_path)
+    log = tmp_path / "logs" / "ui_errors.log"
+    log.parent.mkdir()
+    log.write_text(
+        "--- 2026-11-09T10:00:00 Inspect (profile: a.toml)\nTraceback...\nValueError: old one\n\n"
+        "--- 2026-11-09T11:00:00 Run (profile: a.toml)\nTraceback...\nOSError: new one\n\n",
+        encoding="utf-8",
+    )
+    at.button(key="btn_to_settings").click().run()
+
+    picker = at.selectbox(key="ui_log_entry")  # compact: one list, nothing expanded
+    assert picker.value is None and not any("Traceback" in c.value for c in at.code)
+    assert picker.options[0].startswith("2026-11-09T11:00:00 Run")  # newest first
+    assert "OSError: new one" in picker.options[0]
+    assert "ValueError: old one" in picker.options[1]
+    picker.set_value(1).run()
+    assert any("ValueError: old one" in c.value for c in at.code)  # its trace, below
+
+    at.button(key="btn_log_clear").click().run()
+    assert not log.exists()
+    assert any("No errors logged" in c.value for c in at.caption)
