@@ -8,11 +8,11 @@ last_audit: none recorded
 ---
 # Resume
 ## Next
-Redesign PR 3 of 3 per instructions/UI_REDESIGN_PLAN.md: Inspect & Run area (stale marker, Run writes + download, drop Live inspect per U5), dark earthy theme (U16) and gold Title Case headings (U17) in `.streamlit/config.toml`.
+Kyle tries the finished editor in a browser (restart Streamlit from the repo root) and reports anything off; editor help text review (docs/STATUS.md "Open items").
 ## Where I left off
-Last merge on main: kewhiteh/BBS-pipeline#28 (redesign PR 2). Open: branch `ui-settings-projections` (Settings page manages saved projections: add, rename, remove).
+Last merge on main: kewhiteh/BBS-pipeline#29 (Settings: projections, error log). Open: redesign PR 3 on branch `ui-redesign-3-theme-run` (theme, gold headings, out-of-date marker, Run + download).
 ## Checks at stop
-`uv run ruff check .` green; `uv run ruff format --check .` green; `uv run pytest -q` green, 180 passed. 2026-11-09, branch `ui-settings-projections`.
+`uv run ruff check .` green; `uv run ruff format --check .` green; `uv run pytest -q` green, 184 passed. 2026-11-09, branch `ui-redesign-3-theme-run`.
 ## Blocked / DECISION needed
 - None.
 ## Read next

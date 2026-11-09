@@ -199,6 +199,11 @@ def _show_failure(action: str, exc: BaseException) -> None:
         st.code("".join(traceback.format_exception(exc)), language=None)
 
 
+def _heading(text: str) -> str:
+    """A page or section heading: muted gold via the theme's yellow (plan U17)."""
+    return f":yellow[{text}]"
+
+
 def _draft() -> dict[str, Any]:
     return st.session_state["draft"]
 
@@ -406,7 +411,7 @@ def _settings_page_body(p: dict[str, Any]) -> None:
         "year, so these rarely change. They are saved in the open profile's [source] "
         "section, like every other setting."
     )
-    st.subheader("BBS Release")
+    st.subheader(_heading("BBS Release"))
     fetched, status = _release_status(p)
     (st.success if fetched else st.info)(status)
     src["release"] = st.text_input(
@@ -434,7 +439,7 @@ def _settings_page_body(p: dict[str, Any]) -> None:
         help="Rebuild the cache from the release files, e.g. after replacing them.",
     )
 
-    st.subheader("Data Folders")
+    st.subheader(_heading("Data Folders"))
     src["raw_dir"] = st.text_input(
         "Release directory",
         src["raw_dir"],
@@ -448,7 +453,7 @@ def _settings_page_body(p: dict[str, Any]) -> None:
         help="Where the cleaned, typed copy of the release is kept so runs start fast.",
     )
 
-    st.subheader("Download Settings")
+    st.subheader(_heading("Download Settings"))
     src["offline"] = st.checkbox(
         "Offline (never download)",
         src["offline"],
@@ -484,7 +489,7 @@ def _settings_page_body(p: dict[str, Any]) -> None:
 def _study_area_card(p: dict[str, Any], v: ProfileValues | None) -> None:
     """Where: states, BCRs and a boundary; strata and single routes under More."""
     rt = p["routes"]
-    st.subheader("Study Area")
+    st.subheader(_heading("Study Area"))
     st.caption("Each filter narrows the previous ones; empty keeps every route.")
     codes: list[int] = []
     if v is not None:
@@ -599,7 +604,7 @@ def _code_toggle(label: str, current: list[int], key: str, help: str) -> list[in
 def _survey_card(p: dict[str, Any]) -> None:
     """When and how counted: years, source, stop layout, run filters; the rest under More."""
     rn, obs = p["runs"], p["observations"]
-    st.subheader("Survey Period & Protocol")
+    st.subheader(_heading("Survey Period & Protocol"))
     rn["start_year"], rn["end_year"] = st.slider(
         "Years",
         1966,
@@ -707,7 +712,7 @@ def _survey_card(p: dict[str, Any]) -> None:
 def _species_card(p: dict[str, Any], v: ProfileValues | None) -> None:
     """Which birds: species and the guild file; names, taxonomy and guild options under More."""
     obs, sp, g = p["observations"], p["species"], p["guilds"]
-    st.subheader("Species & Guilds")
+    st.subheader(_heading("Species & Guilds"))
     st.caption("Empty keeps every species. Species lists combine with OR; guilds then narrow.")
     names = {s["AOU"]: s["English_Common_Name"] for s in v.species} if v else {}
     sp["aous"] = _pick(
@@ -958,7 +963,7 @@ def _log_entries() -> list[tuple[str, str]]:
 
 def _log_viewer() -> None:
     """Settings page: read, download and clear the editor's error log."""
-    st.subheader("Error Log")
+    st.subheader(_heading("Error Log"))
     entries = _log_entries()
     if not entries:
         st.caption("No errors logged. Failures (fetch, inspect, run, unexpected) appear here.")
@@ -1006,7 +1011,7 @@ def _log_viewer() -> None:
 
 def _projections_manager() -> None:
     """Settings page: list, rename, remove and add the projections offered in every profile."""
-    st.subheader("Saved Projections")
+    st.subheader(_heading("Saved Projections"))
     st.caption(
         "Your own projections, offered in the Build page's projection list for every "
         "profile, after the built-in ones. Changes are saved at once (to "
@@ -1143,7 +1148,7 @@ def _crs_picker(out: dict[str, Any]) -> None:
 def _output_card(p: dict[str, Any], v: ProfileValues | None) -> None:
     """The file to write, its shape, the joined columns, and GIS options."""
     out = p["output"]
-    st.subheader("Output")
+    st.subheader(_heading("Output"))
     shape_col, file_col = st.columns([1, 3])
     with shape_col:
         shapes = ["long", "wide"]
@@ -1182,7 +1187,7 @@ def _output_card(p: dict[str, Any], v: ProfileValues | None) -> None:
             "rebuilt.",
         )
 
-    st.markdown("#### Joined Columns")
+    st.markdown(f"#### {_heading('Joined Columns')}")
     st.caption("Extra columns added to every row. Inspect shows the exact columns you'll get.")
     shown: list[tuple[str, list[str] | None]] = []
     for table in JOIN_TABLES:
@@ -1235,34 +1240,67 @@ def _show_result(res: dict[str, Any]) -> None:
     if res.get("preview_records"):
         st.markdown("**Preview (first 50 rows)**")
         st.dataframe(pl.DataFrame(res["preview_records"]), hide_index=True)
-    for path in res.get("exported_files", []):
-        st.success(f"Wrote {path}")
+    for number, path in enumerate(res.get("exported_files", [])):
+        written = Path(path)
+        with st.container(horizontal=True, vertical_alignment="center"):
+            st.success(f"Wrote {path}", width="stretch")
+            if written.is_file():
+                st.download_button(
+                    f"Download {written.name}",
+                    written.read_bytes(),
+                    file_name=written.name,
+                    key=f"btn_download_output_{number}",
+                    icon=":material/download:",
+                )
 
 
-def _inspect_run_tab(profile: RunProfile | None, stamp: tuple) -> None:
-    if profile is None:
-        st.info("Fix the problems shown at the top of the page to inspect or run.")
-        return
-    st.caption(
-        "Inspect shows what the profile would produce (row counts at each filter and a "
-        "preview) without writing a file. Run writes the output file."
-    )
-    live = st.toggle("Live inspect (re-inspect after every change)", key="ui_live")
-    c1, c2 = st.columns(2)
-    inspect_clicked = c1.button("Inspect", key="btn_inspect")
-    run_clicked = c2.button("Run", key="btn_run_pipeline", type="primary")
+def _inspect_run_section(profile: RunProfile | None, stamp: tuple) -> None:
+    """Inspect (writes nothing) and Run (writes the file, then offers it as a download).
+
+    Results stay on screen after edits, marked out of date until the next Inspect or Run.
+    """
+    with st.container(horizontal=True, vertical_alignment="center"):
+        st.subheader(_heading("Inspect & Run"), width="stretch")
+        inspect_clicked = st.button(
+            "Inspect", key="btn_inspect", icon=":material/search:", disabled=profile is None
+        )
+        run_clicked = st.button(
+            "Run",
+            key="btn_run_pipeline",
+            type="primary",
+            icon=":material/play_arrow:",
+            disabled=profile is None,
+        )
+    current = profile.model_dump_json() if profile is not None else None
     try:
-        if run_clicked:
+        if run_clicked and profile is not None:
             with st.spinner("Running..."):
                 st.session_state["last_result"] = run_profile(profile).model_dump(mode="json")
+            st.session_state["last_result_for"] = current
             st.session_state["ran"] = True
-        elif inspect_clicked or live:
-            st.session_state["last_result"] = _inspect(profile.model_dump_json(), stamp)
+        elif inspect_clicked and profile is not None:
+            st.session_state["last_result"] = _inspect(current, stamp)
+            st.session_state["last_result_for"] = current
     except Exception as exc:  # shown and logged, not swallowed
         _show_failure("Run" if run_clicked else "Inspect", exc)
         return
-    if "last_result" in st.session_state:
-        _show_result(st.session_state["last_result"])
+    if profile is None:
+        st.info("Fix the problems shown at the top of the page to inspect or run.")
+    result = st.session_state.get("last_result")
+    if result is None:
+        st.caption(
+            "Inspect shows how many routes, runs and rows survive each filter, and a "
+            "preview; it writes nothing. Run writes the output file and offers it as a "
+            "download."
+        )
+        return
+    if st.session_state.get("last_result_for") != current:
+        st.warning(
+            "Settings changed since the last Inspect or Run: these results are out of "
+            "date. Inspect again to update them.",
+            icon=":material/history:",
+        )
+    _show_result(result)
 
 
 # --- profile files -------------------------------------------------------------------
@@ -1322,6 +1360,7 @@ def _switch_to(path: Path | None, draft: dict[str, Any]) -> None:
     for key in [k for k in st.session_state if k.startswith(("ui_", "sb_"))]:
         del st.session_state[key]
     st.session_state.pop("last_result", None)
+    st.session_state.pop("last_result_for", None)
     st.session_state.pop("ran", None)
     st.session_state["profile_path"] = str(path) if path is not None else None
     st.session_state["draft"] = draft
@@ -1402,7 +1441,7 @@ def _header(
     """Title, release status, the open profile, Save, the Profile menu, and page switch."""
     p = _draft()
     with st.container(horizontal=True, vertical_alignment="center"):
-        st.title("BBS Dataset Builder", width="stretch")
+        st.title(_heading("BBS Dataset Builder"), width="stretch")
         if page == "build":
             if st.button("Settings", key="btn_to_settings", icon=":material/settings:"):
                 st.switch_page(PAGES["settings"])
@@ -1434,7 +1473,7 @@ def _build_page() -> None:
     alerts = st.container()  # filled after the tabs, once the draft has been validated
     if not _release_status(p)[0]:
         with st.container(border=True):
-            st.subheader("Fetch the BBS Release")
+            st.subheader(_heading("Fetch the BBS Release"))
             st.caption(
                 "Pick lists and runs need the USGS release on disk. Fetch it once per "
                 "release (about once a year) on the Settings page."
@@ -1465,9 +1504,8 @@ def _build_page() -> None:
         _output_card(p, values)
     profile = _validated(alerts)
     with st.container(border=True):
-        st.subheader("Inspect & Run")
         stamp = _value_source(profile)[1] if profile is not None else ()
-        _inspect_run_tab(profile, stamp)
+        _inspect_run_section(profile, stamp)
 
 
 def _settings_page() -> None:

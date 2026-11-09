@@ -105,6 +105,14 @@ change that discovers or fixes any of it. The phase plan and its decisions live 
   e.g. `[0]`, gets a code list instead so opening it never rewrites the filter
   (`test_an_unusual_run_type_mix_is_kept_not_rewritten`). Source, stop layout, shape
   and join modes are radio buttons.
+- **Inspect & Run and theme (redesign PR 3, 2026-11-09).** Inspect is a button only (Live
+  inspect removed, U5); after any edit the last results stay on screen with an "out of
+  date" warning until the next Inspect or Run
+  (`test_results_are_marked_out_of_date_after_an_edit`). Run writes the file and shows
+  a Download button for each written file (`test_run_writes_the_file_and_offers_it_as_a_download`).
+  Theme: `.streamlit/config.toml`, dark earthy colours (U16), headings in muted gold via
+  `:yellow[...]` (U17), no CSS. Checked: a headless `streamlit run ui/app.py` starts and
+  `streamlit config show` reports the theme; not yet viewed in a browser by Claude.
 - **Fixed 2026-11-07:** a profile without a guild file read "Unsaved changes" right
   after opening, because the editor cleared the default `joins.guilds = ["*"]` to `[]`.
 - **Overlay and boundary files** (Kyle asked for a file picker, 2026-11-07). Overlays
@@ -124,6 +132,11 @@ change that discovers or fixes any of it. The phase plan and its decisions live 
 
 ## Known limitations / workarounds
 
+- **The theme needs Streamlit started from the repo root.** Streamlit reads
+  `.streamlit/config.toml` from the folder you start it in; started elsewhere, the
+  editor works but shows Streamlit's default colours. Workaround: `cd` to the repo first.
+- **One accent colour.** Streamlit has a single `primaryColor`, so sliders, radios,
+  toggles and the Run button share the brick red; separate colours would need CSS.
 - **Restart Streamlit after pulling or switching branches.** A running server reruns
   `ui/app.py` but keeps the `bbs_pipeline` modules and cached pick lists it already
   loaded, so new app code can crash against old library code (a full red error page).

@@ -591,8 +591,9 @@ def test_build_page_has_the_cards_and_no_tabs(
     at, _ = _app(tmp_path, monkeypatch, _profile(tmp_path))
     headings = [h.value for h in at.subheader]
     for name in ["Study Area", "Survey Period & Protocol", "Species & Guilds", "Output"]:
-        assert name in headings
-    assert "Inspect & Run" in headings
+        assert f":yellow[{name}]" in headings  # Title Case, gold via the theme (U17)
+    assert ":yellow[Inspect & Run]" in headings
+    assert at.title[0].value == ":yellow[BBS Dataset Builder]"
     assert not at.tabs
     assert any("Joined Columns" in m.value for m in at.markdown)
     assert any("at least 80% of years" in c.value for c in at.caption)  # the new default
@@ -682,3 +683,42 @@ def test_error_log_is_readable_and_clearable_on_settings(
     at.button(key="btn_log_clear").click().run()
     assert not log.exists()
     assert any("No errors logged" in c.value for c in at.caption)
+
+
+def test_results_are_marked_out_of_date_after_an_edit(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    at, _ = _app(tmp_path, monkeypatch, _profile(tmp_path))
+    assert not any(t.key == "ui_live" for t in at.toggle)  # Inspect is a button only (U5)
+    at.button(key="btn_inspect").click().run()
+    assert at.dataframe and not any("out of date" in w.value for w in at.warning)
+
+    at.multiselect(key="ui_states").set_value([63]).run()
+    assert any("out of date" in w.value for w in at.warning)
+    assert at.dataframe  # the old results stay visible, marked
+
+    at.button(key="btn_inspect").click().run()
+    assert not any("out of date" in w.value for w in at.warning)
+
+
+def test_run_writes_the_file_and_offers_it_as_a_download(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    at, _ = _app(tmp_path, monkeypatch, _profile(tmp_path))
+    at.button(key="btn_run_pipeline").click().run()
+    assert not at.exception, at.exception
+    out = tmp_path / "out" / "o.csv"
+    assert out.is_file()
+    download = at.get("download_button")
+    assert any("Download o.csv" in d.proto.label for d in download)
+
+
+def test_theme_is_dark_and_earthy() -> None:
+    import tomllib
+
+    theme = tomllib.loads((ROOT / ".streamlit" / "config.toml").read_text(encoding="utf-8"))[
+        "theme"
+    ]
+    assert theme["base"] == "dark"
+    assert theme["primaryColor"] == "#C2553A"  # brick red controls
+    assert theme["yellowTextColor"] == "#D4B86A"  # gold headings
