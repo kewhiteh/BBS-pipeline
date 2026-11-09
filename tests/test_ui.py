@@ -1016,3 +1016,21 @@ def test_too_big_build_stops_with_a_warning_not_a_crash(
     assert any("Stopped before running out" in w.value for w in at.warning)
     log = (tmp_path / "logs" / "ui_activity.log").read_text(encoding="utf-8")
     assert '"kind": "warning"' in log
+
+
+def test_species_pick_survives_turning_lumping_off(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """H7, 2026-11-09: turning lumping off relabels 05677, and the browser sends picks
+    back by label, so Streamlit silently cleared the pick. AppTest skips the browser, so
+    this guards the server side only; the browser case was checked by hand (H7)."""
+    at, path = _app(tmp_path, monkeypatch, _profile(tmp_path))
+    at.multiselect(key="ui_aous").set_value(["05677"]).run()
+
+    at.checkbox(key="ui_lump").uncheck().run()
+
+    assert not at.exception, at.exception
+    assert at.multiselect(key="ui_aous").value == ["05677"]
+    at.button(key="btn_save").click().run()
+    saved = load_profile(path)
+    assert saved.species.aous == ["05677"] and not saved.observations.lump_subspecies

@@ -267,7 +267,22 @@ change that discovers or fixes any of it. The phase plan and its decisions live 
   import with JSON To Features. FlatGeobuf: not readable in Pro (use QGIS, or
   GeoPackage). The editor's format descriptions say so.
 
+- **Fixed 2026-11-09 (H7): a pick could vanish when its label changed.** Streamlit
+  sends multiselect picks back from the browser by label; turning lumping off relabels
+  05677 ("Dark-eyed Junco" -> "(unid. race) Dark-eyed Junco"), so the species pick was
+  silently cleared and Inspect ran on every species. `_pick` now re-sets the picks from
+  the draft whenever the labels change. AppTest skips the browser, so the browser case
+  was confirmed in a real browser 2026-11-09 (old code clears the pick, fixed code keeps it).
+
 ## Environment notes
+
+- **Browser checks (2026-11-09).** Headless Chromium is installed (Kyle ran `sudo apt-get
+  install -y libatomic1` and `uvx playwright install --with-deps chromium`). To check the
+  editor in a real browser: start a second copy on another port with a throwaway
+  profile and logs (`BBS_PROFILE=... BBS_UI_ACTIVITY_LOG=... uv run streamlit run
+  ui/app.py --server.port 8599 --server.headless true`), drive it with
+  `uv run --with playwright python <script>`, and read that copy's activity log.
+  Playwright is not a project dependency.
 
 - Moving the project folder breaks `.venv`: its scripts keep the old absolute Python
   path, so `uv run streamlit ...` fails with "Failed to spawn ... No such file or
