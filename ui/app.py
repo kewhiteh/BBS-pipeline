@@ -489,13 +489,12 @@ def _settings_page_body(p: dict[str, Any]) -> None:
     st.caption(f"Editor errors are written to `{ERROR_LOG}` with the full traceback.")
 
 
-def _routes_runs_tab(p: dict[str, Any], v: ProfileValues | None) -> None:
-    rt, rn = p["routes"], p["runs"]
-    st.caption(
-        "Choose where (routes) and which surveys (runs) to keep. Each filter narrows the "
-        "previous ones; leave a list empty to keep everything."
-    )
-    st.subheader("Routes")
+def _study_area_card(p: dict[str, Any], v: ProfileValues | None) -> None:
+    """Where: states, BCRs and a boundary; strata and single routes under More."""
+    rt = p["routes"]
+    st.subheader("Study Area")
+    st.caption("Each filter narrows the previous ones; empty keeps every route.")
+    codes: list[int] = []
     if v is not None:
         names = {s["StateNum"]: s for s in v.states}
         regions = pl.DataFrame(
@@ -533,44 +532,82 @@ def _routes_runs_tab(p: dict[str, Any], v: ProfileValues | None) -> None:
         help="NABCI ecological regions with similar bird communities and habitats. "
         "Keep routes in these BCRs. Empty = all.",
     )
-    rt["strata"] = _pick(
-        "BBS physiographic strata",
-        v.strata if v else None,
-        rt["strata"],
-        "ui_strata",
-        (lambda c: v.label("Stratum", c)) if v else str,
-        as_int=True,
-        help="The BBS's own physiographic regions (older than BCRs). Keep routes in these "
-        "strata. Empty = all.",
-    )
-
-    route_options = None
-    if v is not None:
-        chosen_states = set(codes) if codes else None
-        route_info = {
-            r["route_id"]: r
-            for r in v.routes
-            if (chosen_states is None or r["StateNum"] in chosen_states)
-            and (not rt["bcrs"] or r.get("BCR") in rt["bcrs"])
-            or r["route_id"] in rt["route_ids"]
-        }
-        route_options = list(route_info)
-    rt["route_ids"] = _pick(
-        "Route ids (narrowed to the chosen states and BCRs)",
-        route_options,
-        rt["route_ids"],
-        "ui_route_ids",
-        (lambda r: f"{r} · {route_info[r]['RouteName']}") if v else str,
-        help="Pick individual routes. Empty = every route that passes the filters above.",
-    )
     rt["boundary"] = _gis_file_picker(
         "Boundary polygon file (start point inside)",
         rt["boundary"] or "",
         "ui_boundary",
         "Optional. Keeps only routes whose start point falls inside the polygon(s).",
     )
+    with st.expander("More: strata and individual routes", key="ui_more_area"):
+        rt["strata"] = _pick(
+            "BBS physiographic strata",
+            v.strata if v else None,
+            rt["strata"],
+            "ui_strata",
+            (lambda c: v.label("Stratum", c)) if v else str,
+            as_int=True,
+            help="The BBS's own physiographic regions (older than BCRs). Keep routes in "
+            "these strata. Empty = all.",
+        )
+        route_options = None
+        route_info: dict[str, Any] = {}
+        if v is not None:
+            chosen_states = set(codes) if codes else None
+            route_info = {
+                r["route_id"]: r
+                for r in v.routes
+                if (chosen_states is None or r["StateNum"] in chosen_states)
+                and (not rt["bcrs"] or r.get("BCR") in rt["bcrs"])
+                or r["route_id"] in rt["route_ids"]
+            }
+            route_options = list(route_info)
+        rt["route_ids"] = _pick(
+            "Route ids (narrowed to the chosen states and BCRs)",
+            route_options,
+            rt["route_ids"],
+            "ui_route_ids",
+            (lambda r: f"{r} · {route_info[r]['RouteName']}") if v else str,
+            help="Pick individual routes. Empty = every route that passes the filters above.",
+        )
 
-    st.subheader("Runs")
+
+FIFTY_STOP_FIRST_YEAR = 1997
+SOURCE_LABELS = {"10_stop": "10-stop (1966+)", "hybrid": "Hybrid", "50_stop": "50-stop (1997+)"}
+LAYOUT_LABELS = {
+    "route_total": "Route total",
+    "ten_stop_bins": "10-stop bins",
+    "stops": "All 50 stops",
+}
+# The radios list these in this order; they must name exactly the profile's choices
+assert set(SOURCE_LABELS) == set(OBSERVATION_SOURCES)
+assert set(LAYOUT_LABELS) == set(STOP_LAYOUTS)
+
+
+def _switch_choice(section: dict[str, Any], field: str, key: str, value: str) -> None:
+    """Move a choice widget to a still-valid value when an earlier choice removed its option."""
+    section[field] = value
+    if key in st.session_state:
+        st.session_state[key] = value
+
+
+def _code_toggle(label: str, current: list[int], key: str, help: str) -> list[int]:
+    """A 0/1 code filter as a toggle: on = [1] only, off = no filter.
+
+    A profile holding another mix (e.g. [0], only non-standard runs) gets a multiselect
+    instead, so opening it never rewrites the filter.
+    """
+    if sorted(current) not in ([], [1], [0, 1]):
+        return st.multiselect(f"{label} (codes)", [0, 1], current, key=f"{key}_codes", help=help)
+    on = st.toggle(label, current == [1], key=key, help=help)
+    if on:
+        return [1]
+    return current if sorted(current) == [0, 1] else []  # [0, 1] also means no filter
+
+
+def _survey_card(p: dict[str, Any]) -> None:
+    """When and how counted: years, source, stop layout, run filters; the rest under More."""
+    rn, obs = p["runs"], p["observations"]
+    st.subheader("Survey Period & Protocol")
     rn["start_year"], rn["end_year"] = st.slider(
         "Years",
         1966,
@@ -579,124 +616,107 @@ def _routes_runs_tab(p: dict[str, Any], v: ProfileValues | None) -> None:
         key="ui_years",
         help="Survey years to keep (inclusive).",
     )
-    run_label = (lambda c: v.label("RunType", c)) if v else str
-    rn["run_types"] = st.multiselect(
-        "RunType",
-        sorted({0, 1, *rn["run_types"]}),
-        rn["run_types"],
-        format_func=run_label,
-        key="ui_run_types",
-        help="Whether a run met all standard BBS criteria. Most trend analyses keep only "
-        "1. Empty = all.",
-    )
-    quality_label = (lambda c: v.label("QualityCurrentID", c)) if v else str
-    rn["quality_current_ids"] = st.multiselect(
-        "QualityCurrentID",
-        sorted({0, 1, *rn["quality_current_ids"]}),
-        rn["quality_current_ids"],
-        format_func=quality_label,
-        key="ui_quality_ids",
-        help="Whether weather, time, date, and route-completion criteria were met. Empty = all.",
-    )
-    rn["min_continuity"] = st.slider(
-        "Minimum continuity (share of non-cancelled years surveyed)",
-        0.0,
-        1.0,
-        float(rn["min_continuity"]),
-        0.05,
-        key="ui_min_continuity",
-        help="Drop routes with a surviving run in less than this share of the non-cancelled "
-        "years in range. 0 = keep all; 0.8 = at least 80% of years.",
-    )
-    rn["drop_observer_first_year"] = st.checkbox(
-        "Drop each observer's first year on a route",
-        rn["drop_observer_first_year"],
-        key="ui_drop_first_year",
-        help="Counts are lower in an observer's first year on a route (the start-up "
-        "effect USGS trend analyses account for). Tick to leave those runs out, or keep "
-        "them and add the is_first_year column (Joins & Output) to model it.",
-    )
-
-
-FIFTY_STOP_FIRST_YEAR = 1997
-
-
-def _switch_choice(section: dict[str, Any], field: str, key: str, value: str) -> None:
-    """Move a selectbox to a still-valid value when an earlier choice removed its option."""
-    section[field] = value
-    if key in st.session_state:
-        st.session_state[key] = value
-
-
-def _species_tab(p: dict[str, Any], v: ProfileValues | None) -> None:
-    obs, sp, g = p["observations"], p["species"], p["guilds"]
-    st.caption(
-        "How bird counts are read, and which species to keep. Species filters combine "
-        "with OR; guild filters then narrow the result."
-    )
-    st.subheader("Observations")
-    sources, layouts = list(OBSERVATION_SOURCES), list(STOP_LAYOUTS)
-    start_year = p["runs"]["start_year"]
+    sources, layouts = list(SOURCE_LABELS), list(LAYOUT_LABELS)
+    start_year = rn["start_year"]
     if start_year < FIFTY_STOP_FIRST_YEAR:  # 50-stop counts only exist from 1997
         sources.remove("50_stop")
         if obs["source"] == "50_stop":
             _switch_choice(obs, "source", "ui_obs_source", "10_stop")
             st.info(
-                f"Source switched to 10_stop: the years start in {start_year}, and "
+                f"Source switched to 10-stop: the years start in {start_year}, and "
                 f"50-stop data only exist from {FIFTY_STOP_FIRST_YEAR}.",
                 icon=":material/sync_alt:",
             )
+    obs["source"] = st.radio(
+        "Source",
+        sources,
+        sources.index(obs["source"]),
+        format_func=SOURCE_LABELS.get,
+        horizontal=True,
+        key="ui_obs_source",
+        help="10-stop: 10-stop summaries, 1966 on (the widest coverage). Hybrid: both, "
+        "harmonised to 10-stop bins. 50-stop: per-stop counts, 1997 on only; offered "
+        "when the years start in 1997 or later.",
+    )
     if obs["source"] != "50_stop":  # per-stop layout needs per-stop counts
         layouts.remove("stops")
         if obs["stops"] == "stops":
             _switch_choice(obs, "stops", "ui_stops", "ten_stop_bins")
             st.info(
-                "Stop layout switched to ten_stop_bins: all 50 stops need the 50_stop source.",
+                "Stop layout switched to 10-stop bins: all 50 stops need the 50-stop source.",
                 icon=":material/sync_alt:",
             )
-    c1, c2 = st.columns(2)
-    obs["source"] = c1.selectbox(
-        "Source",
-        sources,
-        sources.index(obs["source"]),
-        key="ui_obs_source",
-        help="10_stop: 10-stop summaries, 1966 on (the widest coverage). hybrid: both, "
-        "harmonised to 10-stop bins. 50_stop: per-stop counts, 1997 on only; offered "
-        "when the years start in 1997 or later.",
-    )
-    obs["stops"] = c2.selectbox(
+    obs["stops"] = st.radio(
         "Stop layout",
         layouts,
         layouts.index(obs["stops"]),
+        format_func=LAYOUT_LABELS.get,
+        horizontal=True,
         key="ui_stops",
-        help="route_total: one count per run. ten_stop_bins: five counts per run "
-        "(stops 1–10, 11–20, ...). stops: all 50 stops (needs the 50_stop source).",
+        help="Route total: one count per run. 10-stop bins: five counts per run "
+        "(stops 1–10, 11–20, ...). All 50 stops: needs the 50-stop source.",
     )
-    obs["zero_fill"] = st.checkbox(
-        "Zero-fill every species ever recorded on the route",
-        obs["zero_fill"],
-        key="ui_zero_fill",
-        help="Add a 0 count for each species seen on the route in any year but not on "
-        "this run. Needed for most abundance models.",
+    rn["run_types"] = _code_toggle(
+        "Standard runs only (RunType 1)",
+        rn["run_types"],
+        "ui_run_types",
+        "Keep only runs that met all standard BBS criteria, as most trend analyses do. "
+        "Off = every run.",
     )
-    obs["lump_subspecies"] = st.checkbox(
-        "Count subspecies and forms under their species",
-        obs["lump_subspecies"],
-        key="ui_lump",
-        help="E.g. fold Dark-eyed Junco forms into Dark-eyed Junco.",
+    rn["quality_current_ids"] = _code_toggle(
+        "Passed quality check only (QualityCurrentID 1)",
+        rn["quality_current_ids"],
+        "ui_quality_ids",
+        "Keep only runs that met the weather, time, date, and route-completion criteria. "
+        "Off = every run.",
     )
-    obs["rolling_years"] = int(
-        st.number_input(
-            "Rolling mean over N calendar years (0 = off)",
-            0,
-            60,
-            obs["rolling_years"],
-            key="ui_rolling",
-            help="Smooth each route's counts with a moving average over this many years.",
+    shown = st.session_state.get("ui_min_continuity", rn["min_continuity"])
+    st.caption(f"Routes need a kept run in at least {shown:.0%} of years (change under More).")
+    with st.expander(
+        "More: continuity, observer first year, zero-fill, rolling mean", key="ui_more_survey"
+    ):
+        rn["min_continuity"] = st.slider(
+            "Minimum continuity (share of non-cancelled years surveyed)",
+            0.0,
+            1.0,
+            float(rn["min_continuity"]),
+            0.05,
+            key="ui_min_continuity",
+            help="Drop routes with a surviving run in less than this share of the "
+            "non-cancelled years in range. 0 = keep all; default 0.8 = at least 80%.",
         )
-    )
+        rn["drop_observer_first_year"] = st.checkbox(
+            "Drop each observer's first year on a route",
+            rn["drop_observer_first_year"],
+            key="ui_drop_first_year",
+            help="Counts are lower in an observer's first year on a route (the start-up "
+            "effect USGS trend analyses account for). Tick to leave those runs out, or "
+            "keep them and join the observer table's is_first_year column to model it.",
+        )
+        obs["zero_fill"] = st.checkbox(
+            "Zero-fill every species ever recorded on the route",
+            obs["zero_fill"],
+            key="ui_zero_fill",
+            help="Add a 0 count for each species seen on the route in any year but not on "
+            "this run. Needed for most abundance models.",
+        )
+        obs["rolling_years"] = int(
+            st.number_input(
+                "Rolling mean over N calendar years (0 = off)",
+                0,
+                60,
+                obs["rolling_years"],
+                key="ui_rolling",
+                help="Smooth each route's counts with a moving average over this many years.",
+            )
+        )
 
-    st.subheader("Species (a species is kept if it matches any list; all empty = every species)")
+
+def _species_card(p: dict[str, Any], v: ProfileValues | None) -> None:
+    """Which birds: species and the guild file; names, taxonomy and guild options under More."""
+    obs, sp, g = p["observations"], p["species"], p["guilds"]
+    st.subheader("Species & Guilds")
+    st.caption("Empty keeps every species. Species lists combine with OR; guilds then narrow.")
     names = {s["AOU"]: s["English_Common_Name"] for s in v.species} if v else {}
     sp["aous"] = _pick(
         "Species (AOU)",
@@ -705,16 +725,6 @@ def _species_tab(p: dict[str, Any], v: ProfileValues | None) -> None:
         "ui_aous",
         lambda a: f"{a} · {names[a]}",
     )
-    sp["common_names"] = _pick(
-        "Common names",
-        sorted(set(names.values())) if v else None,
-        sp["common_names"],
-        "ui_common_names",
-    )
-    sp["families"] = _pick("Families", v.families if v else None, sp["families"], "ui_families")
-    sp["orders"] = _pick("Orders", v.orders if v else None, sp["orders"], "ui_orders")
-
-    st.subheader("Guilds")
     g["file"] = st.text_input(
         "Guild file (CSV; see docs/guild_file.md)",
         g["file"] or "",
@@ -722,40 +732,56 @@ def _species_tab(p: dict[str, Any], v: ProfileValues | None) -> None:
         help="Optional CSV that tags species with traits (habitat, diet, ...). Lets you "
         "filter by trait and adds the traits as output columns.",
     )
-    units = ["report", "error"]
-    g["unmatched"] = st.selectbox(
-        "Guild rows that match no BBS species",
-        units,
-        units.index(g["unmatched"]),
-        key="ui_guild_unmatched",
-    )
-    if not g["file"]:
-        g["filters"] = {}
-        return
-    st.caption("Filters: OR within a trait, AND across traits, AND with the species lists.")
-    traits = v.guild_traits if v else {}
+    traits = v.guild_traits if (v and g["file"]) else {}
     filters: dict[str, list[str]] = {}
-    for trait, values in traits.items():
-        if not values:
-            st.caption(f"`{trait}`: no values in the file yet")
-            continue
-        chosen = _pick(trait, values, g["filters"].get(trait, []), f"ui_guild_{trait}")
-        if chosen:
-            filters[trait] = chosen
-    other = {t: vals for t, vals in g["filters"].items() if t not in traits}
-    filters.update(
-        _key_values(
-            st.text_area(
-                "Other trait filters (trait=value1, value2 per line; for traits without a "
-                "pick list, such as free-text columns)",
-                "\n".join(f"{t}={_joined(vals)}" for t, vals in other.items()),
-                key="ui_guild_other_filters",
-            ),
-            "Other trait filters",
-            split_values=True,
+    if g["file"]:
+        st.caption("Guild filters: OR within a trait, AND across traits and with species.")
+        for trait, values in traits.items():
+            if not values:
+                st.caption(f"`{trait}`: no values in the file yet")
+                continue
+            chosen = _pick(trait, values, g["filters"].get(trait, []), f"ui_guild_{trait}")
+            if chosen:
+                filters[trait] = chosen
+    with st.expander(
+        "More: common names, families, orders, subspecies, guild options", key="ui_more_species"
+    ):
+        sp["common_names"] = _pick(
+            "Common names",
+            sorted(set(names.values())) if v else None,
+            sp["common_names"],
+            "ui_common_names",
         )
-    )
-    g["filters"] = filters
+        sp["families"] = _pick("Families", v.families if v else None, sp["families"], "ui_families")
+        sp["orders"] = _pick("Orders", v.orders if v else None, sp["orders"], "ui_orders")
+        obs["lump_subspecies"] = st.checkbox(
+            "Count subspecies and forms under their species",
+            obs["lump_subspecies"],
+            key="ui_lump",
+            help="E.g. fold Dark-eyed Junco forms into Dark-eyed Junco.",
+        )
+        units = ["report", "error"]
+        g["unmatched"] = st.selectbox(
+            "Guild rows that match no BBS species",
+            units,
+            units.index(g["unmatched"]),
+            key="ui_guild_unmatched",
+        )
+        if g["file"]:
+            other = {t: vals for t, vals in g["filters"].items() if t not in traits}
+            filters.update(
+                _key_values(
+                    st.text_area(
+                        "Other trait filters (trait=value1, value2 per line; for traits "
+                        "without a pick list, such as free-text columns)",
+                        "\n".join(f"{t}={_joined(vals)}" for t, vals in other.items()),
+                        key="ui_guild_other_filters",
+                    ),
+                    "Other trait filters",
+                    split_values=True,
+                )
+            )
+    g["filters"] = filters if g["file"] else {}
 
 
 JOIN_TABLE_HELP: dict[str, str] = {
@@ -793,24 +819,33 @@ OTHER_CRS = "Other (enter an EPSG code)"
 PROJECTIONS_FILE = Path("projections.toml")
 
 
+JOIN_TABLE_TITLES: dict[str, str] = {
+    "routes": "Routes",
+    "weather": "Weather",
+    "observer": "Observer",
+    "vehicle": "Vehicle",
+    "species": "Species",
+    "guilds": "Guild Traits",
+}
+
+
 def _join_picker(p: dict[str, Any], table: str, options: list[str] | None) -> None:
-    """None / Some / All for one table; "Some" opens a column picker."""
+    """None / Some / All for one table (stacked radios); "Some" opens a column picker."""
     current = p["joins"][table]
     mode_now = "All" if current == ["*"] else ("Some" if current else "None")
-    with st.container(border=True):
-        mode = st.segmented_control(
-            table,
+    with st.container(border=True, height="stretch"):
+        mode = st.radio(
+            JOIN_TABLE_TITLES.get(table, table),
             JOIN_MODES,
-            default=mode_now,
-            required=True,
+            JOIN_MODES.index(mode_now),
             key=f"ui_join_mode_{table}",
+            help=JOIN_TABLE_HELP.get(table),
         )
-        st.caption(JOIN_TABLE_HELP.get(table, ""))
         if mode == "All":
             p["joins"][table] = ["*"]
         elif mode == "Some":
             p["joins"][table] = _pick(
-                f"{table} columns",
+                f"{JOIN_TABLE_TITLES.get(table, table)} columns",
                 options,
                 [c for c in current if c != "*"],
                 f"ui_join_{table}",
@@ -826,7 +861,7 @@ def _output_path_picker(out: dict[str, Any]) -> str:
     suffix = path.suffix.lower()
     if suffix not in extensions:
         st.warning(f"'{path.name}' has no supported format; choose one below.")
-    c1, c2, c3 = st.columns([2, 2, 2], vertical_alignment="bottom")
+    c1, c2, c3 = st.columns(3, vertical_alignment="bottom")
     folder = c1.text_input(
         "Folder", str(path.parent), key="ui_output_folder", help="Created if it doesn't exist."
     )
@@ -935,66 +970,75 @@ def _crs_picker(out: dict[str, Any]) -> None:
             st.rerun()
 
 
-def _joins_output_tab(p: dict[str, Any], v: ProfileValues | None) -> None:
-    st.caption(
-        "Extra columns to add to each output row, and the file to write. Inspect shows "
-        "the exact columns you'll get."
-    )
-    st.subheader("Extra columns")
+def _output_card(p: dict[str, Any], v: ProfileValues | None) -> None:
+    """The file to write, its shape, the joined columns, and GIS options."""
+    out = p["output"]
+    st.subheader("Output")
+    shape_col, file_col = st.columns([1, 3])
+    with shape_col:
+        shapes = ["long", "wide"]
+        out["shape"] = st.radio(
+            "Shape",
+            shapes,
+            shapes.index(out["shape"]),
+            format_func={
+                "long": "Long (one row per count)",
+                "wide": "Wide (a column per year)",
+            }.get,
+            key="ui_shape",
+            help="Long: one row per run and species; suits most statistics. Wide: one row "
+            "per route and species, a column per year; suits spreadsheets and maps.",
+        )
+        if out["shape"] == "wide":
+            wide_values = ["route_total", "rolling_mean"]
+            out["wide_value"] = st.selectbox(
+                "Value in each year column",
+                wide_values,
+                wide_values.index(out["wide_value"]),
+                format_func={
+                    "route_total": "That year's count",
+                    "rolling_mean": "Rolling mean (N under Survey Period & Protocol)",
+                }.get,
+                key="ui_wide_value",
+            )
+    with file_col:
+        ext = _output_path_picker(out)
+        out["manifest"] = st.checkbox(
+            "Write manifest",
+            out["manifest"],
+            key="ui_manifest",
+            help="Write <file>.manifest.json beside the output: the profile, release, code "
+            "version, and the counts after each filter, so the file can be traced and "
+            "rebuilt.",
+        )
+
+    st.markdown("#### Joined Columns")
+    st.caption("Extra columns added to every row. Inspect shows the exact columns you'll get.")
+    shown: list[tuple[str, list[str] | None]] = []
     for table in JOIN_TABLES:
         options = v.join_columns.get(table, []) if v else None
         if options is not None and not options:
             # Leave the saved value alone (e.g. guilds = ["*"] without a guild file):
             # clearing it marked every such profile "Unsaved changes" as soon as it opened
-            st.caption(f"`{table}`: nothing to add in this release/profile")
+            st.caption(f"{JOIN_TABLE_TITLES.get(table, table)}: nothing to add in this profile")
             continue
-        _join_picker(p, table, options)
+        shown.append((table, options))
+    if shown:
+        for column, (table, options) in zip(st.columns(len(shown)), shown, strict=True):
+            with column:
+                _join_picker(p, table, options)
 
-    st.subheader("Output file")
-    out = p["output"]
-    ext = _output_path_picker(out)
-    shapes = ["long", "wide"]
-    out["shape"] = st.segmented_control(
-        "Table layout",
-        shapes,
-        default=out["shape"],
-        format_func={
-            "long": "Long: one row per run and species",
-            "wide": "Wide: one row per route and species, a column per year",
-        }.get,
-        required=True,
-        key="ui_shape",
-        help="Long suits most statistics; wide suits spreadsheets and maps.",
-    )
-    if out["shape"] == "wide":
-        wide_values = ["route_total", "rolling_mean"]
-        out["wide_value"] = st.selectbox(
-            "Value in each year column",
-            wide_values,
-            wide_values.index(out["wide_value"]),
-            format_func={
-                "route_total": "That year's count",
-                "rolling_mean": "Rolling mean (set N on the Species & Guilds tab)",
-            }.get,
-            key="ui_wide_value",
-        )
     if ext in VECTOR_EXTENSIONS:
-        _crs_picker(out)
-        if ext == ".gpkg":
-            out["layer_name"] = st.text_input(
-                "Layer name",
-                out["layer_name"],
-                key="ui_layer_name",
-                help="The layer's name inside the GeoPackage, as GIS software lists it.",
-            )
-        _overlays_editor(out)
-    out["manifest"] = st.checkbox(
-        "Write manifest",
-        out["manifest"],
-        key="ui_manifest",
-        help="Write <file>.manifest.json beside the output: the profile, release, code "
-        "version, and the counts after each filter, so the file can be traced and rebuilt.",
-    )
+        with st.expander(f"Projection, layer name and overlays · {out['crs']}", key="ui_more_gis"):
+            _crs_picker(out)
+            if ext == ".gpkg":
+                out["layer_name"] = st.text_input(
+                    "Layer name",
+                    out["layer_name"],
+                    key="ui_layer_name",
+                    help="The layer's name inside the GeoPackage, as GIS software lists it.",
+                )
+            _overlays_editor(out)
 
 
 def _show_result(res: dict[str, Any]) -> None:
@@ -1240,15 +1284,18 @@ def _build_page() -> None:
             title="Pick lists unavailable, using text boxes",
         )
 
-    tabs = st.tabs(["Routes & Runs", "Species & Guilds", "Joins & Output", "Inspect & Run"])
-    with tabs[0]:
-        _routes_runs_tab(p, values)
-    with tabs[1]:
-        _species_tab(p, values)
-    with tabs[2]:
-        _joins_output_tab(p, values)
+    area, survey, birds = st.columns(3, border=True)
+    with area:
+        _study_area_card(p, values)
+    with survey:
+        _survey_card(p)
+    with birds:
+        _species_card(p, values)
+    with st.container(border=True):
+        _output_card(p, values)
     profile = _validated(alerts)
-    with tabs[3]:
+    with st.container(border=True):
+        st.subheader("Inspect & Run")
         stamp = _value_source(profile)[1] if profile is not None else ()
         _inspect_run_tab(profile, stamp)
 
