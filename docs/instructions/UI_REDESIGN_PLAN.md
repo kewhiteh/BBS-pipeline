@@ -1,0 +1,52 @@
+# Editor (Streamlit) redesign plan
+
+Status: **mock-up signed off by Kyle, 2026-11-09.** The final mock-up (version 19) is the
+target for the build (rule: GUI changes get a clickable mock-up first).
+
+Mock-up (private to Kyle): https://claude.ai/artifact/8TPjBea1pDvYzkEqj9G7aV
+(Build page and Settings page; the numbers in it are illustrative, not real counts).
+
+## Why
+
+The editor today is a profiles sidebar plus five tabs that mirror the profile file's
+sections (`[source]`, `[routes]`, ...), not the way a dataset is built. Release & Cache
+(changes about once a year) sits at the same level as the year range. A change on one
+tab can act on another (the 50_stop auto-switch note shows on Species & Guilds when the
+years change on Routes & Runs). Kyle's v2 app (tag v2.0.0-rc1, `src/bbs_pipeline/ui/app.py`)
+was one page with Run and download at the bottom, and he preferred that flow.
+
+## Decisions (Kyle, 2026-11-09)
+
+| # | Decision | Reason |
+|---|----------|--------|
+| U1 | One **Build** page: cards *Study Area*, *Survey Period & Protocol*, *Species & Guilds*, then *Output*, then *Inspect & Run* (names per U17). No tabs, no sidebar. | Reads top to bottom like the task; fewer clicks to one file. |
+| U2 | Release, folders, download settings, cache rebuild, saved projections, logs move to a **second Settings page**. Build page shows a one-line release status; a "fetch the release" card appears only when none is fetched. | Settings change once a year; there are enough of them to need a page, not a dialog. |
+| U3 | Profiles move to a header toolbar: picker, Unsaved badge, Save, a menu (Save as, New, Start from example, Open, View/download TOML). | Frees the sidebar; profile actions stay one click away. |
+| U4 | **Run writes the file and offers a download.** | Both are wanted. |
+| U5 | **Inspect stays a button**; after any edit the last counts are marked out of date. | Kyle likes the explicit check; each Inspect is a real data pass. |
+| U6 | RunType and QualityCurrentID are **visible toggles** ("standard runs only", "passed QC only"), not hidden. On = `[1]`, off = all. | Only codes 0 and 1 exist; cheap to show. |
+| U7 | `runs.min_continuity` sits under "More" and **defaults to 0.8**. | Kyle wants academic-rigour files without opening it every time. Changes the config default for the CLI too (GUI/CLI parity); profiles that omit it will filter at 80%. |
+| U8 | Years, source and stop layout share one card; 50_stop only offered from 1997, "all 50 stops" only with 50_stop. | The auto-switch note appears next to the control that caused it. |
+| U11 | Small single choices (source, stop layout, output shape long/wide) are **horizontal radio buttons** (`st.radio(..., horizontal=True)`), not segmented buttons or a checkbox. | Kyle, mock-up review: cleaner, more compact, and it is obvious which one is selected. |
+| U12 | Years are **one two-handle range slider** (start, end), as `st.slider` with a tuple value. | Kyle, mock-up review: two sliders waste space. |
+| U13 | The output file-name box is narrow (~340 px), not full row width. | Kyle, mock-up review. |
+| U14 | **Joins are visible** in the Output card, not in an expander: one box per table (Routes, Weather, Observer, Guild traits), each with None / Some / All radios; Some shows a column picker. Projection (CRS) stays in a collapsed expander that shows the current code. | Kyle, mock-up review: joins were hidden under "Extra columns & projection" and read as missing. The first mock-up also left out guild trait joins. |
+| U15 | Join modes and output shape use **stacked (vertical) radios**; the four join boxes are narrow (~180 px min) so they sit in one row. | Kyle, mock-up review: more compact than wide rows. |
+| U16 | **Dark earthy theme**, set only in `.streamlit/config.toml` (`base = "dark"`, no CSS): background `#1E2318` (dark olive-charcoal), inputs `secondaryBackgroundColor #2C3324`, text `#E4DCC6` (parchment), borders `#434B37`, links `#B7CF8F`, `primaryColor #C2553A` (brick red, lifted for dark), info `#2D3A29`/`#CFE0BB` (sage), warning `#4A3F1C`/`#F0DC9A` (mustard), success `#2B4026`/`#C5E0B0`. | Kyle, mock-up review: earthy nature colours, not white; then darker, because he works at night with the lights off. Red kept for sliders. Streamlit has one `primaryColor` for sliders, radios, checkboxes, chips *and* primary buttons, so Run is brick red too unless we add CSS. Sage headings in the mock-up need CSS or `:green[...]` markup. White on `#C2553A` is about 4.4:1, just under the 4.5:1 text guideline; an approximate figure, not measured with a checker. |
+| U17 | **Headings are Title Case in muted gold `#D4B86A`.** Section names: *Study Area*, *Survey Period & Protocol*, *Species & Guilds*, *Output*, *Joined Columns*, *Inspect & Run*; page title *BBS Dataset Builder*; Settings: *BBS Release*, *Data Folders*, *Download Settings*, *Saved Projections*, *Logs*. Widget labels and help text stay sentence case. | Kyle, mock-up review: the first names (Where / When & how counted / Which birds) sounded amateur, and lowercase headings looked wrong. Overrides the Streamlit skill's sentence-case default for headings. Gold headings in Streamlit need `:yellow[...]` markup with `yellowTextColor` set to the gold, or CSS. |
+| U9 | The Getting started checklist is removed. | The single page is the checklist; the no-release card covers the one prerequisite. |
+| U10 | Every profile option stays reachable in the editor; profile format and CLI are unchanged except U7's default. | GUI/CLI parity rule. |
+
+## Build order (after sign-off)
+
+1. Settings page and header toolbar; remove sidebar and checklist.
+2. Build page cards and Output strip; U6 toggles; U7 default (config + template + docs).
+3. Check-and-run area (Inspect / stale marker / Run + download), wide layout, light theme in
+   `.streamlit/config.toml`.
+
+Each PR keeps the existing `ui_*` widget keys where the widget survives so the UI tests
+carry over; tests that look for tabs or the checklist are rewritten.
+
+## Open questions
+
+- None open. Build follows the order above.

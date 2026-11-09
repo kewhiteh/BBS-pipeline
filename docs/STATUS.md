@@ -121,6 +121,10 @@ change that discovers or fixes any of it. The phase plan and its decisions live 
 
 ## Open items
 
+- Editor redesign (one Build page + Settings page): decisions U1–U10 and the mock-up link
+  are in [instructions/UI_REDESIGN_PLAN.md](instructions/UI_REDESIGN_PLAN.md). Mock-up signed
+  off 2026-11-09; build next, in 3 PRs. Includes a planned change of the
+  `runs.min_continuity` default from 0.0 to 0.8 (U7).
 - Help text is unreviewed by Kyle. Check the wording, especially the observation source,
   stop layout, and first-year descriptions.
 
