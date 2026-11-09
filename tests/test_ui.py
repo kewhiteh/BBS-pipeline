@@ -169,6 +169,9 @@ def test_inspect_shows_stage_counts_and_writes_nothing(
     assert counts["runs after continuity"] == 79
     assert counts["routes with surviving runs"] == 9
     assert not (tmp_path / "out" / "o.csv").exists()
+    assert any(c.value.startswith("Took ") and "peak memory" in c.value for c in at.caption)
+    log = (tmp_path / "logs" / "ui_activity.log").read_text(encoding="utf-8")
+    assert '"peak_rss_gb"' in log and '"elapsed_s"' in log
 
 
 def test_run_writes_the_output(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
