@@ -3,7 +3,7 @@
 Status: **built 2026-11-09** (kewhiteh/BBS-pipeline#59 core, then the page); waiting for Kyle to use it. Kyle will judge details
 by using the built page; the defaults below are meant to be changed after that.
 
-Mock-up (private to Kyle): https://claude.ai/artifact/TeEqTJkMQEEZv5JEXQPNMJ (version 1 = the flow, signed off; version 2, 2026-11-09 = condensed layout after Kyle's first use: "could be more condensed … so there's no scrolling needed"; awaiting sign-off)
+Mock-up (private to Kyle): https://claude.ai/artifact/TeEqTJkMQEEZv5JEXQPNMJ (version 1 = the flow, signed off; version 2, 2026-11-09 = condensed layout after Kyle's first use: "could be more condensed … so there's no scrolling needed"; signed off and built the same day)
 
 ## Why
 
@@ -59,3 +59,15 @@ a run, and every AOU code is looked up elsewhere. The guild file format itself
   AppTest of the whole flow ending in an Inspect with the saved file, and a Playwright
   run on the real release (starter → paste and match → check → save; no errors).
   Not yet used by Kyle.
+
+## Condensed layout (mock-up v2, built 2026-11-09)
+
+| # | Decision | Reason |
+|---|---|---|
+| G13 | One slim bar: "Guild File" (intro as its tooltip), the four step buttons, Back and Next. No step headings inside the steps. | Kyle: full-width boxes waste space; navigating needed scrolling. |
+| G14 | Traits as cards, 3 per row (`TRAIT_COLUMNS`; Streamlit has no auto-fill grid): name, rows filled and a delete icon on one line, then the values box; "New trait" is the last card. | Five starter traits fit on one screen. |
+| G15 | Add Species tabs are two columns: inputs and buttons left (1/3), results right (2/3). | No scrolling to reach Assign. |
+| G16 | Classify & Check: table left (3/4, scrolls inside, max 560 px), side column right with the checks as badges (grey "not checked yet" until the study area is looked up), problems, File, Save, Download. | Save and the checks always in view. |
+
+Checked at 1920 × 1080 in Chromium: every step fits without page scrolling except
+the Classify table, which scrolls inside itself.
