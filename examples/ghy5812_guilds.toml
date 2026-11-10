@@ -1,35 +1,59 @@
-# GHY 5812 final project: guild responses to land-use change across NC river basins.
-# Starting point for exploration; the year range is open until the data has been explored.
-# Routes are filtered by BCR here and masked to the river-basin extent in ArcGIS.
-# Guilds: starts from the USGS Patuxent breeding-habitat groups (guilds/README.md). Copy
-# guilds/pwrc_species_groups.csv to guilds/ghy5812.csv, fill forest_guild for woodland
-# species (Freemark & Collins 1992; Whitcomb et al. 1981), and point guilds.file at it.
+[source]
+release = "10.5066/P144YU3S"
+raw_dir = "data/raw"
+cache_dir = "data/sanitized_cache"
+offline = false
+rebuild_cache = false
+http_timeout_seconds = 30.0
+http_retries = 3
+http_backoff_seconds = 1.0
 
 [routes]
+states = []
 bcrs = [27, 28, 29]
+strata = []
+route_ids = []
+boundary = ""
 
 [runs]
-start_year = 1966
+start_year = 1995
 end_year = 2025
-run_types = [1]            # meets official BBS criteria (see RunType.pdf in the release)
-quality_current_ids = [1]  # stop completion: QualityCurrentID 1 requires >= 45 of 50 stops completed
-min_continuity = 0.8       # "80% completion": share of non-cancelled years surveyed
+run_types = [1]
+quality_current_ids = [1]
+min_continuity = 0.8
+drop_observer_first_year = false
 
 [observations]
-source = "10_stop"         # 10-stop summary counts, 1966 onward
-rolling_years = 0          # e.g. 5 for a 5-year rolling mean
+source = "10_stop"
+stops = "route_total"
+zero_fill = true
+lump_subspecies = true
+rolling_years = 0
+
+[species]
+aous = []
+common_names = []
+families = []
+orders = []
 
 [guilds]
-file = "guilds/pwrc_species_groups.csv"
-# filters = { breeding_habitat = ["woodland"], forest_guild = ["interior"] }
+file = ""
+filters = {}
+unmatched = "report"
 
 [joins]
-routes = ["RouteName", "Latitude", "Longitude", "BCR", "Stratum"]
-weather = ["Month", "Day", "ObsN", "StartTime", "EndTime"]
-observer = ["is_first_year"]
-species = ["English_Common_Name", "Family", "Order"]
+routes = ["StateNum", "Route", "RouteName", "Latitude", "Longitude", "Stratum", "BCR"]
+weather = ["ObsN", "RunType", "QualityCurrentID"]
+observer = []
+vehicle = []
+species = ["English_Common_Name", "Order", "Family", "Genus", "Species"]
 guilds = ["*"]
 
 [output]
-path = "output/ghy5812_bcr27-29.csv"
+path = "output/5812_final_project_data.gpkg"
+crs = "EPSG:4269"
+layer_name = "bbs_observations"
+overlays = {}
+manifest = true
 shape = "long"
+wide_value = "route_total"
