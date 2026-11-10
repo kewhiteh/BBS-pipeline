@@ -8,11 +8,13 @@ last_audit: none recorded
 ---
 # Resume
 ## Next
-Kyle works through the hand-check queue in [VERIFICATION.md](VERIFICATION.md) ("Kyle's hand-check queue", H1–H13) in a new session; record each result there with date and evidence. Keep this pointer until every item is ticked. When Kyle reports an editor problem, read `logs/ui_activity.log` first (AGENTS.md "Troubleshooting the editor").
+1. Kyle reviews the Guild File page layout mock-up v2 (condensed: slim top bar with stepper and Back/Next, trait cards in a grid, two-column Add Species, table plus a side column for checks and Save): https://claude.ai/artifact/TeEqTJkMQEEZv5JEXQPNMJ (private). On sign-off, rebuild the page layout in `ui/app.py` (`_guild_page` and the `_gw_*` steps) to match; browser-check with Playwright (STATUS.md "Browser checks").
+2. Kyle builds the GHY 5812/5818 guild file with the wizard once he has Whitcomb et al. 1981 (Freemark & Collins 1992 already downloaded); expected around 2026-11-10. Help him; then run H9 on it ([VERIFICATION.md](VERIFICATION.md), the last open hand check).
+When Kyle reports an editor problem, read `logs/ui_activity.log` first.
 ## Where I left off
-Last merge on main: kewhiteh/BBS-pipeline#38 (editor activity log). Today's merged work: editor redesign (#26–#30), Settings projections and error log (#29), reactive filters (#31, #32, #37), layout (#33), validation script and VERIFICATION.md (#35), validation gate (#36). Open: none besides this handoff PR. Kyle chose to keep Streamlit's WSL poll-based file watching (the startup message is harmless).
+Hand checks H1–H8 and H10–H13 are done (VERIFICATION.md); H9 waits for the guild file. Merged today after the previous handoff: multiple-runs warning (#40), time/memory log (#41), memory check (#43), memory cuts (#44), Pro format notes (#48), pick-reset fix (#52), manifest rerun (#57), Guild File wizard plan (#58), guild builder core + `bbs guilds match|check` (#59), Guild File page (#60). Kyle's first use of the page: "feeling good", wants it condensed (mock-up v2 above).
 ## Checks at stop
-`uv run ruff check .` green; `uv run ruff format --check .` green; `uv run pytest -q` green, 198 passed; `uv run python scripts/validate_outputs.py` all PASS. 2026-11-09, main at kewhiteh/BBS-pipeline#38.
+`uv run ruff check .` green; `uv run ruff format --check .` green; `uv run pytest -q` 229 passed; `uv run python scripts/validate_outputs.py` all PASS. 2026-11-09, main at kewhiteh/BBS-pipeline#60.
 ## Blocked / DECISION needed
 - None.
 ## Read next

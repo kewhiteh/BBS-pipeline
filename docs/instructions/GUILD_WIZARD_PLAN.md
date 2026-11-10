@@ -3,7 +3,7 @@
 Status: **built 2026-11-09** (kewhiteh/BBS-pipeline#59 core, then the page); waiting for Kyle to use it. Kyle will judge details
 by using the built page; the defaults below are meant to be changed after that.
 
-Mock-up (private to Kyle): https://claude.ai/artifact/TeEqTJkMQEEZv5JEXQPNMJ
+Mock-up (private to Kyle): https://claude.ai/artifact/TeEqTJkMQEEZv5JEXQPNMJ (version 1 = the flow, signed off; version 2, 2026-11-09 = condensed layout after Kyle's first use: "could be more condensed … so there's no scrolling needed"; awaiting sign-off)
 
 ## Why
 
