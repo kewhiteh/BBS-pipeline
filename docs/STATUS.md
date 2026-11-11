@@ -296,6 +296,11 @@ change that discovers or fixes any of it. The phase plan and its decisions live 
 
 ## Open items
 
+- Guild File page: opening an existing CSV needs an `aou`, `common_name` or
+  `scientific_name` column; a header named `species` (as in Kyle's first file) is not
+  recognised. Consider accepting `species` / `english_name` as common-name aliases
+  (2026-11-11).
+
 - Rerun from a manifest: **done 2026-11-09.** `load_profile` reads a `.json` manifest's
   recorded `profile`, so `bbs run --config x.manifest.json` works (add `--set
   output.path=...` to keep the original); the editor opens a manifest as a new, unsaved
