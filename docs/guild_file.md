@@ -24,7 +24,7 @@ tables = ["species", "routes", "bcr", "guilds"]   # "guilds" adds the trait colu
 
 Each row needs at least one of `aou`, `scientific_name`, or `common_name`. Fill in more
 than one if you like; they are cross-checked. Header names for the three identifiers
-are case-insensitive. Trait names are used exactly as written, so pick names that are
+are case-insensitive. Other common headers are accepted too when the standard one is missing: `species`, `english_name` or `name` for `common_name`; `latin_name`, `sci_name` or `binomial` for `scientific_name`; `aou_code` or `species_code` for `aou`. Trait names are used exactly as written, so pick names that are
 not already BBS output columns (`Family`, `Order`, `RouteName`, ...).
 
 Columns named `note`, `notes`, `comment`, `comments`, `source`, `citation`, or

@@ -22,6 +22,28 @@ from bbs_pipeline.sources.tables import read_text_table
 
 IDENTIFIER_COLUMNS: tuple[str, ...] = ("aou", "scientific_name", "common_name")
 
+# Other header names people use for the identifiers (compared lower case, with spaces,
+# dashes and underscores ignored). Applied only when the standard name is absent.
+# Kyle's first guild file had "species" for the common name (2026-11-11).
+IDENTIFIER_ALIASES: dict[str, str] = {
+    "species": "common_name",
+    "commonname": "common_name",
+    "englishname": "common_name",
+    "englishcommonname": "common_name",
+    "name": "common_name",
+    "scientificname": "scientific_name",
+    "sciname": "scientific_name",
+    "latinname": "scientific_name",
+    "binomial": "scientific_name",
+    "aoucode": "aou",
+    "speciescode": "aou",
+}
+
+
+def _header_key(name: str) -> str:
+    return re.sub(r"[\s_\-]+", "", name.strip().lower())
+
+
 # Free-text columns: kept and joinable by name, but never offered as filters
 NOTE_COLUMNS: frozenset[str] = frozenset(
     {"note", "notes", "comment", "comments", "source", "citation", "reference"}
@@ -62,11 +84,19 @@ def read_guild_csv(path: Path) -> pl.DataFrame:
     df = df.rename(
         {c: c.strip().lower() for c in df.columns if c.strip().lower() in IDENTIFIER_COLUMNS}
     )
+    present = set(df.columns)
+    aliases: dict[str, str] = {}
+    for c in df.columns:
+        target = IDENTIFIER_ALIASES.get(_header_key(c))
+        if target and target not in present and target not in aliases.values():
+            aliases[c] = target
+    df = df.rename(aliases)
     ids = [c for c in IDENTIFIER_COLUMNS if c in df.columns]
     if not ids:
         raise ValueError(
             f"Guild file '{path.name}' needs at least one of the columns {list(IDENTIFIER_COLUMNS)}; "
-            f"found {df.columns}"
+            f"found {df.columns}. Also accepted: 'species' or 'english_name' for the common "
+            "name, 'latin_name' for the scientific name, 'aou_code' for the AOU."
         )
     if len(df.columns) == len(ids):
         raise ValueError(f"Guild file '{path.name}' has no trait columns besides {ids}.")
