@@ -37,7 +37,7 @@ families = []
 orders = []
 
 [guilds]
-file = ""
+file = "guilds/ghy5812.csv"
 filters = {}
 unmatched = "report"
 
