@@ -296,10 +296,11 @@ change that discovers or fixes any of it. The phase plan and its decisions live 
 
 ## Open items
 
-- Guild File page: opening an existing CSV needs an `aou`, `common_name` or
-  `scientific_name` column; a header named `species` (as in Kyle's first file) is not
-  recognised. Consider accepting `species` / `english_name` as common-name aliases
-  (2026-11-11).
+- Guild file header aliases: **done 2026-11-11.** `read_guild_csv` (pipeline, CLI and the
+  Guild File page) accepts `species` / `english_name` / `name` for `common_name`,
+  `latin_name` / `sci_name` / `binomial` for `scientific_name`, `aou_code` /
+  `species_code` for `aou`, only when the standard header is absent. Test:
+  `test_identifier_header_aliases`.
 
 - Rerun from a manifest: **done 2026-11-09.** `load_profile` reads a `.json` manifest's
   recorded `profile`, so `bbs run --config x.manifest.json` works (add `--set

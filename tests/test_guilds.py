@@ -89,7 +89,7 @@ def test_conflicting_identifiers_and_duplicate_species_raise(tmp_path: Path) -> 
 
 def test_file_must_have_an_identifier_and_a_trait(tmp_path: Path) -> None:
     with pytest.raises(ValueError, match="needs at least one of the columns"):
-        read_guild_csv(_csv(tmp_path, "species,guild\nx,y\n"))
+        read_guild_csv(_csv(tmp_path, "bird,guild\nx,y\n"))
     with pytest.raises(ValueError, match="no trait columns"):
         read_guild_csv(_csv(tmp_path, "aou,common_name\n07550,Wood Thrush\n"))
     with pytest.raises(ValueError, match="must be a .csv"):
@@ -243,3 +243,16 @@ def test_trait_column_clashing_with_output_column_raises(tmp_path: Path) -> None
         ValueError, match="'Family' is requested from both joins.species and joins.guilds"
     ):
         run_profile(profile, export=False)
+
+
+def test_identifier_header_aliases(tmp_path) -> None:
+    """A 'species' header (Kyle's first file, 2026-11-11) reads as common_name."""
+    from bbs_pipeline.guilds import read_guild_csv
+
+    path = tmp_path / "g.csv"
+    path.write_text("Species,Scientific Name,guild\nWood Thrush,Hylocichla mustelina,interior\n")
+    assert read_guild_csv(path).columns == ["common_name", "scientific_name", "guild"]
+
+    both = tmp_path / "b.csv"  # the standard name wins; the alias stays a trait
+    both.write_text("common_name,species,guild\nWood Thrush,mustelina,interior\n")
+    assert read_guild_csv(both).columns == ["common_name", "species", "guild"]
