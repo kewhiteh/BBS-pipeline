@@ -1,4 +1,4 @@
-<!-- standard:core v1 — copied verbatim from Kyle's repo-standard kit. Do not edit in a repo; change the kit and re-sync. -->
+<!-- standard:core v1.1 — copied verbatim from Kyle's repo-standard kit. Do not edit in a repo; change the kit and re-sync. -->
 # Repo standard
 
 All of Kyle's repos use this same structure so any session, human or agent, finds things the same way. The text between the `standard:core` markers is identical in every repo. Only "This repo's map" (below the closing marker) differs.
@@ -26,7 +26,7 @@ Frontmatter keys, in this order: `project`, `aliases`, `state` (active | parked 
 - Update CHANGELOG.md in the same PR as any user-visible change.
 - Append to the decisions record when a design decision is made. Never edit or delete past entries. Never reword Kyle's DECISION entries anywhere.
 - Update README.md when setup or usage changes.
-- Test counts and check results live only in docs/RESUME.md "Checks at stop". Reference docs may say a check passes, without counts, and link there.
+- Test counts and check results live only in docs/RESUME.md "Checks at stop", except in dated historical entries in CHANGELOG or the decisions record. Reference docs may say a check passes, without counts, and link there.
 - Kyle is the author and decides. Anything not derivable from the repo, git, or GitHub settings is "UNKNOWN (ask Kyle)". Never guess.
 - Never apply this standard to an exempt repo (see Exemptions).
 
